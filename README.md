@@ -32,11 +32,11 @@ chmod +x start.sh && ./start.sh
 5. Criam o usuário admin padrão
 
 **Isso configura automaticamente:**
-- ✅ Banco de dados PostgreSQL 16
-- ✅ Cache Redis 7
-- ✅ Backend FastAPI rodando na porta 8000
-- ✅ Frontend React + Vite rodando na porta 5173
-- ✅ Usuário admin criado
+- OK Banco de dados PostgreSQL 16
+- OK Cache Redis 7
+- OK Backend FastAPI rodando na porta 8000
+- OK Frontend React + Vite rodando na porta 5173
+- OK Usuário admin criado
 
 **Acesse:**
 - **Frontend**: http://localhost:5173
@@ -426,11 +426,3 @@ Usamos [Conventional Commits](https://www.conventionalcommits.org/):
 - `refactor:` - Refatoração
 - `test:` - Testes
 - `chore:` - Manutenção
-
----
-
-<div align="center">
-
-[⬆ Voltar ao topo](#cfo-x-saas-)
-
-</div>
