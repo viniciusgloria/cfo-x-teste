@@ -1,275 +1,191 @@
-# Backend - CFO Hub API
+# Backend - CFO-X SaaS API
 
-API REST completa construída com FastAPI, PostgreSQL, Redis e SQLAlchemy.
+API REST em FastAPI para o sistema CFO-X SaaS. Backend completo com autenticação JWT, gerenciamento de empresas, colaboradores, ponto, folha de pagamento e muito mais.
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red.svg)](https://www.sqlalchemy.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
 
 ---
 
-## Arquitetura
+## Índice
 
-### Stack Tecnológico
+- [Sobre](#sobre)
+- [Tecnologias](#tecnologias)
+- [Estrutura](#estrutura)
+- [Instalação](#instalação)
+- [Configuração](#configuração)
+- [Uso](#uso)
+- [API Endpoints](#api-endpoints)
+- [Autenticação](#autenticação)
+- [Models](#models)
+- [Testes](#testes)
+- [Deploy](#deploy)
 
-- **Framework:** FastAPI 0.109.0
-- **Database:** PostgreSQL 16 via SQLAlchemy 2.0.25
-- **Autenticação:** JWT (python-jose) + bcrypt
-- **Validação:** Pydantic 2.5.3
-- **Rate Limiting:** slowapi 0.1.9 + Redis 7
-- **Migrations:** init_db.py (cria 26 tabelas automaticamente)
+---
 
-### Estrutura de Pastas
+## Sobre
+
+API REST construída com FastAPI que fornece todos os endpoints necessários para o funcionamento do CFO-X SaaS. Inclui autenticação JWT, CRUD completo para todas as entidades, validações robustas com Pydantic e documentação automática.
+
+### Características:
+- OK API REST completa e documentada
+- OK Autenticação JWT com refresh tokens
+- OK Validação de dados com Pydantic
+- OK ORM com SQLAlchemy 2.0
+- OK Migrations automáticas
+- OK Rate limiting e segurança
+- OK CORS configurável
+- OK Documentação Swagger/OpenAPI automática
+- OK Type hints em todo o código
+
+---
+
+## Tecnologias
+
+### Core
+- **FastAPI 0.109** - Framework web moderno e rápido
+- **Python 3.11+** - Linguagem de programação
+- **Uvicorn** - Servidor ASGI de alta performance
+- **Pydantic 2.5** - Validação de dados
+
+### Database
+- **SQLAlchemy 2.0** - ORM Python
+- **PostgreSQL 15** - Banco de dados relacional
+- **psycopg2-binary** - Driver PostgreSQL
+- **Alembic** - Migrations (futuro)
+
+### Segurança & Auth
+- **python-jose** - JWT tokens
+- **passlib[bcrypt]** - Hash de senhas
+- **bcrypt** - Criptografia
+- **python-multipart** - Upload de arquivos
+- **slowapi** - Rate limiting
+
+### Utilidades
+- **python-dotenv** - Variáveis de ambiente
+- **python-dateutil** - Manipulação de datas
+- **email-validator** - Validação de emails
+- **redis** - Cache e sessões
+
+### Development
+- **pytest** - Testes
+- **pytest-asyncio** - Testes async
+- **httpx** - Cliente HTTP para testes
+- **black** - Formatação de código
+- **flake8** - Linting
+
+---
+
+## Estrutura
 
 ```
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py                 # Entry point FastAPI
-│   ├── config.py               # Configurações (env vars)
-│   ├── database.py             # SQLAlchemy setup
-│   ├── dependencies.py         # Injeção de dependências
-│   ├── auth.py                 # JWT utilities
-│   ├── password_validator.py   # Validação de senha forte
+│   ├── main.py              # Entry point da aplicação
+│   ├── config.py            # Configurações e settings
+│   ├── database.py          # Setup do banco de dados
+│   ├── auth.py              # Autenticação JWT
+│   ├── dependencies.py      # Dependências injetáveis
+│   ├── password_validator.py # Validação de senhas
 │   │
-│   ├── models/                 # 26 modelos SQLAlchemy
+│   ├── middleware/
+│   │   └── security.py      # Middlewares de segurança
+│   │
+│   ├── models/              # Modelos SQLAlchemy
 │   │   ├── __init__.py
-│   │   ├── user.py             # Usuários (auth)
-│   │   ├── refresh_token.py    # Tokens de refresh
-│   │   ├── empresa.py          # Configurações da empresa
+│   │   ├── user.py          # Usuários
+│   │   ├── empresa.py       # Empresas
+│   │   ├── colaborador.py   # Colaboradores
+│   │   ├── ponto.py         # Registros de ponto
+│   │   ├── folha_pagamento.py
+│   │   ├── documento.py
+│   │   ├── tarefa.py
+│   │   ├── okr.py
+│   │   ├── chat.py
+│   │   ├── avaliacao.py
+│   │   └── ... (outros modelos)
+│   │
+│   ├── schemas/             # Schemas Pydantic
+│   │   ├── __init__.py
+│   │   ├── auth.py          # Schemas de autenticação
+│   │   ├── user.py
+│   │   ├── empresa.py
 │   │   ├── colaborador.py
-│   │   ├── ponto.py            # Ponto eletrônico
-│   │   ├── tarefa.py           # Gestão de tarefas
-│   │   ├── okr.py              # OKRs
-│   │   ├── solicitacao.py      # Férias, ajustes, etc
-│   │   ├── mural.py            # Posts, comments, reactions
-│   │   ├── cliente.py          # CRM
-│   │   └── ...                 # 15 outros modelos
+│   │   └── ... (schemas correspondentes)
 │   │
-│   ├── schemas/                # Pydantic schemas (validação)
-│   │   ├── __init__.py
-│   │   ├── auth.py             # Login, register, tokens
-│   │   ├── user.py             # User CRUD
-│   │   ├── refresh_token.py    # Refresh token schemas
-│   │   └── ...                 # Schemas para cada modelo
-│   │
-│   ├── routes/                 # 18 routers REST
-│   │   ├── __init__.py
-│   │   ├── auth.py             # ✅ COMPLETO: /login, /register, /refresh, /logout
-│   │   ├── users.py            # ✅ COMPLETO: CRUD usuários
-│   │   ├── ponto.py            # ✅ COMPLETO: Registros de ponto
-│   │   ├── colaboradores.py    # ⏳ Estruturado
-│   │   ├── tarefas.py          # ⏳ Estruturado
-│   │   ├── okrs.py             # ⏳ Estruturado
-│   │   └── ...                 # 12 outros routers
-│   │
-│   └── middleware/
-│       └── security.py         # Security headers + request logging
+│   └── routes/              # Rotas/Endpoints
+│       ├── __init__.py
+│       ├── auth.py          # Login, refresh, logout
+│       ├── users.py         # CRUD usuários
+│       ├── empresa.py       # CRUD empresas
+│       ├── colaboradores.py # CRUD colaboradores
+│       ├── ponto.py         # Gestão de ponto
+│       ├── folha.py         # Folha de pagamento
+│       ├── documentos.py
+│       ├── tarefas.py
+│       ├── okrs.py
+│       ├── chat.py
+│       ├── avaliacoes.py
+│       └── ... (outras rotas)
 │
-├── init_db.py                  # Script setup inicial (cria tabelas + admin)
-├── requirements.txt
-├── Dockerfile
-└── README.md                   # Este arquivo
+├── tests/                   # Testes
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_auth.py
+│   ├── test_users.py
+│   └── ...
+│
+├── init_db.py              # Script de inicialização do DB
+├── requirements.txt        # Dependências Python
+├── Dockerfile              # Docker para desenvolvimento
+├── .env.example            # Template de variáveis
+└── README.md               # Este arquivo
 ```
 
 ---
 
-## Modelos de Dados (26 Tabelas)
+## Instalação
 
-### Autenticação e Usuários
-- **users** - Usuários do sistema (5 roles: Admin, Gestor, Colaborador, Cliente, Visitante)
-- **refresh_tokens** - Tokens de refresh (rotação automática, 7 dias)
+### Opção 1: Com Docker (Recomendado)
 
-### Gestão de Pessoas
-- **colaboradores** - Dados completos de funcionários
-- **cargos** - Cargos da empresa
-- **setores** - Setores/departamentos
-- **empresa** - Configurações gerais da empresa
-
-### Ponto Eletrônico
-- **pontos** - Registros de entrada/saída
-- **ajustes_ponto** - Solicitações de ajuste de ponto
-
-### Solicitações
-- **solicitacoes** - Férias, atestados, documentos, ajustes
-
-### OKRs e Performance
-- **okrs** - Objetivos e Key Results
-- **feedbacks** - Feedbacks entre colaboradores
-- **avaliacoes** - Avaliações de desempenho
-
-### Gestão de Tarefas/Projetos
-- **tarefas** - Tarefas com status, prioridade, responsáveis
-
-### Comunicação
-- **posts** - Posts do mural social
-- **post_comments** - Comentários em posts
-- **post_reactions** - Reações (like, etc)
-- **chat_messages** - Chat interno
-- **notificacoes** - Notificações do sistema
-
-### CRM e Clientes
-- **clientes** - Cadastro de clientes
-- **folha_clientes** - Folhas de pagamento para clientes (BPO)
-
-### RH e Benefícios
-- **beneficios** - Catálogo de benefícios
-- **user_beneficios** - Benefícios atribuídos aos usuários
-- **folhas_pagamento** - Folhas de pagamento internas
-
-### Outros
-- **documentos** - Gestão de arquivos
-- **lembretes** - Lembretes/avisos
-- **reservas_salas** - Reserva de salas (futuro)
-
-### Diagrama Simplificado
-
-```
-users ─┬─ refresh_tokens
-       ├─ colaboradores ── cargos
-       │                └─ setores
-       ├─ pontos
-       ├─ tarefas
-       ├─ okrs
-       ├─ feedbacks
-       ├─ posts ── post_comments
-       │        └─ post_reactions
-       └─ notificacoes
-
-empresa (configuração global)
-clientes ── folha_clientes
-```
-
----
-
-## Rotas da API
-
-### Autenticação (`/api/auth`)
-
-| Método | Endpoint | Descrição | Rate Limit |
-|--------|----------|-----------|------------|
-| POST | `/login` | Login com email/senha | 5/min |
-| POST | `/register` | Registro de novo usuário | 3/hr |
-| POST | `/refresh` | Renovar access token | 10/min |
-| POST | `/logout` | Invalidar refresh token | - |
-| GET | `/me` | Dados do usuário logado | - |
-
-**Exemplo Login:**
 ```bash
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@cfohub.com","senha":"admin123"}'
+# Na raiz do projeto
+docker-compose up -d backend
+
+# Inicializar banco de dados
+docker-compose exec backend python init_db.py
 ```
 
-**Response:**
-```json
-{
-  "access_token": "eyJ...",
-  "refresh_token": "abc123...",
-  "token_type": "bearer",
-  "access_expires_in": 900,
-  "refresh_expires_in": 604800
-}
-```
+### Opção 2: Desenvolvimento Local
 
-### Usuários (`/api/users`)
+```bash
+# Entrar na pasta backend
+cd backend
 
-| Método | Endpoint | Descrição | Permissão |
-|--------|----------|-----------|-----------|
-| GET | `/` | Listar usuários | Admin/Gestor |
-| GET | `/{id}` | Buscar usuário | Próprio ou Admin |
-| POST | `/` | Criar usuário | Admin |
-| PUT | `/{id}` | Atualizar usuário | Próprio ou Admin |
-| DELETE | `/{id}` | Deletar usuário | Admin |
+# Criar ambiente virtual
+python -m venv venv
 
-### Ponto (`/api/ponto`)
+# Ativar ambiente virtual
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| POST | `/registrar` | Registrar entrada/saída |
-| GET | `/meus-registros` | Ver meus registros |
-| GET | `/hoje` | Registros de hoje |
-| POST | `/ajuste` | Solicitar ajuste |
+# Instalar dependências
+pip install -r requirements.txt
 
-### Outras Rotas (Estruturadas)
+# Copiar variáveis de ambiente
+cp .env.example .env
+# Edite o .env com suas configurações
 
-- `/api/colaboradores` - CRUD colaboradores
-- `/api/tarefas` - Gestão de tarefas
-- `/api/okrs` - OKRs
-- `/api/solicitacoes` - Férias, ajustes, etc
-- `/api/mural` - Posts sociais
-- `/api/chat` - Mensagens
-- `/api/clientes` - CRM
-- `/api/documentos` - Upload/download
-- `/api/notificacoes` - Notificações
-- `/api/avaliacoes` - Avaliações
-- `/api/beneficios` - Benefícios
-- `/api/empresa` - Configurações
-- `/api/cargos-setores` - Cargos e setores
+# Inicializar banco de dados
+python init_db.py
 
----
-
-## Segurança
-
-### JWT Authentication
-
-**Access Token:**
-- Duração: 15 minutos
-- Payload: `user_id`, `email`, `role`, `exp`
-- Algoritmo: HS256
-
-**Refresh Token:**
-- Duração: 7 dias
-- Armazenado: Tabela `refresh_tokens`
-- Rotação: Novo token a cada refresh
-- Revogação: Flag `revoked` no banco
-
-### Rate Limiting (slowapi + Redis)
-
-```python
-# auth.py
-@limiter.limit("5/minute")  # Máximo 5 tentativas de login por minuto
-async def login(...)
-
-@limiter.limit("3/hour")    # Máximo 3 registros por hora
-async def register(...)
-
-@limiter.limit("10/minute") # Máximo 10 refreshes por minuto
-async def refresh(...)
-```
-
-### Security Headers (Middleware)
-
-```python
-# middleware/security.py
-headers = {
-    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
-    "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
-    "Content-Security-Policy": "default-src 'self'"
-}
-```
-
-### Validação de Senha Forte
-
-```python
-# password_validator.py
-- Mínimo 8 caracteres
-- Letras maiúsculas e minúsculas
-- Números e caracteres especiais
-- Não pode conter email
-- Não pode ser senha comum (admin123, password, etc)
-```
-
-### RBAC (5 Níveis)
-
-```python
-# models/user.py
-class UserRole(str, Enum):
-    ADMIN = "admin"           # Acesso total
-    GESTOR = "gestor"         # Gestão de equipe
-    COLABORADOR = "colaborador"  # Acesso básico
-    CLIENTE = "cliente"       # CRM externo
-    VISITANTE = "visitante"   # Somente leitura
+# Rodar servidor
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ---
@@ -278,92 +194,331 @@ class UserRole(str, Enum):
 
 ### Variáveis de Ambiente
 
-Crie `.env.development` (dev) ou `.env` (produção):
+Crie um arquivo `.env` baseado no `.env.example`:
 
-```env
+```bash
+# Ambiente
+ENVIRONMENT=development
+
 # Database
-DATABASE_URL=postgresql://cfohub_user:senha@localhost:5432/cfohub
+DATABASE_URL=postgresql://user:password@localhost:5432/cfohub_dev
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
 
 # JWT
-SECRET_KEY=sua-chave-secreta-aqui-64-bytes
+SECRET_KEY=sua-chave-secreta-min-32-chars
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=15
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# Rate Limiting
-REDIS_HOST=localhost
-REDIS_PORT=6379
+# CORS
+FRONTEND_URL=http://localhost:5173
 
-# Application
-APP_NAME=CFO Hub API
-APP_VERSION=1.1.0
-DEBUG=True
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+# API
+API_PREFIX=/api/v1
+DEBUG=true
+LOG_LEVEL=DEBUG
 ```
 
-**Gerar SECRET_KEY:**
+### Gerar SECRET_KEY
+
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
 ---
 
-## Como Rodar
+## Uso
 
-### Com Docker (Recomendado)
+### Rodar o servidor
 
 ```bash
-cd ..
-docker-compose up
+# Desenvolvimento (com auto-reload)
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Produção
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-### Manual
+### Acessar
 
-**1. Criar ambiente virtual:**
-```bash
-python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
+- **API**: http://localhost:8000
+- **Documentação Swagger**: http://localhost:8000/docs
+- **Documentação ReDoc**: http://localhost:8000/redoc
+- **OpenAPI JSON**: http://localhost:8000/openapi.json
+
+### Primeiro acesso
+
+Após inicializar o banco (`python init_db.py`), você pode criar um usuário admin:
+
+```python
+# No shell Python
+from app.database import SessionLocal
+from app.models.user import User
+from passlib.context import CryptContext
+
+db = SessionLocal()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+admin = User(
+    nome="Admin",
+    email="admin@example.com",
+    senha_hash=pwd_context.hash("admin123"),
+    tipo_usuario="admin",
+    is_active=True
+)
+db.add(admin)
+db.commit()
 ```
-
-**2. Instalar dependências:**
-```bash
-pip install -r requirements.txt
-```
-
-**3. Configurar .env:**
-```bash
-cp .env.example .env
-# Edite .env com suas configurações
-```
-
-**4. Setup banco de dados:**
-```bash
-# Certifique-se que PostgreSQL está rodando
-python init_db.py
-```
-
-**5. Rodar servidor:**
-```bash
-uvicorn app.main:app --reload
-```
-
-**Servidor rodando em:** http://localhost:8000
-
-**Documentação interativa:** http://localhost:8000/api/docs
 
 ---
 
-## Testes (Futuro)
+## API Endpoints
+
+### Autenticação
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| POST | `/api/v1/auth/login` | Login e geração de tokens | ❌ |
+| POST | `/api/v1/auth/refresh` | Renovar access token | ❌ |
+| POST | `/api/v1/auth/logout` | Logout (invalidar refresh token) | ✅ |
+| GET | `/api/v1/auth/me` | Obter usuário logado | ✅ |
+
+### Usuários
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| GET | `/api/v1/users` | Listar usuários | ✅ |
+| POST | `/api/v1/users` | Criar usuário | ✅ |
+| GET | `/api/v1/users/{id}` | Obter usuário | ✅ |
+| PUT | `/api/v1/users/{id}` | Atualizar usuário | ✅ |
+| DELETE | `/api/v1/users/{id}` | Deletar usuário | ✅ |
+
+### Empresas
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| GET | `/api/v1/empresas` | Listar empresas | ✅ |
+| POST | `/api/v1/empresas` | Criar empresa | ✅ |
+| GET | `/api/v1/empresas/{id}` | Obter empresa | ✅ |
+| PUT | `/api/v1/empresas/{id}` | Atualizar empresa | ✅ |
+| DELETE | `/api/v1/empresas/{id}` | Deletar empresa | ✅ |
+
+### Colaboradores
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| GET | `/api/v1/colaboradores` | Listar colaboradores | ✅ |
+| POST | `/api/v1/colaboradores` | Criar colaborador | ✅ |
+| GET | `/api/v1/colaboradores/{id}` | Obter colaborador | ✅ |
+| PUT | `/api/v1/colaboradores/{id}` | Atualizar colaborador | ✅ |
+| DELETE | `/api/v1/colaboradores/{id}` | Deletar colaborador | ✅ |
+
+### Ponto
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| POST | `/api/v1/ponto/registrar` | Registrar ponto | ✅ |
+| GET | `/api/v1/ponto/hoje` | Pontos de hoje | ✅ |
+| GET | `/api/v1/ponto/mes` | Pontos do mês | ✅ |
+| POST | `/api/v1/ponto/solicitacao-ajuste` | Solicitar ajuste | ✅ |
+
+### Folha de Pagamento
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| GET | `/api/v1/folha` | Listar folhas | ✅ |
+| POST | `/api/v1/folha/gerar` | Gerar folha | ✅ |
+| GET | `/api/v1/folha/{id}` | Obter folha | ✅ |
+| PUT | `/api/v1/folha/{id}` | Atualizar folha | ✅ |
+
+_E muitos outros endpoints... Veja a documentação completa em `/docs`_
+
+---
+
+## Autenticação
+
+### JWT Flow
+
+```
+1. Login → POST /auth/login
+   {
+     "email": "user@example.com",
+     "password": "senha123"
+   }
+   
+   Response:
+   {
+     "access_token": "eyJ...",
+     "refresh_token": "eyJ...",
+     "token_type": "bearer"
+   }
+
+2. Usar access_token nas requisições
+   Authorization: Bearer eyJ...
+
+3. Quando expirar, renovar com refresh_token
+   POST /auth/refresh
+   {
+     "refresh_token": "eyJ..."
+   }
+```
+
+### Headers
+
+Todas as rotas protegidas precisam do header:
+
+```
+Authorization: Bearer <access_token>
+```
+
+### Permissões
+
+- **Admin**: Acesso total
+- **Gestor**: Gerencia sua empresa
+- **Colaborador**: Acesso limitado aos seus dados
+
+---
+
+## Models
+
+### Principais Entidades
+
+#### User
+```python
+- id: int (PK)
+- nome: str
+- email: str (unique)
+- senha_hash: str
+- tipo_usuario: enum (admin|gestor|colaborador)
+- is_active: bool
+- created_at: datetime
+```
+
+#### Empresa
+```python
+- id: int (PK)
+- razao_social: str
+- cnpj: str (unique)
+- nome_fantasia: str
+- created_at: datetime
+```
+
+#### Colaborador
+```python
+- id: int (PK)
+- nome: str
+- cpf: str (unique)
+- email: str
+- cargo_id: int (FK)
+- empresa_id: int (FK)
+- data_admissao: date
+- salario: decimal
+```
+
+#### RegistroPonto
+```python
+- id: int (PK)
+- colaborador_id: int (FK)
+- data: date
+- entrada: time
+- saida: time
+- tipo: enum (normal|extra|falta)
+```
+
+_Veja todos os models em `app/models/`_
+
+---
+
+## Testes
 
 ```bash
-# Instalar dependências de teste
-pip install pytest pytest-asyncio httpx
-
-# Rodar testes
+# Rodar todos os testes
 pytest
 
 # Com coverage
-pytest --cov=app tests/
+pytest --cov=app --cov-report=html
+
+# Teste específico
+pytest tests/test_auth.py -v
+
+# Ver cobertura
+open htmlcov/index.html
+```
+
+### Estrutura de Testes
+
+```python
+# tests/test_auth.py
+def test_login(client):
+    response = client.post("/api/v1/auth/login", json={
+        "email": "test@example.com",
+        "password": "test123"
+    })
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+```
+
+---
+
+## Deploy
+
+### Azure App Service
+
+#### Configurações:
+- **Runtime**: Python 3.11
+- **Startup Command**: `python -m uvicorn app.main:app --host 0.0.0.0 --port 8000`
+- **Path**: `/backend` (se monorepo)
+
+#### Application Settings (Portal Azure):
+```
+ENVIRONMENT=production
+DATABASE_URL=postgresql://user:pass@azure-postgres.database.azure.com:5432/cfohub
+REDIS_URL=redis://azure-redis.redis.cache.windows.net:6380/0?ssl=True
+SECRET_KEY=<secret-key-64-chars>
+FRONTEND_URL=https://cfohub.azurestaticapps.net
+DEBUG=false
+LOG_LEVEL=WARNING
+```
+
+### Docker (Desenvolvimento)
+
+```bash
+# Build
+docker build -t cfohub-backend .
+
+# Run
+docker run -p 8000:8000 --env-file .env cfohub-backend
+```
+
+---
+
+## Comandos Úteis
+
+```bash
+# Formatar código
+black app/
+
+# Lint
+flake8 app/
+
+# Type check
+mypy app/
+
+# Ver rotas
+uvicorn app.main:app --reload &
+curl http://localhost:8000/openapi.json | jq '.paths | keys'
+
+# Shell interativo
+python
+>>> from app.database import SessionLocal
+>>> from app.models.user import User
+>>> db = SessionLocal()
+>>> db.query(User).all()
+
+# Gerar requirements.txt
+pip freeze > requirements.txt
 ```
 
 ---
@@ -371,86 +526,86 @@ pytest --cov=app tests/
 ## Padrões de Código
 
 ### Nomenclatura
-- **Variáveis:** snake_case em português (`usuario_id`, `data_criacao`)
-- **Classes:** PascalCase (`UserModel`, `AuthRouter`)
-- **Constantes:** UPPER_CASE (`SECRET_KEY`, `DATABASE_URL`)
+- **Arquivos**: snake_case.py
+- **Classes**: PascalCase
+- **Funções**: snake_case
+- **Constantes**: UPPER_CASE
 
-### Type Hints Obrigatórios
+### Type Hints
 ```python
-def criar_usuario(nome: str, email: str) -> User:
-    ...
+from typing import List, Optional
+from app.schemas.user import UserCreate, UserResponse
 
-async def buscar_usuario(user_id: int, db: Session) -> Optional[User]:
-    ...
+async def create_user(
+    user: UserCreate,
+    db: Session
+) -> UserResponse:
+    # implementação
+    pass
 ```
 
 ### Docstrings
 ```python
-def validate_password(password: str, email: str) -> bool:
+def get_user_by_email(email: str, db: Session) -> Optional[User]:
     """
-    Valida se a senha atende aos requisitos de segurança.
+    Busca usuário por email.
     
     Args:
-        password: Senha a ser validada
-        email: Email do usuário (não pode estar na senha)
+        email: Email do usuário
+        db: Sessão do banco de dados
         
     Returns:
-        True se senha é válida
-        
-    Raises:
-        HTTPException: Se senha não atende requisitos
+        User ou None se não encontrado
     """
+    return db.query(User).filter(User.email == email).first()
 ```
 
 ---
 
 ## Troubleshooting
 
-**Erro: "Module not found"**
+### Erro de conexão com banco
+
 ```bash
-# Certifique-se que está no venv
-pip install -r requirements.txt
+# Verificar se PostgreSQL está rodando
+docker-compose ps db
+
+# Verificar logs
+docker-compose logs db
+
+# Testar conexão
+psql postgresql://user:password@localhost:5432/cfohub_dev
 ```
 
-**Erro: "Database connection failed"**
-```bash
-# Verifique se PostgreSQL está rodando
-psql -U postgres -l
+### Erro de importação
 
-# Teste connection string
-python -c "from app.database import engine; print(engine.url)"
+```bash
+# Reinstalar dependências
+pip install -r requirements.txt --force-reinstall
 ```
 
-**Erro: "Redis connection failed"**
-```bash
-# Rate limiting vai falhar sem Redis
-# Instale Redis ou desabilite rate limiting em app/main.py
-```
+### Erro de migração
 
-**Hot reload não funciona:**
 ```bash
-# Use flag --reload
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Resetar banco (CUIDADO: apaga tudo)
+docker-compose down -v
+docker-compose up -d db
+python init_db.py
 ```
 
 ---
 
-## Dependências Principais
+## Recursos
 
-```txt
-fastapi==0.109.0           # Framework web
-uvicorn[standard]==0.27.0  # ASGI server
-sqlalchemy==2.0.25         # ORM
-psycopg2-binary==2.9.9     # PostgreSQL driver
-pydantic==2.5.3            # Validação de dados
-python-jose[cryptography]  # JWT
-passlib[bcrypt]            # Hash de senhas
-slowapi==0.1.9             # Rate limiting
-redis==7.1.0               # Cache/rate limiting
-python-dotenv==1.0.0       # Env vars
-```
+- [FastAPI Docs](https://fastapi.tiangolo.com/)
+- [SQLAlchemy Docs](https://docs.sqlalchemy.org/en/20/)
+- [Pydantic Docs](https://docs.pydantic.dev/)
+- [PostgreSQL Docs](https://www.postgresql.org/docs/)
 
 ---
 
-**Versão:** 0.0.0  
-**Última atualização:** 7 de Janeiro de 2026
+<div align="center">
+
+[⬆ Voltar ao topo](#backend---cfo-x-saas-api-)
+
+</div>

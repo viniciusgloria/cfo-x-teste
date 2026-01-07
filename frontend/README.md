@@ -1,567 +1,680 @@
-# Frontend - CFO Hub Interface
+# Frontend - CFO-X SaaS
 
-Interface web construída com React 18, TypeScript, Tailwind CSS e Zustand.
+Interface moderna e responsiva para o sistema CFO-X SaaS. Aplicação React com TypeScript, Tailwind CSS e Vite para uma experiência de usuário excepcional.
+
+[![React](https://img.shields.io/badge/React-18.2+-61DAFB.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.0+-646CFF.svg)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0+-38B2AC.svg)](https://tailwindcss.com/)
 
 ---
 
-## Arquitetura
+## Índice
 
-### Stack Tecnológico
+- [Sobre](#sobre)
+- [Tecnologias](#tecnologias)
+- [Estrutura](#estrutura)
+- [Instalação](#instalação)
+- [Configuração](#configuração)
+- [Desenvolvimento](#desenvolvimento)
+- [Build](#build)
+- [Features](#features)
+- [Componentes](#componentes)
+- [Estilização](#estilização)
+- [Deploy](#deploy)
 
-- **Framework UI:** React 18.2
-- **Linguagem:** TypeScript 5.2
-- **Build Tool:** Vite 7.3
-- **Estilização:** Tailwind CSS 3.3
-- **State Management:** Zustand 4.4
-- **Routing:** React Router 6
-- **Ícones:** Lucide React
-- **Formulários:** React Hook Form (futuro)
+---
 
-### Estrutura de Pastas
+## Sobre
+
+Frontend moderno e responsivo para o CFO-X SaaS. Interface intuitiva construída com React e TypeScript, oferecendo experiência de usuário fluida com gestão de estado eficiente, roteamento otimizado e design system consistente.
+
+### Características:
+- OK Interface responsiva e moderna
+- OK TypeScript para type safety
+- OK State management com Zustand
+- OK Roteamento com React Router v6
+- OK Tailwind CSS para estilização
+- OK Componentes reutilizáveis
+- OK Hot Module Replacement (HMR)
+- OK Build otimizado com Vite
+- OK Code splitting automático
+- OK PWA ready
+
+---
+
+## Tecnologias
+
+### Core
+- **React 18.2** - Biblioteca UI
+- **TypeScript 5.0** - Tipagem estática
+- **Vite 5.0** - Build tool moderna e rápida
+- **React Router 6** - Roteamento
+
+### State Management
+- **Zustand 4.4** - State management leve e eficiente
+- **React Context** - Estado compartilhado
+
+### Styling
+- **Tailwind CSS 3.0** - Framework CSS utility-first
+- **PostCSS** - Processador CSS
+- **Lucide React** - Ícones modernos
+
+### UI Components
+- **Radix UI** - Componentes acessíveis
+- **React Hot Toast** - Notificações
+- **Recharts** - Gráficos e visualizações
+- **React Joyride** - Tours e onboarding
+
+### Utilities
+- **React Markdown** - Renderizar markdown
+- **remark-gfm** - GitHub Flavored Markdown
+- **file-saver** - Download de arquivos
+- **xlsx** - Exportar para Excel
+
+### Development
+- **ESLint** - Linting
+- **TypeScript ESLint** - Lint para TS
+- **Vite PWA** - Progressive Web App
+
+---
+
+## Estrutura
 
 ```
-src/
-├── main.tsx                  # Entry point
-├── App.tsx                   # Router principal
-├── index.css                 # Estilos globais + Tailwind
+frontend/
+├── public/                  # Assets estáticos
+│   ├── favicon.ico
+│   └── logo.png
 │
-├── components/               # 50+ componentes reutilizáveis
-│   ├── layout/
-│   │   ├── Sidebar.tsx       # Menu lateral
-│   │   ├── Header.tsx        # Cabeçalho com user menu
-│   │   └── Layout.tsx        # Layout wrapper
-│   │
-│   ├── ui/                   # Componentes base
-│   │   ├── Button.tsx
-│   │   ├── Input.tsx
+├── src/
+│   ├── components/          # Componentes React
+│   │   ├── ApprovarSolicitacaoModal.tsx
+│   │   ├── AtestadoModal.tsx
+│   │   ├── Avatar.tsx
+│   │   ├── BeneficioCard.tsx
+│   │   ├── BeneficioModal.tsx
+│   │   ├── BulkActions.tsx
+│   │   ├── BuscaGlobal.tsx
+│   │   ├── CalendarView.tsx
+│   │   ├── CargoModal.tsx
+│   │   ├── CollaboratorCard.tsx
+│   │   ├── DashboardCustomizer.tsx
+│   │   ├── EditarFolhaModal.tsx
+│   │   ├── Header.tsx
+│   │   ├── Layout.tsx
+│   │   ├── LoadingSpinner.tsx
 │   │   ├── Modal.tsx
-│   │   ├── Card.tsx
-│   │   └── ...
+│   │   ├── Sidebar.tsx
+│   │   └── ... (mais componentes)
 │   │
-│   ├── TarefaCard.tsx        # Card de tarefa
-│   ├── KanbanBoard.tsx       # Quadro Kanban
-│   ├── CalendarView.tsx      # Calendário
-│   ├── GanttView.tsx         # Gráfico Gantt
-│   ├── PostCard.tsx          # Post do mural
-│   ├── NotificationPanel.tsx # Painel de notificações
-│   └── ...                   # 40+ outros componentes
-│
-├── pages/                    # 30+ páginas do sistema
-│   ├── Dashboard.tsx         # Dashboard principal
-│   ├── Login.tsx             # Tela de login
-│   ├── CadastroUsuario.tsx   # Cadastro de usuários
+│   ├── pages/               # Páginas da aplicação
+│   │   ├── Login.tsx
+│   │   ├── Dashboard.tsx
+│   │   ├── Colaboradores.tsx
+│   │   ├── Ponto.tsx
+│   │   ├── Folha.tsx
+│   │   ├── Documentos.tsx
+│   │   ├── Tarefas.tsx
+│   │   ├── OKRs.tsx
+│   │   ├── Chat.tsx
+│   │   ├── Configuracoes.tsx
+│   │   └── ... (outras páginas)
 │   │
-│   ├── Ponto.tsx             # Ponto eletrônico
-│   ├── Colaboradores.tsx     # Lista de colaboradores
-│   ├── Tarefas.tsx           # Gestão de tarefas
-│   ├── Calendario.tsx        # Calendário geral
-│   ├── OKRs.tsx              # OKRs
-│   ├── Solicitacoes.tsx      # Solicitações
-│   ├── Mural.tsx             # Mural social
-│   ├── Chat.tsx              # Chat interno
-│   ├── Clientes.tsx          # CRM
-│   ├── Configuracoes.tsx     # Configurações
-│   └── ...                   # 20+ outras páginas
+│   ├── contexts/            # Context API
+│   │   ├── AuthContext.tsx
+│   │   ├── ThemeContext.tsx
+│   │   └── NotificationContext.tsx
+│   │
+│   ├── hooks/               # Custom hooks
+│   │   ├── useAuth.ts
+│   │   ├── useApi.ts
+│   │   ├── useDebounce.ts
+│   │   ├── useLocalStorage.ts
+│   │   └── usePagination.ts
+│   │
+│   ├── services/            # Serviços de API
+│   │   ├── api.ts           # Cliente axios
+│   │   ├── auth.service.ts
+│   │   ├── user.service.ts
+│   │   ├── colaborador.service.ts
+│   │   ├── ponto.service.ts
+│   │   └── ... (outros services)
+│   │
+│   ├── store/               # Zustand stores
+│   │   ├── authStore.ts
+│   │   ├── userStore.ts
+│   │   └── uiStore.ts
+│   │
+│   ├── types/               # TypeScript types
+│   │   ├── index.ts
+│   │   ├── auth.types.ts
+│   │   ├── user.types.ts
+│   │   ├── colaborador.types.ts
+│   │   └── ... (outros types)
+│   │
+│   ├── utils/               # Utilitários
+│   │   ├── formatters.ts    # Formatação de dados
+│   │   ├── validators.ts    # Validações
+│   │   ├── constants.ts     # Constantes
+│   │   └── helpers.ts       # Helpers gerais
+│   │
+│   ├── App.tsx              # Componente principal
+│   ├── main.tsx             # Entry point
+│   ├── index.css            # Estilos globais
+│   └── vite-env.d.ts        # Vite types
 │
-├── store/                    # 28 stores Zustand
-│   ├── authStore.ts          # Autenticação (login, tokens)
-│   ├── userStore.ts          # Dados do usuário
-│   ├── pontoStore.ts         # Registros de ponto
-│   ├── tarefaStore.ts        # Tarefas
-│   ├── okrStore.ts           # OKRs
-│   ├── muralStore.ts         # Posts do mural
-│   ├── notificationStore.ts  # Notificações
-│   └── ...                   # 21 outros stores
-│
-├── hooks/                    # Custom hooks
-│   ├── useAuth.ts            # Hook de autenticação
-│   ├── useDebounce.ts        # Debounce para inputs
-│   ├── usePageTitle.ts       # Atualiza título da página
-│   └── useAttachmentUploader.ts
-│
-├── utils/                    # Utilities e helpers
-│   ├── api.ts                # Cliente HTTP (fetch wrapper)
-│   ├── formatters.ts         # Formatação de data, moeda, etc
-│   ├── validators.ts         # Validações
-│   └── constants.ts          # Constantes
-│
-├── types/                    # TypeScript types
-│   ├── user.ts
-│   ├── tarefa.ts
-│   ├── ponto.ts
-│   └── ...
-│
-└── contexts/                 # React Contexts
-    └── ToastContext.tsx      # Sistema de notificações toast
+├── .env.example             # Template variáveis de ambiente
+├── eslint.config.js         # Configuração ESLint
+├── index.html               # HTML template
+├── package.json             # Dependências
+├── postcss.config.js        # PostCSS config
+├── tailwind.config.js       # Tailwind config
+├── tsconfig.json            # TypeScript config
+├── tsconfig.app.json        # TS config app
+├── tsconfig.node.json       # TS config node
+├── vite.config.ts           # Vite config
+└── README.md                # Este arquivo
 ```
 
 ---
 
-## Páginas Principais (30+)
+## Instalação
 
-### Autenticação
-- **Login** - Autenticação com email/senha
-- **CadastroUsuario** - Criar novo usuário (Admin)
-
-### Dashboard e Início
-- **Dashboard** - Visão geral com widgets personalizáveis
-- **TarefasDashboard** - Dashboard específico de tarefas
-
-### Gestão de Pessoas
-- **Colaboradores** - Lista e gerenciamento de funcionários
-- **Ponto** - Registro de ponto eletrônico
-- **Solicitacoes** - Férias, atestados, ajustes
-- **Avaliacoes** - Avaliações de desempenho
-- **Beneficios** - Catálogo de benefícios
-
-### Projetos e Tarefas
-- **Tarefas** - Gestão completa com 4 visualizações:
-  - Kanban (colunas arrastáveis)
-  - Gantt (timeline)
-  - Calendário (eventos)
-  - Lista (tabela filtrada)
-- **OKRs** - Objetivos e Key Results
-- **Calendario** - Calendário geral integrado
-
-### Comunicação
-- **Mural** - Posts sociais com comentários e reações
-- **Chat** - Mensagens em tempo real
-- **Notificacoes** - Central de notificações
-
-### CRM e Clientes
-- **Clientes** - Cadastro de clientes
-- **CadastroCliente** - Formulário de novo cliente
-- **FolhaClientes** - BPO - Folha de pagamento para clientes
-
-### Configurações
-- **Configuracoes** - Painel de configurações gerais
-- **Empresa** - Dados da empresa
-- **CargosSetores** - Gerenciar cargos e setores
-
-### Documentos
-- **Documentos** - Upload, compartilhamento, pastas
-
-### Automações (Futuro)
-- **Automacoes** - Criador de automações no-code
-
----
-
-## Componentes Principais
-
-### Layout
-- **Sidebar** - Menu lateral com navegação hierárquica
-- **Header** - Busca global, notificações, menu usuário
-- **Layout** - Wrapper com sidebar + header
-
-### UI Base (Tailwind)
-- **Button** - Botões com variantes (primary, secondary, danger)
-- **Input** - Inputs de texto, email, password
-- **Modal** - Modais com overlay
-- **Card** - Cards com header/footer
-- **Badge** - Tags coloridas (status, categorias)
-- **Avatar** - Avatar do usuário com fallback
-
-### Específicos de Negócio
-- **TarefaCard** - Card de tarefa com drag & drop
-- **KanbanBoard** - Quadro Kanban com colunas customizáveis
-- **CalendarView** - Calendário mensal/semanal
-- **GanttView** - Gráfico Gantt com dependências
-- **PostCard** - Post do mural com comentários/reações
-- **NotificationPanel** - Painel lateral de notificações
-- **BuscaGlobal** - Busca global multi-entidade
-- **DashboardCustomizer** - Editor de widgets do dashboard
-
----
-
-## State Management (Zustand)
-
-### Padrão de Store
-
-```typescript
-// store/authStore.ts
-import { create } from 'zustand';
-
-interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  
-  login: (email: string, senha: string) => Promise<void>;
-  logout: () => void;
-  refreshToken: () => Promise<void>;
-}
-
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  token: localStorage.getItem('access_token'),
-  isAuthenticated: !!localStorage.getItem('access_token'),
-  
-  login: async (email, senha) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, senha })
-    });
-    
-    const data = await response.json();
-    
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
-    
-    set({ 
-      user: data.user, 
-      token: data.access_token,
-      isAuthenticated: true 
-    });
-  },
-  
-  logout: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    set({ user: null, token: null, isAuthenticated: false });
-  },
-  
-  refreshToken: async () => {
-    // Implementar refresh token
-  }
-}));
-```
-
-### Stores Disponíveis
-
-- **authStore** - Autenticação e sessão
-- **userStore** - Lista de usuários
-- **pontoStore** - Registros de ponto
-- **tarefaStore** - Tarefas e projetos
-- **okrStore** - OKRs
-- **solicitacaoStore** - Solicitações
-- **muralStore** - Posts sociais
-- **chatStore** - Mensagens
-- **notificationStore** - Notificações
-- **clienteStore** - CRM
-- **documentoStore** - Documentos
-- **avaliacaoStore** - Avaliações
-- **beneficioStore** - Benefícios
-- **empresaStore** - Configurações empresa
-- **cargoStore** / **setorStore** - Cargos e setores
-
----
-
-## Estilização (Tailwind CSS)
-
-### Tema Customizado
-
-```javascript
-// tailwind.config.js
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          50: '#f0f9ff',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8'
-        },
-        // ... outras cores
-      }
-    }
-  }
-}
-```
-
-### Padrões de Uso
-
-```tsx
-// Botão primário
-<button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
-  Salvar
-</button>
-
-// Card
-<div className="bg-white rounded-lg shadow-md p-6">
-  <h2 className="text-xl font-semibold mb-4">Título</h2>
-  <p className="text-gray-600">Conteúdo</p>
-</div>
-
-// Badge de status
-<span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-  Ativo
-</span>
-```
-
----
-
-## Integração com Backend
-
-### Cliente HTTP
-
-```typescript
-// utils/api.ts
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-export async function fetchAPI(endpoint: string, options?: RequestInit) {
-  const token = localStorage.getItem('access_token');
-  
-  const response = await fetch(`${API_URL}/api${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
-      ...options?.headers
-    }
-  });
-  
-  if (response.status === 401) {
-    // Token expirado, tentar refresh
-    await refreshToken();
-    // Retry request
-  }
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-  
-  return response.json();
-}
-```
-
-### Exemplo de Uso
-
-```typescript
-// store/tarefaStore.ts
-import { fetchAPI } from '../utils/api';
-
-export const useTarefaStore = create((set) => ({
-  tarefas: [],
-  loading: false,
-  
-  fetchTarefas: async () => {
-    set({ loading: true });
-    try {
-      const tarefas = await fetchAPI('/tarefas');
-      set({ tarefas, loading: false });
-    } catch (error) {
-      console.error('Erro ao buscar tarefas:', error);
-      set({ loading: false });
-    }
-  },
-  
-  createTarefa: async (data) => {
-    const novaTarefa = await fetchAPI('/tarefas', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-    
-    set((state) => ({ 
-      tarefas: [...state.tarefas, novaTarefa] 
-    }));
-  }
-}));
-```
-
----
-
-## Como Rodar
-
-### Com Docker (Recomendado)
+### Opção 1: Com Docker (Recomendado)
 
 ```bash
-cd ..
-docker-compose up
+# Na raiz do projeto
+docker-compose up -d frontend
+
+# Acessar
+# http://localhost:5173
 ```
 
-Frontend estará em: http://localhost:5173
+### Opção 2: Desenvolvimento Local
 
-### Manual
-
-**1. Instalar dependências:**
 ```bash
+# Entrar na pasta frontend
+cd frontend
+
+# Instalar dependências
 npm install
+
+# Copiar variáveis de ambiente
+cp .env.example .env
+# Edite o .env com a URL do backend
+
+# Rodar dev server
+npm run dev
+
+# Acessar
+# http://localhost:5173
 ```
 
-**2. Configurar variáveis de ambiente:**
+---
 
-Crie `.env`:
-```env
-VITE_API_URL=http://localhost:8000
+## Configuração
+
+### Variáveis de Ambiente
+
+Crie um arquivo `.env` baseado no `.env.example`:
+
+```bash
+# API Backend URL
+VITE_API_URL=http://localhost:8000/api/v1
+
+# Environment
+VITE_ENVIRONMENT=development
+
+# App Name
+VITE_APP_NAME=CFO Hub
+
+# Feature Flags (opcional)
+VITE_ENABLE_ANALYTICS=false
+VITE_ENABLE_CHAT=true
 ```
 
-**3. Rodar em desenvolvimento:**
+### Configuração do Vite
+
+`vite.config.ts`:
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    host: true
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true
+  }
+})
+```
+
+---
+
+## Desenvolvimento
+
+### Rodar o servidor de desenvolvimento
+
 ```bash
 npm run dev
 ```
 
-**4. Build para produção:**
+Acesse http://localhost:5173
+
+### Scripts disponíveis
+
 ```bash
-npm run build
-npm run preview  # Testar build localmente
+# Desenvolvimento
+npm run dev              # Inicia dev server com HMR
+
+# Build
+npm run build            # Build de produção
+npm run preview          # Preview do build
+
+# Linting
+npm run lint             # Executar ESLint
+
+# Type checking
+npx tsc --noEmit         # Verificar erros de tipo
 ```
+
+### Hot Module Replacement (HMR)
+
+Vite oferece HMR nativo. Qualquer alteração no código atualiza instantaneamente no browser sem perder o estado da aplicação.
 
 ---
 
-## Scripts Disponíveis
+## Features
 
-```bash
-npm run dev          # Servidor de desenvolvimento (hot reload)
-npm run build        # Build de produção
-npm run preview      # Preview do build
-npm run lint         # Linting com ESLint
-npm run type-check   # Verificação de tipos TypeScript
-```
+### Autenticação
+- Login/Logout com JWT
+- Refresh token automático
+- Rotas protegidas
+- Sessão persistente
+
+### Dashboard
+- Cards informativos
+- Gráficos interativos (Recharts)
+- Métricas em tempo real
+- Dashboard customizável
+
+### Gestão de Colaboradores
+- Lista com filtros e busca
+- Cadastro completo
+- Edição em massa
+- Exportação para Excel
+- Importação de dados
+
+### Controle de Ponto
+- Registro de ponto
+- Visualização de calendário
+- Solicitações de ajuste
+- Relatórios de frequência
+- Gestão de atestados
+
+### Folha de Pagamento
+- Geração automática
+- Visualização detalhada
+- Edição de folhas
+- Exportação de relatórios
+- Histórico completo
+
+### Documentos
+- Upload de arquivos
+- Organização por pastas
+- Compartilhamento
+- Controle de versões
+- Visualização inline
+
+### Tarefas
+- Criação e atribuição
+- Kanban board
+- Dependências entre tarefas
+- Notificações
+- Filtros avançados
+
+### OKRs
+- Definição de objetivos
+- Key results mensuráveis
+- Acompanhamento de progresso
+- Timeline visual
+- Relatórios de performance
+
+### Chat
+- Mensagens em tempo real
+- Chat individual e em grupo
+- Compartilhamento de arquivos
+- Histórico de mensagens
+- Notificações push
+
+### Notificações
+- Sistema de notificações
+- Preferências de notificação
+- Marcação de lido/não lido
+- Agrupamento inteligente
 
 ---
 
-## Padrões de Código
+## Componentes
 
-### Nomenclatura
-- **Componentes:** PascalCase (`TarefaCard.tsx`)
-- **Hooks:** camelCase com prefixo `use` (`useAuth.ts`)
-- **Stores:** camelCase com sufixo `Store` (`authStore.ts`)
-- **Utils:** camelCase (`formatters.ts`)
+### Principais Componentes
 
-### Estrutura de Componente
+#### Layout
+```tsx
+<Layout>
+  <Header />
+  <Sidebar />
+  <main>{children}</main>
+</Layout>
+```
+
+#### Modal
+```tsx
+<Modal
+  isOpen={isOpen}
+  onClose={onClose}
+  title="Título"
+>
+  {content}
+</Modal>
+```
+
+#### DataTable
+```tsx
+<DataTable
+  data={data}
+  columns={columns}
+  onRowClick={handleRowClick}
+  loading={loading}
+/>
+```
+
+#### Card
+```tsx
+<Card
+  title="Título"
+  subtitle="Subtítulo"
+  icon={<Icon />}
+  actions={<Button />}
+>
+  {content}
+</Card>
+```
+
+### Componentes Reutilizáveis
+
+- **Avatar** - Avatar de usuário
+- **Button** - Botões estilizados
+- **Input** - Campos de formulário
+- **Select** - Seleção com busca
+- **DatePicker** - Seletor de data
+- **FileUpload** - Upload de arquivos
+- **LoadingSpinner** - Indicador de loading
+- **Toast** - Notificações toast
+- **Tooltip** - Tooltips informativos
+- **Badge** - Badges e tags
+- **Pagination** - Paginação de listas
+
+---
+
+## Estilização
+
+### Tailwind CSS
+
+Utilizamos Tailwind CSS para estilização rápida e consistente:
 
 ```tsx
-// components/TarefaCard.tsx
-import React from 'react';
-import { Tarefa } from '../types/tarefa';
+<div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+  <h2 className="text-xl font-bold text-gray-800">Título</h2>
+  <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+    Ação
+  </button>
+</div>
+```
 
-interface TarefaCardProps {
-  tarefa: Tarefa;
-  onEdit?: (id: number) => void;
-  onDelete?: (id: number) => void;
-}
+### Design System
 
-export function TarefaCard({ tarefa, onEdit, onDelete }: TarefaCardProps) {
-  return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <h3 className="font-semibold">{tarefa.titulo}</h3>
-      <p className="text-gray-600 text-sm">{tarefa.descricao}</p>
-      
-      <div className="flex gap-2 mt-4">
-        {onEdit && (
-          <button onClick={() => onEdit(tarefa.id)}>
-            Editar
-          </button>
-        )}
-        {onDelete && (
-          <button onClick={() => onDelete(tarefa.id)}>
-            Excluir
-          </button>
-        )}
-      </div>
-    </div>
-  );
+Cores principais definidas no `tailwind.config.js`:
+
+```javascript
+colors: {
+  primary: '#3B82F6',    // Blue
+  secondary: '#8B5CF6',  // Purple
+  success: '#10B981',    // Green
+  warning: '#F59E0B',    // Orange
+  danger: '#EF4444',     // Red
+  gray: colors.gray,
 }
 ```
 
-### TypeScript
+### Dark Mode
 
-- **Sempre use tipos explícitos**
-- **Evite `any`** - Use `unknown` se necessário
-- **Interfaces para props** de componentes
-- **Types para dados** de API
+Suporte a dark mode (futuro):
 
+```tsx
+<div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+  Conteúdo
+</div>
+```
+
+---
+
+## Integração com API
+
+### Cliente API
+
+`services/api.ts`:
 ```typescript
-// types/tarefa.ts
-export interface Tarefa {
-  id: number;
-  titulo: string;
-  descricao: string;
-  status: TarefaStatus;
-  prioridade: TarefaPrioridade;
-  responsavel_id: number;
-  created_at: string;
-}
+import axios from 'axios'
 
-export enum TarefaStatus {
-  BACKLOG = 'backlog',
-  TODO = 'todo',
-  EM_PROGRESSO = 'em_progresso',
-  CONCLUIDA = 'concluida'
-}
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
 
-export enum TarefaPrioridade {
-  BAIXA = 'baixa',
-  MEDIA = 'media',
-  ALTA = 'alta',
-  URGENTE = 'urgente'
+// Interceptor para adicionar token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export default api
+```
+
+### Service Example
+
+`services/colaborador.service.ts`:
+```typescript
+import api from './api'
+import { Colaborador } from '../types'
+
+export const colaboradorService = {
+  getAll: () => api.get<Colaborador[]>('/colaboradores'),
+  
+  getById: (id: number) => api.get<Colaborador>(`/colaboradores/${id}`),
+  
+  create: (data: Partial<Colaborador>) => 
+    api.post<Colaborador>('/colaboradores', data),
+  
+  update: (id: number, data: Partial<Colaborador>) =>
+    api.put<Colaborador>(`/colaboradores/${id}`, data),
+  
+  delete: (id: number) => 
+    api.delete(`/colaboradores/${id}`)
 }
 ```
+
+---
+
+## Build
+
+### Build de Produção
+
+```bash
+npm run build
+```
+
+Gera otimizado na pasta `dist/`:
+- Code splitting automático
+- Minificação de JS/CSS
+- Tree shaking
+- Asset optimization
+- Source maps (opcional)
+
+### Preview do Build
+
+```bash
+npm run preview
+```
+
+Testa o build localmente antes do deploy.
+
+### Otimizações
+
+- **Code Splitting**: Carregamento sob demanda
+- **Lazy Loading**: Componentes lazy
+- **Image Optimization**: Imagens otimizadas
+- **Bundle Size**: Analisado com Rollup
+
+---
+
+## Deploy
+
+### Azure Static Web Apps
+
+#### Configurações:
+- **App location**: `/frontend`
+- **Output location**: `dist`
+- **Build command**: `npm run build`
+
+#### Application Settings (Portal Azure):
+```
+VITE_API_URL=https://cfohub-backend.azurewebsites.net/api/v1
+VITE_ENVIRONMENT=production
+VITE_APP_NAME=CFO Hub
+```
+
+### Build para Azure
+
+`staticwebapp.config.json` já está configurado com:
+- Rewrite para SPA routing
+- Security headers
+- MIME types
+- API routes
 
 ---
 
 ## Boas Práticas
 
-### Performance
-- **Lazy loading** de páginas com `React.lazy()`
-- **Memoização** com `useMemo` e `useCallback` quando necessário
-- **Virtualização** para listas longas (react-window)
-- **Code splitting** automático pelo Vite
+### TypeScript
 
-### Segurança
-- **Nunca usar `dangerouslySetInnerHTML`** sem sanitização (DOMPurify)
-- **Validar inputs** no cliente E servidor
-- **Tokens em localStorage** (não em cookies sem httpOnly por limitação do FastAPI)
-- **Nunca usar `eval()` ou `Function()`**
+```typescript
+// Sempre use tipos
+interface User {
+  id: number
+  name: string
+  email: string
+}
 
-### Acessibilidade
-- **Labels** em todos os inputs
-- **Botões com textos descritivos**
-- **Alt text** em imagens
-- **Contraste** adequado de cores
-- **Navegação por teclado** funcional
+// Props de componentes
+interface ButtonProps {
+  label: string
+  onClick: () => void
+  variant?: 'primary' | 'secondary'
+}
+
+const Button: React.FC<ButtonProps> = ({ label, onClick, variant = 'primary' }) => {
+  // implementação
+}
+```
+
+### Hooks Customizados
+
+```typescript
+// hooks/useAuth.ts
+export const useAuth = () => {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    // Verificar autenticação
+    checkAuth()
+  }, [])
+  
+  return { user, loading, login, logout }
+}
+```
+
+### State Management (Zustand)
+
+```typescript
+// store/authStore.ts
+import create from 'zustand'
+
+interface AuthState {
+  user: User | null
+  token: string | null
+  setUser: (user: User) => void
+  logout: () => void
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  token: null,
+  setUser: (user) => set({ user }),
+  logout: () => set({ user: null, token: null })
+}))
+```
 
 ---
 
 ## Troubleshooting
 
-**Erro: "Module not found"**
-```bash
-rm -rf node_modules package-lock.json
-npm install
-```
+### Erro de CORS
 
-**Build falha:**
+Verifique se o backend permite a origem do frontend no CORS.
+
+### Build falha
+
 ```bash
-# Limpar cache Vite
-rm -rf node_modules/.vite
+# Limpar cache
+rm -rf node_modules dist
+npm install
 npm run build
 ```
 
-**Hot reload não funciona:**
+### Tipos TypeScript
+
 ```bash
-# Verificar se Vite está configurado corretamente
-# vite.config.ts deve ter server.hmr = true
-```
-
-**CORS errors:**
-```bash
-# Backend deve ter ALLOWED_ORIGINS configurado
-# ALLOWED_ORIGINS=http://localhost:5173
+# Reinstalar types
+npm install --save-dev @types/react @types/react-dom
 ```
 
 ---
 
-## Dependências Principais
+## Recursos
 
-```json
-{
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
-  "react-router-dom": "^6.20.1",
-  "zustand": "^4.4.7",
-  "tailwindcss": "^3.3.6",
-  "typescript": "^5.2.2",
-  "vite": "^7.3.0",
-  "lucide-react": "^0.294.0"
-}
-```
+- [React Docs](https://react.dev/)
+- [TypeScript Docs](https://www.typescriptlang.org/docs/)
+- [Vite Docs](https://vitejs.dev/)
+- [Tailwind CSS Docs](https://tailwindcss.com/docs)
+- [React Router Docs](https://reactrouter.com/)
+- [Zustand Docs](https://zustand-demo.pmnd.rs/)
 
 ---
 
----
+<div align="center">
 
-**Versão:** 0.0.0  
-**Última atualização:** 7 de Janeiro de 2026
+[⬆ Voltar ao topo](#frontend---cfo-x-saas-)
+
+</div>
