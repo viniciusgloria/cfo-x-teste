@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/env/
+backend/.venv
+backend/*.db
+backend/*.sqlite3
+
+# Environment - NEVER COMMIT
+.env
+.env.local
+.env.production
+.env.development
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database
+*.sqlite
+*.db
+
+# Environment - NEVER COMMIT
+.env
+.env.local
+.env.production
+.env.development
+backend/.env*
+frontend/.env*
+
+# Build
+dist/
+build/
+
+# Testing
+.pytest_cache/
+coverage/
+.coverage

@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --primary: 166 63% 40%; /* emerald-ish HSL */
+    --card-bg: 0 0% 100%;
+    --card-border: 220 14% 90%;
+    --muted: 215 20% 55%;
+    --text: 210 9% 9%;
+  }
+
+  .dark {
+    --background: 220 13% 8%;
+    --foreground: 0 0% 98%;
+    --primary: 166 60% 45%;
+    --card-bg: 220 13% 12%;
+    --card-border: 220 9% 18%;
+    --muted: 215 12% 70%;
+    --text: 220 14% 96%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--text));
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    transition: background-color .15s, color .15s;
+  }
+
+  .dark input,
+  .dark select,
+  .dark textarea {
+    background-color: hsl(var(--card-bg));
+    color: hsl(var(--text));
+    border-color: hsl(var(--card-border));
+  }
+
+  .dark ::placeholder {
+    color: hsl(var(--muted));
+  }
+}
+
+/* Top loading bar animation */
+@keyframes cfo-loading {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-loading {
+  animation: cfo-loading 1.2s linear infinite;
+}
+
+/* focus-visible helper */
+:focus-visible {
+  outline: 3px solid hsl(var(--primary) / 0.25);
+  outline-offset: 2px;
+}
+
+/* Avatar utilities */
+@layer components {
+  .avatar { border-radius: 9999px; object-fit: cover; }
+  .avatar-sm { width: 1.5rem; height: 1.5rem; }
+  .avatar-md { width: 2.5rem; height: 2.5rem; }
+  .avatar-lg { width: 3rem; height: 3rem; }
+  .avatar-xl { width: 5rem; height: 5rem; }
+}
+
+/* Hide scrollbar but allow scrolling */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Ripple animation */
+@keyframes ripple {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.2);
+  }
+  80% {
+    opacity: 0.2;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.4s linear;
+}
+
+/* Highlight animation on table row click */
+.tr-clicked {
+  animation: row-highlight 0.5s;
+}
+
+@keyframes row-highlight {
+  0% { background-color: #a7f3d0; }
+  100% { background-color: inherit; }
+}

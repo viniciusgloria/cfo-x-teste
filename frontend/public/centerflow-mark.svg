@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Center Flow mark">
+  <defs>
+    <linearGradient id="flow" x1="60" y1="60" x2="452" y2="452" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24D1FF" />
+      <stop offset="0.5" stop-color="#11D8C0" />
+      <stop offset="1" stop-color="#00C16A" />
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="240" fill="#041d1d" />
+  <path d="M92 186c68-94 206-102 296-7" stroke="url(#flow)" stroke-width="52" stroke-linecap="round" fill="none" />
+  <path d="M92 263c68-94 206-102 296-7" stroke="url(#flow)" stroke-width="46" stroke-linecap="round" fill="none" />
+  <path d="M92 340c68-94 206-102 296-7" stroke="url(#flow)" stroke-width="40" stroke-linecap="round" fill="none" />
+</svg>
