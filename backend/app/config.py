@@ -28,7 +28,6 @@ class Settings(BaseSettings):
     APP_NAME: str = "CFO Hub API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
-    API_PREFIX: str = "/api/v1"
     
     # CORS
     FRONTEND_URL: str = "http://localhost:5173"
