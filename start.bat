@@ -37,7 +37,7 @@ echo.
 echo URLs de Acesso:
 echo   Frontend:       http://localhost:5173
 echo   Backend API:    http://localhost:8000
-echo   API Docs:       http://localhost:8000/docs
+echo   API Docs:       http://localhost:8000/api/docs
 echo   Database:       localhost:5432
 echo.
 echo Credenciais padrao (dev):
@@ -54,4 +54,4 @@ pause >nul
 
 REM Abrir navegador
 start http://localhost:5173
-start http://localhost:8000/docs
+start http://localhost:8000/api/docs
