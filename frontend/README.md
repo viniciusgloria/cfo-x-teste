@@ -221,7 +221,7 @@ Crie um arquivo `.env` baseado no `.env.example`:
 
 ```bash
 # API Backend URL
-VITE_API_URL=http://localhost:8000/api/v1
+VITE_API_URL=http://localhost:8000/api
 
 # Environment
 VITE_ENVIRONMENT=development
@@ -559,7 +559,7 @@ Testa o build localmente antes do deploy.
 
 #### Application Settings (Portal Azure):
 ```
-VITE_API_URL=https://cfohub-backend.azurewebsites.net/api/v1
+VITE_API_URL=https://cfohub-backend.azurewebsites.net/api
 VITE_ENVIRONMENT=production
 VITE_APP_NAME=CFO Hub
 ```

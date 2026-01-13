@@ -31,7 +31,7 @@
 **Frontend:**
 1. Configure `frontend/.env`:
    ```env
-   VITE_API_URL=http://localhost:8000/api/v1
+   VITE_API_URL=http://localhost:8000/apis
    VITE_ENVIRONMENT=development
    ```
 2. Execute: `npm run dev`
@@ -52,7 +52,7 @@ SECRET_KEY=<Chave secreta única - 32+ caracteres>
 FRONTEND_URL=https://cfohub-staging.azurestaticapps.net
 DEBUG=false
 LOG_LEVEL=INFO
-API_PREFIX=/api/v1
+API_PREFIX=/api
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
@@ -67,7 +67,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 No portal Azure, vá em: **Configuration > Application Settings** e adicione:
 ```
-VITE_API_URL=https://cfohub-backend-staging.azurewebsites.net/api/v1
+VITE_API_URL=https://cfohub-backend-staging.azurewebsites.net/api
 VITE_ENVIRONMENT=staging
 ```
 
@@ -87,7 +87,7 @@ SECRET_KEY=<Chave secreta FORTE única - 64+ caracteres>
 FRONTEND_URL=https://cfohub.azurestaticapps.net
 DEBUG=false
 LOG_LEVEL=WARNING
-API_PREFIX=/api/v1
+API_PREFIX=/api
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
@@ -102,7 +102,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 
 No portal Azure, vá em: **Configuration > Application Settings** e adicione:
 ```
-VITE_API_URL=https://cfohub-backend.azurewebsites.net/api/v1
+VITE_API_URL=https://cfohub-backend.azurewebsites.net/api
 VITE_ENVIRONMENT=production
 ```
 

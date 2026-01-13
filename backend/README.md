@@ -216,7 +216,7 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 FRONTEND_URL=http://localhost:5173
 
 # API
-API_PREFIX=/api/v1
+API_PREFIX=/api
 DEBUG=true
 LOG_LEVEL=DEBUG
 ```
@@ -280,58 +280,58 @@ db.commit()
 
 | Método | Endpoint | Descrição | Auth |
 |--------|----------|-----------|------|
-| POST | `/api/v1/auth/login` | Login e geração de tokens | ❌ |
-| POST | `/api/v1/auth/refresh` | Renovar access token | ❌ |
-| POST | `/api/v1/auth/logout` | Logout (invalidar refresh token) | ✅ |
-| GET | `/api/v1/auth/me` | Obter usuário logado | ✅ |
+| POST | `/api/auth/login` | Login e geração de tokens | ❌ |
+| POST | `/api/auth/refresh` | Renovar access token | ❌ |
+| POST | `/api/auth/logout` | Logout (invalidar refresh token) | ✅ |
+| GET | `/api/auth/me` | Obter usuário logado | ✅ |
 
 ### Usuários
 
 | Método | Endpoint | Descrição | Auth |
 |--------|----------|-----------|------|
-| GET | `/api/v1/users` | Listar usuários | ✅ |
-| POST | `/api/v1/users` | Criar usuário | ✅ |
-| GET | `/api/v1/users/{id}` | Obter usuário | ✅ |
-| PUT | `/api/v1/users/{id}` | Atualizar usuário | ✅ |
-| DELETE | `/api/v1/users/{id}` | Deletar usuário | ✅ |
+| GET | `/api/users` | Listar usuários | ✅ |
+| POST | `/api/users` | Criar usuário | ✅ |
+| GET | `/api/users/{id}` | Obter usuário | ✅ |
+| PUT | `/api/users/{id}` | Atualizar usuário | ✅ |
+| DELETE | `/api/users/{id}` | Deletar usuário | ✅ |
 
 ### Empresas
 
 | Método | Endpoint | Descrição | Auth |
 |--------|----------|-----------|------|
-| GET | `/api/v1/empresas` | Listar empresas | ✅ |
-| POST | `/api/v1/empresas` | Criar empresa | ✅ |
-| GET | `/api/v1/empresas/{id}` | Obter empresa | ✅ |
-| PUT | `/api/v1/empresas/{id}` | Atualizar empresa | ✅ |
-| DELETE | `/api/v1/empresas/{id}` | Deletar empresa | ✅ |
+| GET | `/api/empresas` | Listar empresas | ✅ |
+| POST | `/api/empresas` | Criar empresa | ✅ |
+| GET | `/api/empresas/{id}` | Obter empresa | ✅ |
+| PUT | `/api/empresas/{id}` | Atualizar empresa | ✅ |
+| DELETE | `/api/empresas/{id}` | Deletar empresa | ✅ |
 
 ### Colaboradores
 
 | Método | Endpoint | Descrição | Auth |
 |--------|----------|-----------|------|
-| GET | `/api/v1/colaboradores` | Listar colaboradores | ✅ |
-| POST | `/api/v1/colaboradores` | Criar colaborador | ✅ |
-| GET | `/api/v1/colaboradores/{id}` | Obter colaborador | ✅ |
-| PUT | `/api/v1/colaboradores/{id}` | Atualizar colaborador | ✅ |
-| DELETE | `/api/v1/colaboradores/{id}` | Deletar colaborador | ✅ |
+| GET | `/api/colaboradores` | Listar colaboradores | ✅ |
+| POST | `/api/colaboradores` | Criar colaborador | ✅ |
+| GET | `/api/colaboradores/{id}` | Obter colaborador | ✅ |
+| PUT | `/api/colaboradores/{id}` | Atualizar colaborador | ✅ |
+| DELETE | `/api/colaboradores/{id}` | Deletar colaborador | ✅ |
 
 ### Ponto
 
 | Método | Endpoint | Descrição | Auth |
 |--------|----------|-----------|------|
-| POST | `/api/v1/ponto/registrar` | Registrar ponto | ✅ |
-| GET | `/api/v1/ponto/hoje` | Pontos de hoje | ✅ |
-| GET | `/api/v1/ponto/mes` | Pontos do mês | ✅ |
-| POST | `/api/v1/ponto/solicitacao-ajuste` | Solicitar ajuste | ✅ |
+| POST | `/api/ponto/registrar` | Registrar ponto | ✅ |
+| GET | `/api/ponto/hoje` | Pontos de hoje | ✅ |
+| GET | `/api/ponto/mes` | Pontos do mês | ✅ |
+| POST | `/api/ponto/solicitacao-ajuste` | Solicitar ajuste | ✅ |
 
 ### Folha de Pagamento
 
 | Método | Endpoint | Descrição | Auth |
 |--------|----------|-----------|------|
-| GET | `/api/v1/folha` | Listar folhas | ✅ |
-| POST | `/api/v1/folha/gerar` | Gerar folha | ✅ |
-| GET | `/api/v1/folha/{id}` | Obter folha | ✅ |
-| PUT | `/api/v1/folha/{id}` | Atualizar folha | ✅ |
+| GET | `/api/folha` | Listar folhas | ✅ |
+| POST | `/api/folha/gerar` | Gerar folha | ✅ |
+| GET | `/api/folha/{id}` | Obter folha | ✅ |
+| PUT | `/api/folha/{id}` | Atualizar folha | ✅ |
 
 _E muitos outros endpoints... Veja a documentação completa em `/docs`_
 
@@ -452,7 +452,7 @@ open htmlcov/index.html
 ```python
 # tests/test_auth.py
 def test_login(client):
-    response = client.post("/api/v1/auth/login", json={
+    response = client.post("/api/auth/login", json={
         "email": "test@example.com",
         "password": "test123"
     })
