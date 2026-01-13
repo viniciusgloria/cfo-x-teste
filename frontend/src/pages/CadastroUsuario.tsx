@@ -277,9 +277,9 @@ export function CadastroUsuario() {
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
+      newErrors.email = 'E-mail é obrigatório';
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Email inválido';
+      newErrors.email = 'E-mail inválido';
     }
 
     if (formData.telefone && !validatePhone(formData.telefone)) {
@@ -508,7 +508,7 @@ export function CadastroUsuario() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Email *
+                    E-mail *
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
@@ -818,7 +818,7 @@ export function CadastroUsuario() {
                     type="text"
                     value={formData.chavePix || ''}
                     onChange={(e) => handleChange('chavePix', e.target.value)}
-                    placeholder="CPF, Email, Telefone ou Chave Aleatória"
+                    placeholder="CPF, E-mail, Telefone ou Chave Aleatória"
                     className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
                   />
                 </div>

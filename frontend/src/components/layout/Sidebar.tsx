@@ -27,7 +27,7 @@ import { useEmpresaStore } from '../../store/empresaStore';
 import { useCargosSetoresStore } from '../../store/cargosSetoresStore';
 import { NavItem } from '../../types';
 import { getAllowedPaths } from '../../utils/permissions';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 
 // Menu principal na ordem solicitada
@@ -65,18 +65,37 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarProps) {
   const { logout, user } = useAuthStore();
-  const { logo, miniLogo, nomeEmpresa } = useEmpresaStore();
+  const { logo, miniLogo, nomeEmpresa, aplicarInversaoLogo } = useEmpresaStore();
   const { cargos, setores } = useCargosSetoresStore();
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   
   const cargoNome = cargos.find(c => c.id === user?.cargoId)?.nome;
   const setorNome = setores.find(s => s.id === user?.setorId)?.nome;
   const allowedPaths = getAllowedPaths(user, cargoNome, setorNome);
   
   const isGestor = user?.role === 'admin' || user?.role === 'gestor';
+  // Inverter somente se: dark mode está ativo E opção está selecionada
+  const shouldInvert = isDarkMode && aplicarInversaoLogo === true;
 
-  
+  // Monitorar mudanças de dark mode
+  useEffect(() => {
+    // Verificar estado inicial
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
+
+    // Criar observer para mudanças de classe
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -160,12 +179,17 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
                 <div className="flex items-center justify-center w-full">
                   <img
                     src={collapsed ? (miniLogo || logo) : (logo || miniLogo)}
-                    alt={nomeEmpresa}
+                    alt={nomeEmpresa || 'Logo da Empresa'}
                     className={`${collapsed ? 'h-8 w-8 object-contain rounded' : 'h-[55px] w-[246px] object-contain'} transition-all mx-auto`}
+                    style={{
+                      filter: shouldInvert ? 'invert(1)' : 'none',
+                    }}
                   />
                 </div>
               ) : (
-                !collapsed && <h1 className="text-gray-800 dark:text-white text-xl font-bold text-center w-full">{nomeEmpresa}</h1>
+                <h1 className={`text-gray-800 dark:text-white font-bold text-center w-full ${collapsed ? 'text-xs hidden' : 'text-lg'} transition-all`}>
+                  {nomeEmpresa || 'CFO Hub'}
+                </h1>
               )}
               {/* Editing the company logo was moved to Configurações (Empresa) for admin users. */}
             </div>

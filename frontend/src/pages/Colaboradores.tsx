@@ -207,7 +207,7 @@ export function Colaboradores() {
             <Tabs tabs={[{ id: 'dados', label: 'Dados' }, { id: 'jornada', label: 'Jornada' }, { id: 'beneficios', label: 'Benefícios' }, { id: 'documentos', label: 'Documentos' }, { id: 'ferias', label: 'Férias' }, { id: 'ponto', label: 'Ponto' }]} activeTab={activeTab} onTabChange={setActiveTab}>
               {activeTab === 'dados' && (
                 <div className="space-y-3">
-                  <p className="text-sm"><strong>Email:</strong> {sel.email}</p>
+                  <p className="text-sm"><strong>E-mail:</strong> {sel.email}</p>
                   <p className="text-sm"><strong>Telefone:</strong> {sel.telefone ? formatPhone(sel.telefone) : '—'}</p>
                   <p className="text-sm"><strong>Departamento:</strong> {sel.departamento}</p>
                   <p className="text-sm"><strong>Cargo:</strong> {sel.cargo}</p>

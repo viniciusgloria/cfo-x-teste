@@ -29,6 +29,7 @@ import Automacoes from './pages/Automacoes';
 import { NavigationProgress } from './components/ui/NavigationProgress';
 import { GuidedTour } from './components/GuidedTour';
 import { useThemeStore } from './store/themeStore';
+import { useEmpresaStore } from './store/empresaStore';
 
 function App() {
   const { theme, setTheme } = useThemeStore();
@@ -36,6 +37,34 @@ function App() {
   useEffect(() => {
     // Aplica o tema salvo ao carregar
     setTheme(theme);
+  }, []);
+
+  // Carregar favicon do store
+  useEffect(() => {
+    const favicon = localStorage.getItem('cfo:empresa');
+    if (favicon) {
+      try {
+        const empresaData = JSON.parse(favicon);
+        // Procurar por favicon em diferentes estruturas possíveis
+        const faviconUrl = empresaData.favicon || 
+                          (empresaData.state && empresaData.state.favicon) ||
+                          (empresaData.state && empresaData.state.identidadeVisual && empresaData.state.identidadeVisual.favicon);
+        
+        if (faviconUrl) {
+          const faviconElement = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+          if (faviconElement) {
+            faviconElement.href = faviconUrl;
+          } else {
+            const newFavicon = document.createElement('link');
+            newFavicon.rel = 'icon';
+            newFavicon.href = faviconUrl;
+            document.head.appendChild(newFavicon);
+          }
+        }
+      } catch (error) {
+        console.log('Favicon não encontrado no localStorage');
+      }
+    }
   }, []);
 
   /**

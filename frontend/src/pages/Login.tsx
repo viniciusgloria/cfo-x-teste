@@ -197,7 +197,7 @@ export function Login() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-200">Email</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-200">E-mail</label>
                 <Input
                   type="email"
                   placeholder="seu@email.com"

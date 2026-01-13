@@ -140,14 +140,14 @@ export const useColaboradoresStore = create<ColaboradoresState>()(
           const docsObrigatorios = docsStore.getDocumentosObrigatorios(colaborador.cargo);
           
           console.log(`
-            📧 Email de Boas-Vindas Enviado para ${colaborador.email}
+            📧 E-mail de Boas-Vindas Enviado para ${colaborador.email}
             
             Olá ${colaborador.nome},
             
             Bem-vindo(a) à CenterFlow!
             
             Credenciais de Acesso:
-            - Email: ${colaborador.email}
+            - E-mail: ${colaborador.email}
             - Senha temporária: Cfo@2024
             
             Link de acesso: https://cfo-hub.com/login
@@ -159,7 +159,7 @@ export const useColaboradoresStore = create<ColaboradoresState>()(
             Equipe CenterFlow
           `);
           
-          toast.success(`Email de boas-vindas enviado para ${colaborador.email}!`);
+          toast.success(`E-mail de boas-vindas enviado para ${colaborador.email}!`);
           
           return state;
         });

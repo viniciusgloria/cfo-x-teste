@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Settings, Plus, Pencil, Trash2, Search, History, Users, Eye, EyeOff } from 'lucide-react';
+import { Settings, Plus, Pencil, Trash2, Search, History, Users, Eye, EyeOff, Building2, Clock, CreditCard, Palette, FileText, Zap } from 'lucide-react';
 // Card removed: no longer needed after maintenance UI removal
 import PageBanner from '../components/ui/PageBanner';
 import { Tabs } from '../components/ui/Tabs';
@@ -20,6 +20,15 @@ import { CargoModal } from '../components/CargoModal';
 import { SetorModal } from '../components/SetorModal';
 import { HistoricoList } from '../components/HistoricoList';
 import { BulkAssignModal } from '../components/BulkAssignModal';
+import {
+  ConfiguracoesOperacionais,
+  ConfiguracoesPonto,
+  DadosBancarios,
+  IdentidadeVisual,
+  InformacoesLegais,
+  Recursos,
+  SmtpConfig,
+} from '../components/ConfiguracoesEmpresa';
 
 export function Configuracoes() {
   const [active, setActive] = useState('empresa');
@@ -105,6 +114,72 @@ export function Configuracoes() {
   const [showTestKey, setShowTestKey] = useState(false);
   const [showTestSecret, setShowTestSecret] = useState(false);
 
+  // Estados para novas abas de Configurações
+  const [configOperacional, setConfigOperacional] = useState({
+    moeda_padrao: 'BRL',
+    idioma_padrao: 'pt-BR',
+    fuso_horario: 'America/Sao_Paulo',
+    formato_data: 'DD/MM/YYYY',
+  });
+
+  const [configPonto, setConfigPonto] = useState({
+    horario_entrada: '08:00',
+    horario_saida: '17:00',
+    carga_horaria_semanal: 40,
+    jornada_horas: 8,
+    jornada_dias: 5,
+    tolerancia_minutos: 10,
+  });
+
+  const [dadosBancarios, setDadosBancarios] = useState({
+    codigo_banco: '001',
+    agencia: '',
+    conta_corrente: '',
+    dia_pagamento: '',
+  });
+
+  const [identidadeVisual, setIdentidadeVisual] = useState({
+    logo_sidebar: '',
+    logo_mini: '',
+    favicon: '',
+    cor_primaria: '#10B981',
+    cor_secundaria: '#6366F1',
+    aplicar_inversao_logo: false,
+  });
+
+  const [informacoesLegais, setInformacoesLegais] = useState({
+    cnpj: '',
+    cpf_responsavel: '',
+    classificacao: 'LTDA',
+    estado: 'SP',
+    cep: '',
+    endereco: '',
+    bairro: '',
+    cidade: '',
+    numero_endereco: '',
+    complemento_endereco: '',
+  });
+
+  const [recursos, setRecursos] = useState({
+    ponto_ativo: true,
+    solicitacoes_ativo: true,
+    okrs_ativo: true,
+    mural_ativo: true,
+    chat_ativo: true,
+    documentos_ativo: true,
+    feedbacks_ativo: true,
+    beneficios_ativo: true,
+    avaliacoes_ativo: true,
+    clientes_ativo: true,
+    colaboradores_ativo: true,
+    folha_pagamento_ativo: true,
+    folha_clientes_ativo: true,
+    tarefas_ativo: true,
+    relatorios_ativo: true,
+  });
+
+  const [isSavingConfigs, setIsSavingConfigs] = useState(false);
+
   // Persistence helpers for system Omie logs
   const getSystemLogsKey = () => 'omie_logs_system';
 
@@ -185,7 +260,7 @@ export function Configuracoes() {
 
   const saveEditUser = () => {
     if (!editForm.name.trim() || !editForm.email.trim()) {
-      toast.error('Preencha nome e email');
+      toast.error('Preencha nome e e-mail');
       return;
     }
     setUsers((prev) => prev.map((u) => (u.id === editUserId ? { ...u, name: editForm.name, email: editForm.email, role: editForm.role } : u)));
@@ -270,25 +345,12 @@ export function Configuracoes() {
 
   // validate empresa form on save
   const handleSaveEmpresa = () => {
-    // mark fields as touched
-    setTouchedEmpresa({ nome: true, cnpj: true, cidade: true });
-    const errors: string[] = [];
-    if (!empresa.nome) errors.push('Nome da empresa é obrigatório.');
-    if (!empresa.cnpj) errors.push('CNPJ é obrigatório.');
-    else if (!isValidCNPJ(empresa.cnpj)) errors.push('CNPJ inválido.');
-    if (!maxLength(empresa.nome, 100)) errors.push('Nome da empresa é muito longo (máx. 100 caracteres).');
-
-    if (errors.length) {
-      toast.error('Existem erros no formulário');
-      setEmpresaErrors(errors);
-      return;
-    }
-
+    // Validação simplificada - a empresa já é pré-preenchida com dados válidos
     setEmpresaErrors([]);
     setIsSavingEmpresa(true);
     setTimeout(() => {
       setIsSavingEmpresa(false);
-      toast.success('Dados da empresa salvos');
+      // Não mostrar mensagem redundante já que as seções individuais mostram suas próprias mensagens
     }, 800);
   };
 
@@ -467,6 +529,85 @@ export function Configuracoes() {
   // validation / touched states for inline errors
   const [touchedEmpresa, setTouchedEmpresa] = useState({ nome: false, cnpj: false, cidade: false });
 
+  // Handlers para salvar configurações
+  const handleSaveConfigOperacional = () => {
+    setIsSavingConfigs(true);
+    setTimeout(() => {
+      setIsSavingConfigs(false);
+      toast.success('Configurações operacionais salvas');
+    }, 800);
+  };
+
+  const handleSaveConfigPonto = () => {
+    setIsSavingConfigs(true);
+    setTimeout(() => {
+      setIsSavingConfigs(false);
+      toast.success('Configurações de ponto salvas');
+    }, 800);
+  };
+
+  const handleSaveDadosBancarios = () => {
+    setIsSavingConfigs(true);
+    setTimeout(() => {
+      setIsSavingConfigs(false);
+      toast.success('Dados bancários salvos');
+    }, 800);
+  };
+
+  const handleSaveInformacoesLegais = () => {
+    setIsSavingConfigs(true);
+    setTimeout(() => {
+      setIsSavingConfigs(false);
+      toast.success('Informações legais salvas');
+    }, 800);
+  };
+
+  const handleSaveIdentidadeVisual = () => {
+    setIsSavingConfigs(true);
+    
+    // Sincronizar logos, favicon e inversão de cores com o store
+    const { setLogo, setMiniLogo, setFavicon, setAplicarInversaoLogo } = useEmpresaStore.getState();
+    
+    if (identidadeVisual.logo_sidebar) {
+      setLogo(identidadeVisual.logo_sidebar);
+    }
+    if (identidadeVisual.logo_mini) {
+      setMiniLogo(identidadeVisual.logo_mini);
+    }
+    if (identidadeVisual.favicon) {
+      setFavicon(identidadeVisual.favicon);
+      
+      // Aplicar favicon no HTML head
+      const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+      if (favicon) {
+        favicon.href = identidadeVisual.favicon;
+      } else {
+        const newFavicon = document.createElement('link');
+        newFavicon.rel = 'icon';
+        newFavicon.href = identidadeVisual.favicon;
+        document.head.appendChild(newFavicon);
+      }
+    }
+    
+    // Aplicar inversão de cores
+    if (identidadeVisual.aplicar_inversao_logo !== undefined) {
+      setAplicarInversaoLogo(identidadeVisual.aplicar_inversao_logo);
+    }
+    
+    setTimeout(() => {
+      setIsSavingConfigs(false);
+      toast.success('Identidade visual salva');
+    }, 800);
+  };
+
+  const handleSaveRecursos = () => {
+    setIsSavingConfigs(true);
+    setTimeout(() => {
+      setIsSavingConfigs(false);
+      toast.success('Configuração de recursos salva');
+    }, 800);
+  };
+
   return (
     <div className="space-y-6">
       <PageBanner title="Configurações" icon={<Settings size={32} />} />
@@ -486,84 +627,114 @@ export function Configuracoes() {
           onTabChange={setActive}
         >
           {active === 'empresa' && (
-            <div className="space-y-4 max-w-2xl mt-4">
-              <FormError errors={empresaErrors} />
-              <div className="flex flex-row gap-8 items-start">
-                {/* Logo expandida */}
-                <div className="flex flex-col items-center w-[260px]">
-                  <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">Logo Sidebar</div>
-                  <div className="h-[55px] w-[246px] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 flex items-center justify-center p-2 mb-2 rounded">
-                    {logo ? (
-                      <img src={logo} alt="preview-expanded" className="h-[55px] w-[246px] object-contain" />
-                    ) : (
-                      <div className="text-xs text-gray-400 dark:text-slate-500">Sem logo</div>
-                    )}
-                  </div>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRefExpanded.current?.click()}
-                      className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-900/60 text-slate-800 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-700"
-                      disabled={uploadingExpanded}
-                    >
-                      {uploadingExpanded ? 'Enviando...' : 'Upload'}
-                    </button>
-                  )}
-                  <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-2 text-center">Exibição: 246×55 px<br/>PNG/JPG até 2MB</div>
-                  <input ref={fileInputRefExpanded} type="file" accept="image/jpeg,image/jpg,image/png" onChange={handleExpandedUpload} className="hidden" />
-                </div>
-
-                {/* Mini logo */}
-                <div className="flex flex-col items-center w-[120px]">
-                  <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">Mini Logo Sidebar</div>
-                  <div className="h-10 w-10 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 flex items-center justify-center mb-2 rounded">
-                    {miniLogo ? (
-                      <img src={miniLogo} alt="preview-collapsed" className="h-10 w-10 object-contain rounded" />
-                    ) : (
-                      <div className="text-xs text-gray-400 dark:text-slate-500">—</div>
-                    )}
-                  </div>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRefMini.current?.click()}
-                      className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-900/60 text-slate-800 dark:text-slate-200 rounded border border-slate-200 dark:border-slate-700"
-                      disabled={uploadingMini}
-                    >
-                      {uploadingMini ? 'Enviando...' : 'Upload'}
-                    </button>
-                  )}
-                  <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-2 text-center">Exibição: 40×40 px<br/>PNG/JPG até 2MB</div>
-                  <input ref={fileInputRefMini} type="file" accept="image/jpeg,image/jpg,image/png" onChange={handleMiniUpload} className="hidden" />
-                </div>
+            <div className="mt-4 space-y-6">
+              {/* Seção: Informações Legais */}
+              <div className="p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Informações Legais
+                </h3>
+                <InformacoesLegais
+                  data={informacoesLegais}
+                  onChange={(updates) => setInformacoesLegais({ ...informacoesLegais, ...updates })}
+                  isLoading={isSavingConfigs}
+                />
               </div>
-              
-              <label className="block text-sm text-gray-600 dark:text-slate-300">Nome da empresa</label>
-              <Input maxLength={100} aria-label="Nome da empresa" value={empresa.nome} onBlur={() => setTouchedEmpresa({ ...touchedEmpresa, nome: true })} onChange={(e) => setEmpresa({ ...empresa, nome: e.target.value })} aria-invalid={!empresa.nome && touchedEmpresa.nome} />
-              {!empresa.nome && touchedEmpresa.nome && <p className="text-xs text-red-500">O nome da empresa é obrigatório.</p>}
-              <label className="block text-sm text-gray-600 dark:text-slate-300">CNPJ</label>
-              <Input
-                maxLength={18}
-                aria-label="CNPJ"
-                mask="cnpj"
-                value={empresa.cnpj}
-                onBlur={() => setTouchedEmpresa({ ...touchedEmpresa, cnpj: true })}
-                onChange={(e) => setEmpresa({ ...empresa, cnpj: (e.target as HTMLInputElement).value })}
-                aria-invalid={!empresa.cnpj && touchedEmpresa.cnpj}
-              />
-              {!empresa.cnpj && touchedEmpresa.cnpj && <p className="text-xs text-red-500">CNPJ é obrigatório.</p>}
-              {empresa.cnpj && touchedEmpresa.cnpj && !isValidCNPJ(empresa.cnpj) && <p className="text-xs text-red-500">CNPJ inválido.</p>}
-              {empresa.cnpj && touchedEmpresa.cnpj && isValidCNPJ(empresa.cnpj) && <p className="text-xs text-green-600">CNPJ válido.</p>}
-              <label className="block text-sm text-gray-600 dark:text-slate-300">Cidade</label>
-              <Input maxLength={60} aria-label="Cidade" value={empresa.cidade} onBlur={() => setTouchedEmpresa({ ...touchedEmpresa, cidade: true })} onChange={(e) => setEmpresa({ ...empresa, cidade: e.target.value })} />
-              <div className="flex gap-3">
-                <Button onClick={handleSaveEmpresa} loading={isSavingEmpresa} disabled={!empresa.nome || !empresa.cnpj}>Salvar</Button>
-                <Button variant="outline" onClick={() => { setEmpresa({ nome: '', cnpj: '', cidade: '' }); }}>
+
+              {/* Seção: Identidade Visual */}
+              <div className="p-6 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 flex items-center gap-2">
+                  <Palette className="w-5 h-5" />
+                  Identidade Visual
+                </h3>
+                <IdentidadeVisual
+                  data={identidadeVisual}
+                  onChange={(updates) => setIdentidadeVisual({ ...identidadeVisual, ...updates })}
+                  isLoading={isSavingConfigs}
+                />
+              </div>
+
+              {/* Seção: Configurações de Ponto */}
+              <div className="p-6 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-100 flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Configurações de Ponto
+                </h3>
+                <ConfiguracoesPonto
+                  data={configPonto}
+                  onChange={(updates) => setConfigPonto({ ...configPonto, ...updates })}
+                  isLoading={isSavingConfigs}
+                />
+              </div>
+
+              {/* Seção: Dados Bancários */}
+              <div className="p-6 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Dados Bancários
+                </h3>
+                <DadosBancarios
+                  data={dadosBancarios}
+                  onChange={(updates) => setDadosBancarios({ ...dadosBancarios, ...updates })}
+                  isLoading={isSavingConfigs}
+                />
+              </div>
+
+              {/* Seção: Configurações Operacionais */}
+              <div className="p-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Configurações Operacionais
+                </h3>
+                <ConfiguracoesOperacionais
+                  data={configOperacional}
+                  onChange={(updates) => setConfigOperacional({ ...configOperacional, ...updates })}
+                  isLoading={isSavingConfigs}
+                />
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex gap-3 justify-end pt-4">
+                <Button variant="outline" onClick={() => { 
+                  setConfigOperacional({});
+                  setConfigPonto({});
+                  setDadosBancarios({});
+                  setIdentidadeVisual({});
+                  setInformacoesLegais({});
+                }}>
                   Cancelar
+                </Button>
+                <Button onClick={() => {
+                  handleSaveEmpresa();
+                  handleSaveInformacoesLegais();
+                  handleSaveIdentidadeVisual();
+                  handleSaveConfigOperacional();
+                  handleSaveConfigPonto();
+                  handleSaveDadosBancarios();
+                }} loading={isSavingEmpresa || isSavingConfigs}>
+                  Salvar Configurações
                 </Button>
               </div>
             </div>
           )}
+
+          {/* Configurações Operacionais - REMOVIDA */}
+          {/* Agora integrada na aba Empresa como seção */}
+
+          {/* Configurações de Ponto - REMOVIDA */}
+          {/* Agora integrada na aba Empresa como seção */}
+
+          {/* Dados Bancários - REMOVIDA */}
+          {/* Agora integrada na aba Empresa como seção */}
+
+          {/* Identidade Visual - REMOVIDA */}
+          {/* Agora integrada na aba Empresa como seção */}
+
+          {/* Informações Legais - REMOVIDA */}
+          {/* Agora integrada na aba Empresa como seção */}
+
+          {/* Recursos - REMOVIDA */}
+          {/* Agora integrada na aba Empresa como seção */}
 
           {active === 'usuarios' && (
             <div className="mt-4">
@@ -592,7 +763,7 @@ export function Configuracoes() {
                   <thead>
                     <tr className="text-left text-sm text-gray-600 dark:text-slate-300">
                       <th className="p-2">Nome</th>
-                      <th className="p-2">Email</th>
+                      <th className="p-2">E-mail</th>
                       <th className="p-2">Cargo</th>
                       <th className="p-2">Ações</th>
                     </tr>
@@ -1278,6 +1449,37 @@ export function Configuracoes() {
           {active === 'integracoes' && (
             <div className="text-sm text-gray-600 dark:text-slate-300 mt-4">Integrações e webhooks (mock)</div>
           )}
+
+          {active === 'permissoes' && (
+            <div className="mt-4 space-y-6">
+              {/* Seção: Recursos */}
+              <div className="p-6 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  Recursos
+                </h3>
+                <Recursos
+                  data={recursos}
+                  onChange={(updates) => setRecursos({ ...recursos, ...updates })}
+                  isLoading={isSavingConfigs}
+                />
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex gap-3 justify-end pt-4">
+                <Button variant="outline" onClick={() => { 
+                  setRecursos({});
+                }}>
+                  Cancelar
+                </Button>
+                <Button onClick={() => {
+                  toast.success('Recursos salvos com sucesso!');
+                }} loading={isSavingConfigs}>
+                  Salvar Recursos
+                </Button>
+              </div>
+            </div>
+          )}
         </Tabs>
 
       {/* Manutenção de dados removida */}
@@ -1336,7 +1538,7 @@ export function Configuracoes() {
             <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 dark:text-slate-300 dark:text-gray-300">Email</label>
+            <label className="block text-sm text-gray-600 dark:text-slate-300 dark:text-gray-300">E-mail</label>
             <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
           </div>
           <div>

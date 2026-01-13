@@ -485,7 +485,7 @@ export default function FuncionariosClientePage() {
               <Input
                 value={formData.chavePix || ''}
                 onChange={(e) => setFormData({ ...formData, chavePix: e.target.value })}
-                placeholder="CPF, Email, Telefone ou Chave Aleatória"
+                placeholder="CPF, E-mail, Telefone ou Chave Aleatória"
               />
             </div>
 
