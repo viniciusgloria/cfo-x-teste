@@ -1092,7 +1092,6 @@ export function CadastroUsuario() {
                     <option value="colaborador">Colaborador - Acesso Padrão</option>
                     <option value="gestor">Gestor - Gerenciamento de Equipe</option>
                     <option value="cliente">Cliente - Acesso aos Dados BPO</option>
-                    <option value="visitante">Visitante - Somente Leitura</option>
                     <option value="admin">Administrador - Acesso Total</option>
                   </select>
                   {user?.role !== 'admin' && (
@@ -1109,8 +1108,6 @@ export function CadastroUsuario() {
                       <strong>Colaborador:</strong> Registrar ponto, solicitar férias, visualizar informações próprias.
                       <br />
                       <strong>Cliente:</strong> Acesso aos dados do próprio cliente (folha, funcionários, relatórios).
-                      <br />
-                      <strong>Visitante:</strong> Acesso somente leitura ao dashboard e mural.
                     </p>
                   </div>
                 </div>

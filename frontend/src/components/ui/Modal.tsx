@@ -8,13 +8,20 @@ interface ModalProps {
   subtitle?: string;
   children: ReactNode;
   className?: string;
+  size?: 'default' | 'large' | 'xl';
 }
 
-export function Modal({ isOpen, onClose, title, subtitle, children, className = '' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, subtitle, children, className = '', size = 'default' }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
+  
+  const sizeClasses = {
+    default: 'max-w-md',
+    large: 'max-w-3xl',
+    xl: 'max-w-5xl'
+  };
   useEffect(() => {
-    if (typeof document === 'undefined') return;
+    if (!isOpen || typeof document === 'undefined') return;
     lastActiveElementRef.current = document.activeElement as HTMLElement | null;
 
     const dialog = dialogRef.current;
@@ -78,7 +85,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, className = 
       // restore focus
       try { lastActiveElementRef.current?.focus(); } catch (e) { /* ignore */ }
     };
-  }, [onClose]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -92,7 +99,7 @@ export function Modal({ isOpen, onClose, title, subtitle, children, className = 
         aria-describedby="modal-content"
         ref={dialogRef}
         tabIndex={-1}
-        className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 ${className}`}
+        className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-lg ${sizeClasses[size]} w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700 ${className}`}
       >
         <div className="sticky top-0 flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div>

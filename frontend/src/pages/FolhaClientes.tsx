@@ -101,10 +101,8 @@ export default function FolhaClientesPage() {
   const { clientes } = useClientesStore();
   const user = useAuthStore((s) => s.user);
 
-  const isVisitante = user?.role === 'visitante';
-
-  // Determine o cliente selecionado (visitors are fixed to their clienteId)
-  const selectedClientId = isVisitante && user?.clienteId ? String(user.clienteId) : filtroCliente;
+  // Determine o cliente selecionado
+  const selectedClientId = filtroCliente;
   const selectedClient = clientes.find((c) => String(c.id) === String(selectedClientId));
   const bannerTitle = selectedClientId && selectedClientId !== 'Todos' && selectedClient
     ? `Folha de Clientes - ${selectedClient.dadosGerais?.nome || 'Cliente'}`
@@ -113,18 +111,12 @@ export default function FolhaClientesPage() {
   usePageTitle(bannerTitle);
   
 
-  // Se for visitante, fixa o filtroCliente para o cliente vinculado ao usuário
-  useEffect(() => {
-    if (isVisitante && user?.clienteId) {
-      setFiltroCliente(String(user.clienteId));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVisitante, user?.clienteId]);
 
-  // Auto-selecionar cliente no modal Nova Folha apenas para admin e visitante
+
+  // Auto-selecionar cliente no modal Nova Folha apenas para admin
   useEffect(() => {
     if (modalNovaFolhaAberto && selectedClientId && selectedClientId !== 'Todos') {
-      if (user?.role === 'admin' || user?.role === 'visitante') {
+      if (user?.role === 'admin') {
         setNovaClienteId(selectedClientId);
       }
     }
@@ -419,7 +411,7 @@ export default function FolhaClientesPage() {
       />
 
       {/* Seletor de Cliente Destacado - Apenas para Admins */}
-      {!isVisitante && (
+      {(
         <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-750 border-2 border-green-200 dark:border-green-900">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1755,7 +1747,7 @@ export default function FolhaClientesPage() {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-900 dark:bg-gray-800"
                 value={novaClienteId}
                 onChange={(e) => setNovaClienteId(e.target.value)}
-                disabled={isVisitante || (user?.role !== 'admin' && user?.role !== 'visitante')}
+                disabled={user?.role !== 'admin'}
               >
                 <option value="">Selecione o cliente</option>
                 {clientes.filter(c => c.status === 'ativo').map(c => (
@@ -2053,7 +2045,7 @@ export default function FolhaClientesPage() {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-900 dark:bg-gray-800"
                   value={editClienteId}
                   onChange={(e) => setEditClienteId(e.target.value)}
-                  disabled={isVisitante}
+  
                 >
                   {clientes.filter(c => c.status === 'ativo').map(c => (
                     <option key={c.id} value={c.id}>{c.dadosGerais?.nome}</option>

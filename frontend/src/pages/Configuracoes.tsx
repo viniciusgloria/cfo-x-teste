@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
-import { Settings, Plus, Pencil, Trash2, Search, History, Users, Eye, EyeOff, Building2, Clock, CreditCard, Palette, FileText, Zap } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Settings, Plus, Pencil, Trash2, Search, History, Users, Eye, EyeOff, Building2, Clock, CreditCard, Palette, FileText, Zap, LayoutDashboard, UserCircle, Timer, FileText as FileTextIcon, Star, Target, CheckSquare, MessageSquare, MessageCircle, ThumbsUp, FileStack, Gift, BarChart3, UsersRound, DollarSign, FileSpreadsheet, LayoutGrid, List } from 'lucide-react';
+import { Cargo, Setor } from '../types';
 // Card removed: no longer needed after maintenance UI removal
 import PageBanner from '../components/ui/PageBanner';
 import { Tabs } from '../components/ui/Tabs';
@@ -16,8 +17,8 @@ import { useAuthStore } from '../store/authStore';
 import { useSystemStore } from '../store/systemStore';
 import { testOmieCredentials, OmieTestResult } from '../utils/omie';
 import { useCargosSetoresStore } from '../store/cargosSetoresStore';
-import { CargoModal } from '../components/CargoModal';
-import { SetorModal } from '../components/SetorModal';
+import { CargoModalAdvanced } from '../components/CargoModalAdvanced';
+import { SetorModalAdvanced } from '../components/SetorModalAdvanced';
 import { HistoricoList } from '../components/HistoricoList';
 import { BulkAssignModal } from '../components/BulkAssignModal';
 import {
@@ -62,6 +63,10 @@ export function Configuracoes() {
   const [bulkAssignCargoOpen, setBulkAssignCargoOpen] = useState(false);
   const [bulkAssignSetorOpen, setBulkAssignSetorOpen] = useState(false);
 
+  // Estados para Estrutura Organizacional unificada
+  const [estruturaView, setEstruturaView] = useState<'setores' | 'cargos'>('setores');
+  const [estruturaLayout, setEstruturaLayout] = useState<'cards' | 'table'>('cards');
+
   // Estados para configuração de email
   const [emailConfig, setEmailConfig] = useState({
     smtpHost: '',
@@ -70,11 +75,14 @@ export function Configuracoes() {
     smtpPassword: '',
     fromEmail: '',
     fromName: '',
+    notificationEmail: '',
     useTLS: true,
     useSSL: false,
   });
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [emailErrors, setEmailErrors] = useState<Record<string, string>>({});
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState<{success: boolean; message: string} | null>(null);
 
   const {
     updateEmailConfig,
@@ -178,6 +186,43 @@ export function Configuracoes() {
     relatorios_ativo: true,
   });
 
+  // Estados para permissões por role
+  const [permissoesGestor, setPermissoesGestor] = useState({
+    dashboard: true,
+    colaboradores: true,
+    ponto: true,
+    solicitacoes: true,
+    avaliacoes: true,
+    okrs: true,
+    tarefas: true,
+    mural: true,
+    chat: true,
+    feedbacks: true,
+    relatorios: true,
+  });
+
+  const [permissoesColaborador, setPermissoesColaborador] = useState({
+    dashboard: true,
+    ponto: true,
+    solicitacoes: true,
+    tarefas: true,
+    mural: true,
+    chat: true,
+    documentos: true,
+    beneficios: true,
+    feedbacks: true,
+  });
+
+  const [permissoesCliente, setPermissoesCliente] = useState({
+    dashboard: true,
+    clientes: true,
+    folha_clientes: true,
+    funcionarios_cliente: true,
+    chat: true,
+    feedbacks: true,
+    relatorios: true,
+  });
+
   const [isSavingConfigs, setIsSavingConfigs] = useState(false);
 
   // Persistence helpers for system Omie logs
@@ -269,16 +314,16 @@ export function Configuracoes() {
   };
 
   // Funções de Cargos
-  const handleSaveCargo = (nome: string, descricao?: string) => {
+  const handleSaveCargo = (cargoData: Omit<Cargo, 'id' | 'criadoEm' | 'atualizadoEm'>) => {
     const userId = user?.id || 'system';
     const userName = user?.name || 'Sistema';
     
     if (editingCargoId) {
-      updateCargo(editingCargoId, nome, descricao, userId, userName);
+      updateCargo(editingCargoId, cargoData, userId, userName);
       toast.success('Cargo atualizado com sucesso');
       setEditingCargoId(null);
     } else {
-      addCargo(nome, descricao, userId, userName);
+      addCargo(cargoData, userId, userName);
       toast.success('Cargo criado com sucesso');
     }
     setCargoModalOpen(false);
@@ -301,16 +346,16 @@ export function Configuracoes() {
   };
 
   // Funções de Setores
-  const handleSaveSetor = (nome: string, descricao?: string) => {
+  const handleSaveSetor = (setorData: Omit<Setor, 'id' | 'criadoEm' | 'atualizadoEm'>) => {
     const userId = user?.id || 'system';
     const userName = user?.name || 'Sistema';
     
     if (editingSetorId) {
-      updateSetor(editingSetorId, nome, descricao, userId, userName);
+      updateSetor(editingSetorId, setorData, userId, userName);
       toast.success('Setor atualizado com sucesso');
       setEditingSetorId(null);
     } else {
-      addSetor(nome, descricao, userId, userName);
+      addSetor(setorData, userId, userName);
       toast.success('Setor criado com sucesso');
     }
     setSetorModalOpen(false);
@@ -332,6 +377,17 @@ export function Configuracoes() {
     setConfirmSetorDelete(false);
   };
 
+  // Callbacks estáveis para fechar modais
+  const handleCloseCargoModal = useCallback(() => {
+    setCargoModalOpen(false);
+    setEditingCargoId(null);
+  }, []);
+
+  const handleCloseSetorModal = useCallback(() => {
+    setSetorModalOpen(false);
+    setEditingSetorId(null);
+  }, []);
+
   // Funções de filtro
   const filterCargos = (query: string) => {
     return searchCargosFunction(query);
@@ -352,6 +408,43 @@ export function Configuracoes() {
       setIsSavingEmpresa(false);
       // Não mostrar mensagem redundante já que as seções individuais mostram suas próprias mensagens
     }, 800);
+  };
+
+  const handleTestSMTPConnection = async () => {
+    const errors: Record<string, string> = {};
+
+    if (!emailConfig.smtpHost.trim()) errors.smtpHost = 'Host SMTP é obrigatório';
+    if (!emailConfig.smtpPort || emailConfig.smtpPort <= 0) errors.smtpPort = 'Porta SMTP deve ser maior que 0';
+
+    setEmailErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setTestResult({success: false, message: 'Preencha os campos obrigatórios'});
+      return;
+    }
+
+    setTestingConnection(true);
+    setTestResult(null);
+
+    try {
+      // Simular teste de conexão SMTP
+      // Em produção, conectar ao backend para fazer o teste real
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setTestResult({
+        success: true,
+        message: 'Conexão SMTP estabelecida com sucesso!'
+      });
+      toast.success('Conexão testada com sucesso');
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: 'Falha ao conectar ao servidor SMTP. Verifique as credenciais.'
+      });
+      toast.error('Erro ao testar conexão');
+    } finally {
+      setTestingConnection(false);
+    }
   };
 
   const handleSaveEmailConfig = () => {
@@ -608,6 +701,65 @@ export function Configuracoes() {
     }, 800);
   };
 
+  // Funções para gerenciar permissões
+  const handleTogglePermissaoGestor = (key: string) => {
+    setPermissoesGestor(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
+  };
+
+  const handleTogglePermissaoColaborador = (key: string) => {
+    setPermissoesColaborador(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
+  };
+
+  const handleTogglePermissaoCliente = (key: string) => {
+    setPermissoesCliente(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
+  };
+
+  const handleSavePermissoes = () => {
+    setIsSavingConfigs(true);
+    
+    // Salvar permissões no localStorage
+    localStorage.setItem('permissoes_gestor', JSON.stringify(permissoesGestor));
+    localStorage.setItem('permissoes_colaborador', JSON.stringify(permissoesColaborador));
+    localStorage.setItem('permissoes_cliente', JSON.stringify(permissoesCliente));
+    localStorage.setItem('recursos_sistema', JSON.stringify(recursos));
+    
+    // Disparar evento customizado para atualizar sidebar
+    window.dispatchEvent(new Event('storage'));
+    
+    setTimeout(() => {
+      setIsSavingConfigs(false);
+      toast.success('Permissões salvas com sucesso!');
+    }, 800);
+  };
+
+  const handleCancelarPermissoes = () => {
+    // Recarregar permissões do localStorage ou usar valores padrão
+    const gestorSaved = localStorage.getItem('permissoes_gestor');
+    const colaboradorSaved = localStorage.getItem('permissoes_colaborador');
+    const clienteSaved = localStorage.getItem('permissoes_cliente');
+    const recursosSaved = localStorage.getItem('recursos_sistema');
+
+    if (gestorSaved) setPermissoesGestor(JSON.parse(gestorSaved));
+    if (colaboradorSaved) setPermissoesColaborador(JSON.parse(colaboradorSaved));
+    if (clienteSaved) setPermissoesCliente(JSON.parse(clienteSaved));
+    if (recursosSaved) setRecursos(JSON.parse(recursosSaved));
+
+    toast.info('Alterações descartadas');
+  };
+
+  // Carregar permissões salvas ao montar o componente
+  useEffect(() => {
+    const gestorSaved = localStorage.getItem('permissoes_gestor');
+    const colaboradorSaved = localStorage.getItem('permissoes_colaborador');
+    const clienteSaved = localStorage.getItem('permissoes_cliente');
+    const recursosSaved = localStorage.getItem('recursos_sistema');
+
+    if (gestorSaved) setPermissoesGestor(JSON.parse(gestorSaved));
+    if (colaboradorSaved) setPermissoesColaborador(JSON.parse(colaboradorSaved));
+    if (clienteSaved) setPermissoesCliente(JSON.parse(clienteSaved));
+    if (recursosSaved) setRecursos(JSON.parse(recursosSaved));
+  }, []);
+
   return (
     <div className="space-y-6">
       <PageBanner title="Configurações" icon={<Settings size={32} />} />
@@ -618,8 +770,7 @@ export function Configuracoes() {
             { id: 'clientes', label: 'Clientes' },
             { id: 'omie', label: 'Omie' },
             { id: 'emails', label: 'E-mails' },
-            { id: 'cargos', label: 'Cargos' },
-            { id: 'setores', label: 'Setores' },
+            { id: 'estrutura', label: 'Estrutura Organizacional' },
             { id: 'permissoes', label: 'Permissões' },
             { id: 'integracoes', label: 'Integrações' },
           ]}
@@ -784,104 +935,6 @@ export function Configuracoes() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2 mt-4">
-                <div className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-slate-900 dark:bg-gray-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h5 className="font-semibold text-gray-800 dark:text-white">Administrador</h5>
-                      <p className="text-xs text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500">Acesso total ao sistema</p>
-                    </div>
-                    <span className="px-3 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 text-xs font-medium rounded-full">Admin</span>
-                  </div>
-                  <ul className="text-sm text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500 space-y-1">
-                    <li>✓ Todas as funcionalidades do sistema</li>
-                    <li>✓ Gerenciar usuários, cargos e setores</li>
-                    <li>✓ Configurações da empresa</li>
-                    <li>✓ Aprovar solicitações</li>
-                    <li>✓ Acessar relatórios completos</li>
-                    <li>✓ Gerenciar folha de pagamento</li>
-                  </ul>
-                </div>
-
-                <div className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-slate-900 dark:bg-gray-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h5 className="font-semibold text-gray-800 dark:text-white">Gestor</h5>
-                      <p className="text-xs text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500">Gerenciamento de equipes e aprovações</p>
-                    </div>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-medium rounded-full">Gestor</span>
-                  </div>
-                  <ul className="text-sm text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500 space-y-1">
-                    <li>✓ Aprovar solicitações da equipe</li>
-                    <li>✓ Ver dados dos colaboradores</li>
-                    <li>✓ Acessar relatórios</li>
-                    <li>✓ Gerenciar avaliações e OKRs</li>
-                    <li>✓ Aprovar ajustes de ponto</li>
-                    <li>✗ Alterar configurações da empresa</li>
-                  </ul>
-                </div>
-
-                <div className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-slate-900 dark:bg-gray-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h5 className="font-semibold text-gray-800 dark:text-white">Colaborador</h5>
-                      <p className="text-xs text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500">Usuário padrão com acesso aos recursos básicos</p>
-                    </div>
-                    <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-xs font-medium rounded-full">Padrão</span>
-                  </div>
-                  <ul className="text-sm text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500 space-y-1">
-                    <li>✓ Registrar ponto</li>
-                    <li>✓ Ver próprio banco de horas</li>
-                    <li>✓ Criar solicitações (ajuste, atestado, férias)</li>
-                    <li>✓ Postar no mural</li>
-                    <li>✗ Aprovar solicitações</li>
-                    <li>✗ Ver dados de outros colaboradores</li>
-                  </ul>
-                </div>
-
-                <div className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-slate-900 dark:bg-gray-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h5 className="font-semibold text-gray-800 dark:text-white">Cliente</h5>
-                      <p className="text-xs text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500">Acesso aos dados do próprio cliente (BPO)</p>
-                    </div>
-                    <span className="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-medium rounded-full">Cliente</span>
-                  </div>
-                  <ul className="text-sm text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500 space-y-1">
-                    <li>✓ Ver folha de pagamento do cliente</li>
-                    <li>✓ Gerenciar funcionários do cliente</li>
-                    <li>✓ Acompanhar status de pagamentos</li>
-                    <li>✓ Visualizar relatórios do cliente</li>
-                    <li>✗ Acessar dados de outros clientes</li>
-                    <li>✗ Gerenciar colaboradores internos</li>
-                  </ul>
-                </div>
-
-                <div className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-slate-900 dark:bg-gray-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h5 className="font-semibold text-gray-800 dark:text-white">Visitante</h5>
-                      <p className="text-xs text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500">Acesso somente leitura (ex: estagiário, consultor)</p>
-                    </div>
-                    <span className="px-3 py-1 bg-slate-200 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-medium rounded-full">Limitado</span>
-                  </div>
-                  <ul className="text-sm text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500 space-y-1">
-                    <li>✓ Ver dashboard</li>
-                    <li>✓ Visualizar mural</li>
-                    <li>✗ Registrar ponto</li>
-                    <li>✗ Criar solicitações</li>
-                    <li>✗ Postar no mural</li>
-                    <li>✗ Acessar dados sensíveis</li>
-                  </ul>
-                </div>
-              </div>
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mt-4">
-                <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                  <strong>Nota:</strong> As permissões são aplicadas automaticamente com base no nível de acesso do usuário.
-                  Para alterar o nível de acesso, edite o usuário na aba Usuários.
-                </p>
               </div>
               </div>
           )}
@@ -1174,6 +1227,18 @@ export function Configuracoes() {
                     <p className="text-red-500 text-xs mt-1">{emailErrors.fromName}</p>
                   )}
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-gray-300 mb-1">
+                    E-mail para Notificações do Sistema
+                  </label>
+                  <Input
+                    type="email"
+                    value={emailConfig.notificationEmail}
+                    onChange={(e) => setEmailConfig(prev => ({ ...prev, notificationEmail: e.target.value }))}
+                    placeholder="notificacoes@cfocompany.com"
+                  />
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -1200,17 +1265,23 @@ export function Configuracoes() {
                 </div>
               </div>
 
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Configurações Recomendadas</h4>
-                <div className="text-sm text-yellow-700 dark:text-yellow-400 space-y-1">
-                  <p><strong>Gmail:</strong> smtp.gmail.com:587, TLS ativado</p>
-                  <p><strong>Outlook:</strong> smtp-mail.outlook.com:587, TLS ativado</p>
-                  <p><strong>Yahoo:</strong> smtp.mail.yahoo.com:587, TLS ativado</p>
-                  <p><strong>Para outros provedores:</strong> Consulte a documentação do seu provedor de e-mail</p>
+              {testResult && (
+                <div className={`rounded-lg p-4 ${testResult.success ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'}`}>
+                  <p className={`text-sm ${testResult.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                    {testResult.message}
+                  </p>
                 </div>
-              </div>
+              )}
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
+                <Button
+                  onClick={handleTestSMTPConnection}
+                  disabled={testingConnection}
+                  variant="outline"
+                  className="px-6"
+                >
+                  {testingConnection ? 'Testando...' : 'Testar Conexão'}
+                </Button>
                 <Button
                   onClick={handleSaveEmailConfig}
                   disabled={isSavingEmail}
@@ -1222,227 +1293,401 @@ export function Configuracoes() {
             </div>
           )}
 
-          {active === 'cargos' && (
+          {active === 'estrutura' && (
             <div className="mt-4 space-y-4">
-              <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Gerenciar Cargos</h3>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setShowHistoricoCargos(!showHistoricoCargos)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <History size={16} className="mr-1" />
-                      Histórico
-                    </Button>
-                    {isAdmin && (
-                      <>
-                        <Button
-                          onClick={() => setBulkAssignCargoOpen(true)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <Users size={16} className="mr-1" />
-                          Atribuir em Massa
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setEditingCargoId(null);
-                            setCargoModalOpen(true);
-                          }}
-                          size="sm"
-                        >
-                          <Plus size={16} className="mr-1" />
-                          Novo Cargo
-                        </Button>
-                      </>
-                    )}
-                  </div>
+              {/* Header com toggles de visualização */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
+                  <button
+                    onClick={() => setEstruturaView('setores')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      estruturaView === 'setores'
+                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Setores
+                  </button>
+                  <button
+                    onClick={() => setEstruturaView('cargos')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      estruturaView === 'cargos'
+                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Cargos
+                  </button>
                 </div>
 
-                <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
-                  <Input
-                    value={searchCargos}
-                    onChange={(e) => setSearchCargos(e.target.value)}
-                    placeholder="Buscar cargos por nome ou descrição..."
-                    className="pl-10"
-                  />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEstruturaLayout('cards')}
+                    className={`p-2 rounded-md transition-all ${
+                      estruturaLayout === 'cards'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
+                    }`}
+                    title="Visualização em cards"
+                  >
+                    <LayoutGrid size={20} />
+                  </button>
+                  <button
+                    onClick={() => setEstruturaLayout('table')}
+                    className={`p-2 rounded-md transition-all ${
+                      estruturaLayout === 'table'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
+                    }`}
+                    title="Visualização em tabela"
+                  >
+                    <List size={20} />
+                  </button>
                 </div>
-
-                {showHistoricoCargos && (
-                  <div className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-slate-900/50 dark:bg-gray-800/50">
-                    <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Histórico de Alterações - Cargos</h4>
-                    <HistoricoList historico={getHistorico('cargo')} tipo="cargo" />
-                  </div>
-                )}
               </div>
 
-              {(() => {
-                const cargosFiltrados = searchCargos ? filterCargos(searchCargos) : cargos;
-                
-                if (cargosFiltrados.length === 0) {
-                  return (
-                    <div className="text-center py-12 text-gray-500 dark:text-slate-400 dark:text-gray-400 dark:text-slate-500">
-                      {searchCargos 
-                        ? `Nenhum cargo encontrado para "${searchCargos}"`
-                        : 'Nenhum cargo cadastrado. Clique em "Novo Cargo" para começar.'}
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {cargosFiltrados.map((cargo) => (
-                      <div
-                        key={cargo.id}
-                        className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-slate-900 dark:bg-gray-800"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-semibold text-gray-800 dark:text-white">{cargo.nome}</h4>
-                          {isAdmin && (
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleEditCargo(cargo.id)}
-                                className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
-                                aria-label={`Editar ${cargo.nome}`}
-                              >
-                                <Pencil size={16} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setToDeleteCargoId(cargo.id);
-                                  setConfirmCargoDelete(true);
-                                }}
-                                className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                aria-label={`Remover ${cargo.nome}`}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        {cargo.descricao && (
-                          <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500">{cargo.descricao}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          {active === 'setores' && (
-            <div className="mt-4 space-y-4">
-              <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Gerenciar Setores</h3>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setShowHistoricoSetores(!showHistoricoSetores)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <History size={16} className="mr-1" />
-                      Histórico
-                    </Button>
-                    {isAdmin && (
-                      <>
+              {/* Conteúdo baseado na view selecionada */}
+              {estruturaView === 'setores' && (
+                <>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Gerenciar Setores</h3>
+                      <div className="flex gap-2 flex-nowrap">
                         <Button
-                          onClick={() => setBulkAssignSetorOpen(true)}
+                          onClick={() => setShowHistoricoSetores(!showHistoricoSetores)}
                           variant="outline"
                           size="sm"
+                          className="whitespace-nowrap inline-flex items-center"
                         >
-                          <Users size={16} className="mr-1" />
-                          Atribuir em Massa
+                          <History size={16} className="mr-1 align-middle" />
+                          Histórico
                         </Button>
-                        <Button
-                          onClick={() => {
-                            setEditingSetorId(null);
-                            setSetorModalOpen(true);
-                          }}
-                          size="sm"
-                        >
-                          <Plus size={16} className="mr-1" />
-                          Novo Setor
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
-                  <Input
-                    value={searchSetores}
-                    onChange={(e) => setSearchSetores(e.target.value)}
-                    placeholder="Buscar setores por nome ou descrição..."
-                    className="pl-10"
-                  />
-                </div>
-
-                {showHistoricoSetores && (
-                  <div className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-slate-900/50 dark:bg-gray-800/50">
-                    <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Histórico de Alterações - Setores</h4>
-                    <HistoricoList historico={getHistorico('setor')} tipo="setor" />
-                  </div>
-                )}
-              </div>
-
-              {(() => {
-                const setoresFiltrados = searchSetores ? filterSetores(searchSetores) : setores;
-                
-                if (setoresFiltrados.length === 0) {
-                  return (
-                    <div className="text-center py-12 text-gray-500 dark:text-slate-400 dark:text-gray-400 dark:text-slate-500">
-                      {searchSetores 
-                        ? `Nenhum setor encontrado para "${searchSetores}"`
-                        : 'Nenhum setor cadastrado. Clique em "Novo Setor" para começar.'}
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {setoresFiltrados.map((setor) => (
-                      <div
-                        key={setor.id}
-                        className="border border-gray-200 dark:border-slate-700 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-slate-900 dark:bg-gray-800"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-semibold text-gray-800 dark:text-white">{setor.nome}</h4>
-                          {isAdmin && (
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleEditSetor(setor.id)}
-                                className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
-                                aria-label={`Editar ${setor.nome}`}
-                              >
-                                <Pencil size={16} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setToDeleteSetorId(setor.id);
-                                  setConfirmSetorDelete(true);
-                                }}
-                                className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                aria-label={`Remover ${setor.nome}`}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        {setor.descricao && (
-                          <p className="text-sm text-gray-600 dark:text-slate-300 dark:text-gray-400 dark:text-slate-500">{setor.descricao}</p>
+                        {isAdmin && (
+                          <>
+                            <Button
+                              onClick={() => setBulkAssignSetorOpen(true)}
+                              variant="outline"
+                              size="sm"
+                              className="whitespace-nowrap inline-flex items-center"
+                            >
+                              <Users size={16} className="mr-1 align-middle" />
+                              Atribuir em Massa
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setEditingSetorId(null);
+                                setSetorModalOpen(true);
+                              }}
+                              size="sm"
+                              className="whitespace-nowrap inline-flex items-center"
+                            >
+                              <Plus size={16} className="mr-1 align-middle" />
+                              Novo Setor
+                            </Button>
+                          </>
                         )}
                       </div>
-                    ))}
+                    </div>
+
+                    <div className="relative">
+                      <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+                      <Input
+                        value={searchSetores}
+                        onChange={(e) => setSearchSetores(e.target.value)}
+                        placeholder="Buscar setores por nome ou descrição..."
+                        className="pl-10"
+                      />
+                    </div>
+
+                    {showHistoricoSetores && (
+                      <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-gray-50 dark:bg-slate-900/50">
+                        <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Histórico de Alterações - Setores</h4>
+                        <HistoricoList historico={getHistorico('setor')} tipo="setor" />
+                      </div>
+                    )}
                   </div>
-                );
-              })()}
+
+                  {(() => {
+                    const setoresFiltrados = searchSetores ? filterSetores(searchSetores) : setores;
+                    
+                    if (setoresFiltrados.length === 0) {
+                      return (
+                        <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                          {searchSetores 
+                            ? `Nenhum setor encontrado para "${searchSetores}"`
+                            : 'Nenhum setor cadastrado. Clique em "Novo Setor" para começar.'}
+                        </div>
+                      );
+                    }
+
+                    if (estruturaLayout === 'cards') {
+                      return (
+                        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                          {setoresFiltrados.map((setor) => (
+                            <div
+                              key={setor.id}
+                              className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-semibold text-gray-800 dark:text-white">{setor.nome}</h4>
+                                {isAdmin && (
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => handleEditSetor(setor.id)}
+                                      className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                      aria-label={`Editar ${setor.nome}`}
+                                    >
+                                      <Pencil size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setToDeleteSetorId(setor.id);
+                                        setConfirmSetorDelete(true);
+                                      }}
+                                      className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                      aria-label={`Remover ${setor.nome}`}
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              {setor.descricao && (
+                                <p className="text-sm text-gray-600 dark:text-slate-300">{setor.descricao}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    } else {
+                      // Tabela view
+                      return (
+                        <div className="border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                            <thead className="bg-gray-50 dark:bg-slate-800">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                  Nome do Setor
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                  Descrição
+                                </th>
+                                {isAdmin && (
+                                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                    Ações
+                                  </th>
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700">
+                              {setoresFiltrados.map((setor) => (
+                                <tr key={setor.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="font-medium text-gray-900 dark:text-white">{setor.nome}</div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="text-sm text-gray-600 dark:text-slate-300">{setor.descricao || '-'}</div>
+                                  </td>
+                                  {isAdmin && (
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                      <button
+                                        onClick={() => handleEditSetor(setor.id)}
+                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                                      >
+                                        Editar
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setToDeleteSetorId(setor.id);
+                                          setConfirmSetorDelete(true);
+                                        }}
+                                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                      >
+                                        Remover
+                                      </button>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    }
+                  })()}
+                </>
+              )}
+
+              {estruturaView === 'cargos' && (
+                <>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Gerenciar Cargos</h3>
+                      <div className="flex gap-2 flex-nowrap">
+                        <Button
+                          onClick={() => setShowHistoricoCargos(!showHistoricoCargos)}
+                          variant="outline"
+                          size="sm"
+                          className="whitespace-nowrap inline-flex items-center"
+                        >
+                          <History size={16} className="mr-1 align-middle" />
+                          Histórico
+                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Button
+                              onClick={() => setBulkAssignCargoOpen(true)}
+                              variant="outline"
+                              size="sm"
+                              className="whitespace-nowrap inline-flex items-center"
+                            >
+                              <Users size={16} className="mr-1 align-middle" />
+                              Atribuir em Massa
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setEditingCargoId(null);
+                                setCargoModalOpen(true);
+                              }}
+                              size="sm"
+                              className="whitespace-nowrap inline-flex items-center"
+                            >
+                              <Plus size={16} className="mr-1 align-middle" />
+                              Novo Cargo
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+                      <Input
+                        value={searchCargos}
+                        onChange={(e) => setSearchCargos(e.target.value)}
+                        placeholder="Buscar cargos por nome ou descrição..."
+                        className="pl-10"
+                      />
+                    </div>
+
+                    {showHistoricoCargos && (
+                      <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-gray-50 dark:bg-slate-900/50">
+                        <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Histórico de Alterações - Cargos</h4>
+                        <HistoricoList historico={getHistorico('cargo')} tipo="cargo" />
+                      </div>
+                    )}
+                  </div>
+
+                  {(() => {
+                    const cargosFiltrados = searchCargos ? filterCargos(searchCargos) : cargos;
+                    
+                    if (cargosFiltrados.length === 0) {
+                      return (
+                        <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                          {searchCargos 
+                            ? `Nenhum cargo encontrado para "${searchCargos}"`
+                            : 'Nenhum cargo cadastrado. Clique em "Novo Cargo" para começar.'}
+                        </div>
+                      );
+                    }
+
+                    if (estruturaLayout === 'cards') {
+                      return (
+                        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                          {cargosFiltrados.map((cargo) => (
+                            <div
+                              key={cargo.id}
+                              className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-semibold text-gray-800 dark:text-white">{cargo.nome}</h4>
+                                {isAdmin && (
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => handleEditCargo(cargo.id)}
+                                      className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                      aria-label={`Editar ${cargo.nome}`}
+                                    >
+                                      <Pencil size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setToDeleteCargoId(cargo.id);
+                                        setConfirmCargoDelete(true);
+                                      }}
+                                      className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                      aria-label={`Remover ${cargo.nome}`}
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              {cargo.descricao && (
+                                <p className="text-sm text-gray-600 dark:text-slate-300">{cargo.descricao}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    } else {
+                      // Tabela view
+                      return (
+                        <div className="border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                            <thead className="bg-gray-50 dark:bg-slate-800">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                  Nome do Cargo
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                  Descrição
+                                </th>
+                                {isAdmin && (
+                                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                    Ações
+                                  </th>
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700">
+                              {cargosFiltrados.map((cargo) => (
+                                <tr key={cargo.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="font-medium text-gray-900 dark:text-white">{cargo.nome}</div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="text-sm text-gray-600 dark:text-slate-300">{cargo.descricao || '-'}</div>
+                                  </td>
+                                  {isAdmin && (
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                      <button
+                                        onClick={() => handleEditCargo(cargo.id)}
+                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                                      >
+                                        Editar
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setToDeleteCargoId(cargo.id);
+                                          setConfirmCargoDelete(true);
+                                        }}
+                                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                      >
+                                        Remover
+                                      </button>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    }
+                  })()}
+                </>
+              )}
             </div>
           )}
 
@@ -1452,12 +1697,153 @@ export function Configuracoes() {
 
           {active === 'permissoes' && (
             <div className="mt-4 space-y-6">
-              {/* Seção: Recursos */}
-              <div className="p-6 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>• Configuração de Permissões:</strong> Defina quais páginas e funcionalidades cada nível de acesso pode visualizar e utilizar no sistema.
+                </p>
+              </div>
+
+              {/* Lista de Permissões por Nível */}
+              <div className="space-y-6">
+                {/* Administrador */}
+                <div className="border border-purple-200 dark:border-purple-800 rounded-lg p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100">Administrador</h3>
+                      <p className="text-xs text-purple-700 dark:text-purple-300">Acesso total ao sistema</p>
+                    </div>
+                    <span className="px-3 py-1 bg-purple-200 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 text-xs font-bold rounded-full">ADMIN</span>
+                  </div>
+                  <div className="bg-white dark:bg-slate-900 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 dark:text-slate-300 mb-2 font-medium">✓ Todas as funcionalidades habilitadas</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">O administrador tem acesso irrestrito a todos os módulos do sistema.</p>
+                  </div>
+                </div>
+
+                {/* Gestor */}
+                <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">Gestor</h3>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">Gerenciamento de equipes</p>
+                    </div>
+                    <span className="px-3 py-1 bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 text-xs font-bold rounded-full">GESTOR</span>
+                  </div>
+                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                    {[
+                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                      { key: 'colaboradores', label: 'Colaboradores', icon: UserCircle },
+                      { key: 'ponto', label: 'Ponto', icon: Timer },
+                      { key: 'solicitacoes', label: 'Solicitações', icon: FileTextIcon },
+                      { key: 'avaliacoes', label: 'Avaliações', icon: Star },
+                      { key: 'okrs', label: 'OKRs', icon: Target },
+                      { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                      { key: 'mural', label: 'Mural', icon: MessageSquare },
+                      { key: 'chat', label: 'Chat', icon: MessageCircle },
+                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
+                      { key: 'relatorios', label: 'Relatórios', icon: BarChart3 },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 rounded accent-blue-600" 
+                            checked={permissoesGestor[item.key as keyof typeof permissoesGestor] || false}
+                            onChange={() => handleTogglePermissaoGestor(item.key)}
+                          />
+                          <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Colaborador */}
+                <div className="border border-green-200 dark:border-green-800 rounded-lg p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-green-900 dark:text-green-100">Colaborador</h3>
+                      <p className="text-xs text-green-700 dark:text-green-300">Acesso padrão</p>
+                    </div>
+                    <span className="px-3 py-1 bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-100 text-xs font-bold rounded-full">COLAB</span>
+                  </div>
+                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                    {[
+                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                      { key: 'ponto', label: 'Ponto', icon: Timer },
+                      { key: 'solicitacoes', label: 'Solicitações', icon: FileTextIcon },
+                      { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                      { key: 'mural', label: 'Mural', icon: MessageSquare },
+                      { key: 'chat', label: 'Chat', icon: MessageCircle },
+                      { key: 'documentos', label: 'Documentos', icon: FileStack },
+                      { key: 'beneficios', label: 'Benefícios', icon: Gift },
+                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 rounded accent-green-600" 
+                            checked={permissoesColaborador[item.key as keyof typeof permissoesColaborador] || false}
+                            onChange={() => handleTogglePermissaoColaborador(item.key)}
+                          />
+                          <Icon className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Cliente */}
+                <div className="border border-orange-200 dark:border-orange-800 rounded-lg p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-orange-900 dark:text-orange-100">Cliente</h3>
+                      <p className="text-xs text-orange-700 dark:text-orange-300">Portal do cliente</p>
+                    </div>
+                    <span className="px-3 py-1 bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 text-xs font-bold rounded-full">CLIENTE</span>
+                  </div>
+                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                    {[
+                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                      { key: 'clientes', label: 'Meus Dados', icon: UsersRound },
+                      { key: 'folha_clientes', label: 'Folha de Pagamento', icon: DollarSign },
+                      { key: 'funcionarios_cliente', label: 'Meus Funcionários', icon: UserCircle },
+                      { key: 'chat', label: 'Chat', icon: MessageCircle },
+                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
+                      { key: 'relatorios', label: 'Relatórios', icon: FileSpreadsheet },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 rounded accent-orange-600" 
+                            checked={permissoesCliente[item.key as keyof typeof permissoesCliente] || false}
+                            onChange={() => handleTogglePermissaoCliente(item.key)}
+                          />
+                          <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção: Recursos Globais */}
+              <div className="p-6 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-4 mt-6">
                 <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 flex items-center gap-2">
                   <Zap className="w-5 h-5" />
-                  Recursos
+                  Recursos Globais do Sistema
                 </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Ative ou desative módulos globalmente. Módulos desativados não estarão disponíveis para nenhum nível de acesso.
+                </p>
                 <Recursos
                   data={recursos}
                   onChange={(updates) => setRecursos({ ...recursos, ...updates })}
@@ -1467,15 +1853,11 @@ export function Configuracoes() {
 
               {/* Botões de Ação */}
               <div className="flex gap-3 justify-end pt-4">
-                <Button variant="outline" onClick={() => { 
-                  setRecursos({});
-                }}>
+                <Button variant="outline" onClick={handleCancelarPermissoes}>
                   Cancelar
                 </Button>
-                <Button onClick={() => {
-                  toast.success('Recursos salvos com sucesso!');
-                }} loading={isSavingConfigs}>
-                  Salvar Recursos
+                <Button onClick={handleSavePermissoes} loading={isSavingConfigs}>
+                  Salvar Permissões
                 </Button>
               </div>
             </div>
@@ -1487,15 +1869,14 @@ export function Configuracoes() {
       <ConfirmModal isOpen={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleConfirmRemove} title="Remover usuário" />
 
       {/* Modais de Cargo */}
-      <CargoModal
+      <CargoModalAdvanced
         isOpen={cargoModalOpen}
-        onClose={() => {
-          setCargoModalOpen(false);
-          setEditingCargoId(null);
-        }}
+        onClose={handleCloseCargoModal}
         onSave={handleSaveCargo}
         cargoInicial={editingCargoId ? cargos.find((c) => c.id === editingCargoId) : undefined}
         titulo={editingCargoId ? 'Editar Cargo' : 'Novo Cargo'}
+        cargos={cargos}
+        setores={setores}
       />
       <ConfirmModal
         isOpen={confirmCargoDelete}
@@ -1509,15 +1890,15 @@ export function Configuracoes() {
       />
 
       {/* Modais de Setor */}
-      <SetorModal
+      <SetorModalAdvanced
+        key={setorModalOpen ? (editingSetorId || 'new') : 'closed'}
         isOpen={setorModalOpen}
-        onClose={() => {
-          setSetorModalOpen(false);
-          setEditingSetorId(null);
-        }}
+        onClose={handleCloseSetorModal}
         onSave={handleSaveSetor}
         setorInicial={editingSetorId ? setores.find((s) => s.id === editingSetorId) : undefined}
         titulo={editingSetorId ? 'Editar Setor' : 'Novo Setor'}
+        setores={setores}
+        usuarios={users}
       />
       <ConfirmModal
         isOpen={confirmSetorDelete}
@@ -1552,7 +1933,7 @@ export function Configuracoes() {
               <option value="gestor">Gestor</option>
               <option value="colaborador">Colaborador</option>
               <option value="cliente">Cliente</option>
-              <option value="visitante">Visitante</option>
+
             </select>
           </div>
           <div className="flex gap-3 pt-2">

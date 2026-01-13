@@ -43,11 +43,9 @@ export default function FuncionariosClientePage() {
   } = useFuncionariosClienteStore();
 
   // Determinar clienteId baseado no usuário
-  const clienteId = user?.role === 'visitante' && user?.clienteId 
-    ? user.clienteId 
-    : (clientes.find(c => c.status === 'ativo')?.id || 1);
+  const clienteId = clientes.find(c => c.status === 'ativo')?.id || 1;
 
-  // cliente and isVisitante are intentionally not needed here
+  // cliente is intentionally not needed here
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 500);

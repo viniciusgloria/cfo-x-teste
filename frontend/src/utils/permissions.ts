@@ -49,9 +49,5 @@ export const getAllowedPaths = (user: User | null, cargoNome?: string, setorNome
     return ['/dashboard', '/clientes', '/chat', '/feedbacks'];
   }
 
-  if (user.role === 'visitante') {
-    return ['/dashboard', '/mural'];
-  }
-
   return [];
 };

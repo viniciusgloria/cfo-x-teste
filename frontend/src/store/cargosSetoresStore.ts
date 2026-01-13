@@ -8,13 +8,13 @@ interface CargosSetoresState {
   historico: HistoricoAlteracao[];
   
   // Cargos
-  addCargo: (nome: string, descricao?: string, userId?: string, userName?: string) => void;
-  updateCargo: (id: string, nome: string, descricao?: string, userId?: string, userName?: string) => void;
+  addCargo: (cargo: Omit<Cargo, 'id' | 'criadoEm' | 'atualizadoEm'>, userId?: string, userName?: string) => void;
+  updateCargo: (id: string, cargo: Partial<Cargo>, userId?: string, userName?: string) => void;
   removeCargo: (id: string, userId?: string, userName?: string) => void;
   
   // Setores
-  addSetor: (nome: string, descricao?: string, userId?: string, userName?: string) => void;
-  updateSetor: (id: string, nome: string, descricao?: string, userId?: string, userName?: string) => void;
+  addSetor: (setor: Omit<Setor, 'id' | 'criadoEm' | 'atualizadoEm'>, userId?: string, userName?: string) => void;
+  updateSetor: (id: string, setor: Partial<Setor>, userId?: string, userName?: string) => void;
   removeSetor: (id: string, userId?: string, userName?: string) => void;
   
   // Histórico
@@ -38,11 +38,10 @@ export const useCargosSetoresStore = create<CargosSetoresState>()(
       setores: mockSetores,
       historico: [],
 
-      addCargo: (nome, descricao, userId = '1', userName = 'Sistema') => {
+      addCargo: (cargoData, userId = '1', userName = 'Sistema') => {
         const novoCargo: Cargo = {
+          ...cargoData,
           id: Date.now().toString(),
-          nome,
-          descricao,
           criadoEm: new Date().toISOString(),
           atualizadoEm: new Date().toISOString(),
           criadoPor: userName,
@@ -53,12 +52,12 @@ export const useCargosSetoresStore = create<CargosSetoresState>()(
           id: `hist-${Date.now()}`,
           tipo: 'cargo',
           itemId: novoCargo.id,
-          itemNome: nome,
+          itemNome: cargoData.nome,
           acao: 'criacao',
           alteradoPor: userName,
           alteradoPorId: userId,
           alteradoEm: new Date().toISOString(),
-          detalhes: `Cargo "${nome}" criado`,
+          detalhes: `Cargo "${cargoData.nome}" criado`,
         };
         
         set((state) => ({ 
@@ -67,25 +66,25 @@ export const useCargosSetoresStore = create<CargosSetoresState>()(
         }));
       },
 
-      updateCargo: (id, nome, descricao, userId = '1', userName = 'Sistema') => {
+      updateCargo: (id, cargoData, userId = '1', userName = 'Sistema') => {
         const cargoAntigo = get().cargos.find(c => c.id === id);
         
         const novoHistorico: HistoricoAlteracao = {
           id: `hist-${Date.now()}`,
           tipo: 'cargo',
           itemId: id,
-          itemNome: nome,
+          itemNome: cargoData.nome || cargoAntigo?.nome || 'Desconhecido',
           acao: 'edicao',
           alteradoPor: userName,
           alteradoPorId: userId,
           alteradoEm: new Date().toISOString(),
-          detalhes: `Cargo atualizado de "${cargoAntigo?.nome}" para "${nome}"`,
+          detalhes: `Cargo "${cargoAntigo?.nome}" atualizado`,
         };
         
         set((state) => ({
           cargos: state.cargos.map((cargo) =>
             cargo.id === id
-              ? { ...cargo, nome, descricao, atualizadoEm: new Date().toISOString(), atualizadoPor: userName }
+              ? { ...cargo, ...cargoData, atualizadoEm: new Date().toISOString(), atualizadoPor: userName }
               : cargo
           ),
           historico: [...state.historico, novoHistorico],
@@ -113,11 +112,10 @@ export const useCargosSetoresStore = create<CargosSetoresState>()(
         }));
       },
 
-      addSetor: (nome, descricao, userId = '1', userName = 'Sistema') => {
+      addSetor: (setorData, userId = '1', userName = 'Sistema') => {
         const novoSetor: Setor = {
+          ...setorData,
           id: Date.now().toString(),
-          nome,
-          descricao,
           criadoEm: new Date().toISOString(),
           atualizadoEm: new Date().toISOString(),
           criadoPor: userName,
@@ -128,12 +126,12 @@ export const useCargosSetoresStore = create<CargosSetoresState>()(
           id: `hist-${Date.now()}`,
           tipo: 'setor',
           itemId: novoSetor.id,
-          itemNome: nome,
+          itemNome: setorData.nome,
           acao: 'criacao',
           alteradoPor: userName,
           alteradoPorId: userId,
           alteradoEm: new Date().toISOString(),
-          detalhes: `Setor "${nome}" criado`,
+          detalhes: `Setor "${setorData.nome}" criado`,
         };
         
         set((state) => ({ 
@@ -142,25 +140,25 @@ export const useCargosSetoresStore = create<CargosSetoresState>()(
         }));
       },
 
-      updateSetor: (id, nome, descricao, userId = '1', userName = 'Sistema') => {
+      updateSetor: (id, setorData, userId = '1', userName = 'Sistema') => {
         const setorAntigo = get().setores.find(s => s.id === id);
         
         const novoHistorico: HistoricoAlteracao = {
           id: `hist-${Date.now()}`,
           tipo: 'setor',
           itemId: id,
-          itemNome: nome,
+          itemNome: setorData.nome || setorAntigo?.nome || 'Desconhecido',
           acao: 'edicao',
           alteradoPor: userName,
           alteradoPorId: userId,
           alteradoEm: new Date().toISOString(),
-          detalhes: `Setor atualizado de "${setorAntigo?.nome}" para "${nome}"`,
+          detalhes: `Setor "${setorAntigo?.nome}" atualizado`,
         };
         
         set((state) => ({
           setores: state.setores.map((setor) =>
             setor.id === id
-              ? { ...setor, nome, descricao, atualizadoEm: new Date().toISOString(), atualizadoPor: userName }
+              ? { ...setor, ...setorData, atualizadoEm: new Date().toISOString(), atualizadoPor: userName }
               : setor
           ),
           historico: [...state.historico, novoHistorico],

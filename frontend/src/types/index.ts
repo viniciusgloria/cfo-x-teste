@@ -1,6 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 
-export type UserRole = 'admin' | 'gestor' | 'colaborador' | 'cliente' | 'visitante';
+export type UserRole = 'admin' | 'gestor' | 'colaborador' | 'cliente';
 
 export interface HistoricoAlteracao {
   id: string;
@@ -18,6 +18,18 @@ export interface Cargo {
   id: string;
   nome: string;
   descricao?: string;
+  // Hierarquia
+  nivelHierarquico?: number; // 1=C-Level, 2=Gerencial, 3=Supervisão, 4=Operacional, 5=Estagiário
+  cargosPai?: string[]; // IDs dos cargos superiores (pode ter múltiplos)
+  // Dados financeiros
+  salarioBase?: number;
+  salarioMax?: number;
+  // Setores vinculados
+  setoresVinculados?: string[]; // IDs dos setores onde este cargo pode existir
+  // Competências e responsabilidades
+  competencias?: string[]; // Lista de skills/competências necessárias
+  responsabilidades?: string[]; // Lista de responsabilidades do cargo
+  // Metadados
   criadoEm: string;
   atualizadoEm: string;
   criadoPor?: string;
@@ -28,6 +40,17 @@ export interface Setor {
   id: string;
   nome: string;
   descricao?: string;
+  // Hierarquia
+  setorPai?: string; // ID do setor pai (apenas um)
+  // Gestor
+  gestorId?: string; // ID do usuário gestor
+  gestorNome?: string; // Nome do gestor (cache)
+  // Dados adicionais
+  orcamentoAnual?: number;
+  localizacao?: string; // Filial/localização física
+  email?: string; // Email do departamento
+  ramal?: string;
+  // Metadados
   criadoEm: string;
   atualizadoEm: string;
   criadoPor?: string;
