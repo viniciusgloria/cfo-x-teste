@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # Application
-    APP_NAME: str = "CFO Hub API"
-    APP_VERSION: str = "1.0.0"
+    APP_NAME: str = "CFO X API"
+    APP_VERSION: str = "0.0.0 Em Desenvolvimento"
     DEBUG: bool = False
     
     # CORS
@@ -39,10 +39,6 @@ class Settings(BaseSettings):
     OMIE_API_KEY: str = ""
     OMIE_API_SECRET: str = ""
     OMIE_APP_KEY: str = ""
-    
-    # Azure Storage (opcional)
-    AZURE_STORAGE_CONNECTION_STRING: str = ""
-    AZURE_STORAGE_CONTAINER_NAME: str = "documents"
     
     class Config:
         env_file = ".env"
