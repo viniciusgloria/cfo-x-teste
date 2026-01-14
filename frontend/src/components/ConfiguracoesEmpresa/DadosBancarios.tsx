@@ -1,4 +1,5 @@
 import React from 'react';
+import { Info } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 
@@ -172,9 +173,10 @@ export function DadosBancarios({
       </div>
 
       {/* Card informativo */}
-      <div className="bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 rounded-lg p-4">
-        <p className="text-sm text-green-900 dark:text-green-300">
-          <strong>• Segurança:</strong> Estes dados bancários são criptografados e armazenados com segurança. Apenas administradores podem acessá-los.
+      <div className="bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700 rounded-lg p-4">
+        <p className="text-sm text-blue-900 dark:text-blue-300 flex items-start gap-2">
+          <Info size={16} className="mt-0.5 flex-shrink-0" />
+          <span><strong>Segurança:</strong> Estes dados bancários são criptografados e armazenados com segurança. Apenas administradores podem acessá-los.</span>
         </p>
       </div>
     </div>

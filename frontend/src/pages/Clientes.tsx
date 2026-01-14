@@ -154,15 +154,6 @@ export function Clientes() {
                 <Plus size={18} />
                 Novo Cliente
               </Button>
-              <Button
-                variant="secondary"
-                onClick={handleSync}
-                disabled={isSyncing}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
-                Sincronizar OMIE
-              </Button>
             </div>
           </>
         )}

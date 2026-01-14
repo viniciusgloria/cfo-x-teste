@@ -15,19 +15,10 @@ interface CargoModalAdvancedProps {
   setores: Setor[];
 }
 
-const NIVEIS_HIERARQUICOS = [
-  { value: 1, label: '1 - C-Level' },
-  { value: 2, label: '2 - Gerencial' },
-  { value: 3, label: '3 - Supervisão' },
-  { value: 4, label: '4 - Operacional' },
-  { value: 5, label: '5 - Estagiário' },
-];
-
 export function CargoModalAdvanced({ isOpen, onClose, onSave, cargoInicial, titulo = 'Novo Cargo', cargos, setores }: CargoModalAdvancedProps) {
   const [form, setForm] = useState({
     nome: '',
     descricao: '',
-    nivelHierarquico: 4 as number,
     cargosPaiSelecionados: [] as string[],
     salarioBase: '',
     salarioMax: '',
@@ -50,7 +41,6 @@ export function CargoModalAdvanced({ isOpen, onClose, onSave, cargoInicial, titu
       setForm({
         nome: cargoInicial.nome,
         descricao: cargoInicial.descricao || '',
-        nivelHierarquico: cargoInicial.nivelHierarquico || 4,
         cargosPaiSelecionados: cargoInicial.cargosPai || [],
         salarioBase: cargoInicial.salarioBase?.toString() || '',
         salarioMax: cargoInicial.salarioMax?.toString() || '',
@@ -62,7 +52,6 @@ export function CargoModalAdvanced({ isOpen, onClose, onSave, cargoInicial, titu
       setForm({
         nome: '',
         descricao: '',
-        nivelHierarquico: 4,
         cargosPaiSelecionados: [],
         salarioBase: '',
         salarioMax: '',
@@ -132,7 +121,6 @@ export function CargoModalAdvanced({ isOpen, onClose, onSave, cargoInicial, titu
     const cargoData: Omit<Cargo, 'id' | 'criadoEm' | 'atualizadoEm'> = {
       nome: form.nome.trim(),
       descricao: form.descricao.trim() || undefined,
-      nivelHierarquico: form.nivelHierarquico,
       cargosPai: form.cargosPaiSelecionados.length > 0 ? form.cargosPaiSelecionados : undefined,
       salarioBase: salBase,
       salarioMax: salMax,
@@ -187,59 +175,6 @@ export function CargoModalAdvanced({ isOpen, onClose, onSave, cargoInicial, titu
           </div>
         </div>
 
-        {/* Hierarquia */}
-        <div className="space-y-4 mt-6 pt-2">
-          <h4 className="font-semibold text-gray-800 dark:text-white">Hierarquia</h4>
-          
-          <div>
-            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">
-              Nível Hierárquico
-            </label>
-            <div className="grid grid-cols-5 gap-2">
-              {NIVEIS_HIERARQUICOS.map((nivel) => (
-                <button
-                  key={nivel.value}
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, nivelHierarquico: nivel.value }))}
-                  className={`px-3 py-2 text-xs rounded-md border transition-all ${
-                    form.nivelHierarquico === nivel.value
-                      ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-400 font-semibold'
-                      : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-400 hover:border-gray-400 dark:hover:border-slate-500'
-                  }`}
-                >
-                  {nivel.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {form.nivelHierarquico > 1 && cargosDisponiveis.length > 0 && (
-            <div>
-              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">
-                Reporta-se a (Cargos Pai)
-              </label>
-              <div className="border border-gray-300 dark:border-slate-600 rounded-md p-3 max-h-32 overflow-y-auto space-y-2">
-                {cargosDisponiveis.map((cargo) => (
-                  <label key={cargo.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={form.cargosPaiSelecionados.includes(cargo.id)}
-                      onChange={() => handleToggleCargoPai(cargo.id)}
-                      className="rounded"
-                    />
-                    <span className="text-gray-700 dark:text-slate-300">{cargo.nome}</span>
-                    {cargo.nivelHierarquico && (
-                      <span className="text-xs text-gray-500 dark:text-slate-400">
-                        (Nível {cargo.nivelHierarquico})
-                      </span>
-                    )}
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Dados Financeiros */}
         <div className="space-y-4 mt-6 pt-2">
           <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
@@ -286,7 +221,7 @@ export function CargoModalAdvanced({ isOpen, onClose, onSave, cargoInicial, titu
                 <label key={setor.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 p-1 rounded">
                   <input
                     type="checkbox"
-                    checked={setoresVinculados.includes(setor.id)}
+                    checked={form.setoresVinculados.includes(setor.id)}
                     onChange={() => handleToggleSetorVinculado(setor.id)}
                     className="rounded"
                   />

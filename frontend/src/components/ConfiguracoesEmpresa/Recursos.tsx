@@ -1,5 +1,5 @@
 import React from 'react';
-import { Timer, FileText, Target, MessageSquare, MessageCircle, FileStack, Star, Gift, BarChart3, UsersRound, UserCircle, DollarSign, TrendingUp, CheckSquare, FileSpreadsheet, LucideIcon } from 'lucide-react';
+import { Timer, FileText, Target, MessageSquare, MessageCircle, FileStack, Star, Gift, BarChart3, UsersRound, UserCircle, DollarSign, TrendingUp, CheckSquare, FileSpreadsheet, LucideIcon, Clock, FolderOpen, Award, Users, UserCog, Receipt, BarChart, Info } from 'lucide-react';
 
 interface RecursosProps {
   data: Record<string, any>;
@@ -17,7 +17,7 @@ const FEATURES: Array<{
     key: 'ponto_ativo',
     label: 'Ponto',
     description: 'Sistema de controle de ponto e assiduidade de colaboradores',
-    icon: Timer,
+    icon: Clock,
   },
   {
     key: 'solicitacoes_ativo',
@@ -27,7 +27,7 @@ const FEATURES: Array<{
   },
   {
     key: 'okrs_ativo',
-    label: 'OKRs',
+    label: 'Desenvolvimento',
     description: 'Definição e acompanhamento de objetivos e resultados-chave',
     icon: Target,
   },
@@ -47,13 +47,13 @@ const FEATURES: Array<{
     key: 'documentos_ativo',
     label: 'Documentos',
     description: 'Gestão centralizada de arquivos e documentos',
-    icon: FileStack,
+    icon: FolderOpen,
   },
   {
     key: 'feedbacks_ativo',
     label: 'Feedbacks',
     description: 'Sistema de avaliações e feedbacks 360 graus',
-    icon: Star,
+    icon: MessageCircle,
   },
   {
     key: 'beneficios_ativo',
@@ -65,19 +65,19 @@ const FEATURES: Array<{
     key: 'avaliacoes_ativo',
     label: 'Avaliações',
     description: 'Avaliação de desempenho de colaboradores',
-    icon: BarChart3,
+    icon: Award,
   },
   {
     key: 'clientes_ativo',
     label: 'Clientes',
     description: 'Gestão de dados de clientes',
-    icon: UsersRound,
+    icon: Users,
   },
   {
     key: 'colaboradores_ativo',
     label: 'Colaboradores',
     description: 'Gestão de colaboradores e folha de pagamento',
-    icon: UserCircle,
+    icon: UserCog,
   },
   {
     key: 'folha_pagamento_ativo',
@@ -87,9 +87,9 @@ const FEATURES: Array<{
   },
   {
     key: 'folha_clientes_ativo',
-    label: 'Folha Clientes',
+    label: 'Folha de Clientes',
     description: 'Gestão de folhas de clientes',
-    icon: TrendingUp,
+    icon: Receipt,
   },
   {
     key: 'tarefas_ativo',
@@ -101,7 +101,7 @@ const FEATURES: Array<{
     key: 'relatorios_ativo',
     label: 'Relatórios',
     description: 'Geração e visualização de relatórios analíticos',
-    icon: FileSpreadsheet,
+    icon: BarChart,
   },
 ];
 
@@ -118,7 +118,7 @@ export function Recursos({
     <div className="space-y-6">
       <div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          Ative ou desative os módulos e funcionalidades disponíveis para sua empresa. Estas configurações afetarão o acesso aos recursos para todos os colaboradores.
+          Ative ou desative módulos globalmente. Módulos desativados não estarão disponíveis para nenhum nível de acesso. Estas configurações afetarão o acesso aos recursos para todos os colaboradores.
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export function Recursos({
               key={feature.key}
               className={`flex items-start gap-4 p-4 rounded-lg border transition-all ${
                 data[feature.key]
-                  ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20'
+                  ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
                   : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60'
               }`}
             >
@@ -141,13 +141,13 @@ export function Recursos({
                 checked={data[feature.key] as boolean || false}
                 onChange={(e) => handleToggle(feature.key, e.target.checked)}
                 disabled={isLoading}
-                className="w-5 h-5 rounded mt-0.5 cursor-pointer accent-emerald-600"
+                className="w-5 h-5 rounded mt-0.5 cursor-pointer accent-red-600"
               />
 
               {/* Conteúdo */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <Icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <Icon className="w-5 h-5 text-red-600 dark:text-red-400" />
                   <label
                     htmlFor={feature.key}
                     className="font-medium text-gray-900 dark:text-white cursor-pointer"
@@ -163,7 +163,7 @@ export function Recursos({
               {/* Badge de status */}
               {data[feature.key] && (
                 <div className="flex-shrink-0">
-                  <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                  <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/40 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-200">
                     Ativo
                   </span>
                 </div>
@@ -174,9 +174,10 @@ export function Recursos({
       </div>
 
       {/* Card inf•mativo */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>ℹ️ Dica:</strong> Desativar um módulo oculta-o da interface, mas não deleta os dados. Você pode reativar a qualquer momento.
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <p className="text-sm text-red-800 dark:text-red-200 flex items-center gap-2">
+          <Info className="w-4 h-4 text-red-600 dark:text-red-400" />
+          <strong>Atenção:</strong> Desativar um módulo da interface não deleta seus dados. Você pode reativar a qualquer momento.
         </p>
       </div>
     </div>

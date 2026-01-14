@@ -1,4 +1,5 @@
 import React from 'react';
+import { Info } from 'lucide-react';
 import { Select } from '../ui/Select';
 
 interface ConfiguracoesOperacionaisProps {
@@ -94,8 +95,9 @@ export function ConfiguracoesOperacionais({
 
       {/* Informações Adicionais */}
       <div className="bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 rounded-lg p-4">
-        <p className="text-sm text-red-900 dark:text-red-300">
-          <strong>• Dica:</strong> As configurações operacionais afetam como datas, horas e valores monetários são exibidos em todo o sistema.
+        <p className="text-sm text-red-900 dark:text-red-300 flex items-start gap-2">
+          <Info size={16} className="mt-0.5 flex-shrink-0" />
+          <span><strong>Dica:</strong> As configurações operacionais afetam como datas, horas e valores monetários são exibidos em todo o sistema.</span>
         </p>
       </div>
     </div>

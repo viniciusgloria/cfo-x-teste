@@ -78,7 +78,7 @@ export function Login() {
     setLoadingGoogle(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 480));
-      login('google@centerflow.com', 'oauth-google');
+      login('google@cfocompany.com', 'oauth-google');
       toast.success('Login via Google simulado.');
     } finally {
       setLoadingGoogle(false);
@@ -90,7 +90,7 @@ export function Login() {
   };
 
   const handleAutofillDemo = () => {
-    setEmail('demo@centerflow.com');
+    setEmail('demo@cfocompany.com');
     setPassword('123456');
     toast.success('Credenciais de demonstração preenchidas.');
   };

@@ -222,10 +222,10 @@ export function CadastroCliente() {
   const [cnpjDragOver, setCnpjDragOver] = useState(false);
   const [contratoDragOver, setContratoDragOver] = useState(false);
   const [integrationOpen, setIntegrationOpen] = useState<Record<IntegrationSection, boolean>>({
-    erp: true,
-    marketplace: true,
-    ads: true,
-    gateway: true,
+    erp: false,
+    marketplace: false,
+    ads: false,
+    gateway: false,
   });
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({});
 
@@ -660,49 +660,6 @@ export function CadastroCliente() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold mb-4">Dados Gerais da Empresa</h3>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">Pertence a um grupo?</label>
-              <div className="flex items-center gap-4 flex-wrap">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={form.omieConfig.pertenceGrupo}
-                    onChange={() => setForm(prev => ({ ...prev, omieConfig: { ...prev.omieConfig, pertenceGrupo: true } }))}
-                  />
-                  <span>Sim</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={!form.omieConfig.pertenceGrupo}
-                    onChange={() => setForm(prev => ({ ...prev, omieConfig: { ...prev.omieConfig, pertenceGrupo: false, grupoId: '' } }))}
-                  />
-                  <span>Não</span>
-                </label>
-              </div>
-            </div>
-
-            {form.omieConfig.pertenceGrupo && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Grupos:</label>
-                {config.omieConfig.grupos.length === 0 ? (
-                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3">
-                    Nenhum grupo cadastrado. Cadastre grupos na aba Configurações &gt; Omie.
-                  </p>
-                ) : (
-                  <select
-                    value={form.omieConfig.grupoId || ''}
-                    onChange={(e) => setForm(prev => ({ ...prev, omieConfig: { ...prev.omieConfig, grupoId: e.target.value } }))}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 bg-white dark:bg-slate-900/70 text-gray-900 dark:text-slate-100"
-                  >
-                    <option value="">Selecione um grupo</option>
-                    {config.omieConfig.grupos.map((grupo) => (
-                      <option key={grupo.id} value={grupo.id}>{grupo.nome}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

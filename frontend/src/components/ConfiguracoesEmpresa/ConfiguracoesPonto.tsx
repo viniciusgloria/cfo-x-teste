@@ -1,4 +1,5 @@
 import React from 'react';
+import { Info } from 'lucide-react';
 
 interface ConfiguracoesPontoProps {
   data: Record<string, any>;
@@ -129,8 +130,9 @@ export function ConfiguracoesPonto({
 
       {/* Card informativo */}
       <div className="bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700 rounded-lg p-4">
-        <p className="text-sm text-orange-900 dark:text-orange-300">
-          <strong>• Importante:</strong> Estas configurações estabelecem os padrões para o controle de ponto. Ajuste conforme a política de trabalho da sua empresa.
+        <p className="text-sm text-orange-900 dark:text-orange-300 flex items-start gap-2">
+          <Info size={16} className="mt-0.5 flex-shrink-0" />
+          <span><strong>Importante:</strong> Estas configurações estabelecem os padrões para o controle de ponto. Ajuste conforme a política de trabalho da sua empresa.</span>
         </p>
       </div>
     </div>

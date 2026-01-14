@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
+import { Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { isValidCNPJ, formatCNPJ, isValidCPF, formatCPF, fetchAddressByCEP } from '../../utils/validation';
 import { useEmpresaStore } from '../../store/empresaStore';
@@ -611,9 +612,10 @@ export function InformacoesLegais({
       </div>
 
       {/* Card informativo */}
-      <div className="bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700 rounded-lg p-4">
-        <p className="text-sm text-blue-900 dark:text-blue-300">
-          <strong>• Importante:</strong> Mantenha estes dados sempre atualizados para fins legais, fiscais e de conformidade regulatória.
+      <div className="bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700 rounded-lg p-4">
+        <p className="text-sm text-emerald-900 dark:text-emerald-300 flex items-start gap-2">
+          <Info size={16} className="mt-0.5 flex-shrink-0" />
+          <span><strong>Importante:</strong> Mantenha estes dados sempre atualizados para fins legais, fiscais e de conformidade regulatória.</span>
         </p>
       </div>
     </div>

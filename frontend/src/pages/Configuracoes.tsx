@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { Settings, Plus, Pencil, Trash2, Search, History, Users, Eye, EyeOff, Building2, Clock, CreditCard, Palette, FileText, Zap, Home, UserCog, Award, FolderOpen, BarChart, Receipt, LayoutDashboard, UserCircle, Timer, FileText as FileTextIcon, Star, Target, CheckSquare, MessageSquare, MessageCircle, ThumbsUp, FileStack, Gift, BarChart3, UsersRound, DollarSign, FileSpreadsheet, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Settings, Plus, Pencil, Trash2, Search, History, Users, Clock, CreditCard, Palette, FileText, Zap, LayoutDashboard, UserCircle, Timer, FileText as FileTextIcon, Star, Target, CheckSquare, MessageSquare, MessageCircle, ThumbsUp, FileStack, Gift, BarChart3, UsersRound, DollarSign, FileSpreadsheet, LayoutGrid, List, Eye, AlertCircle, Building2, Info, ChevronDown, ChevronUp, Home, UserCog, Award, BarChart, FolderOpen, Receipt } from 'lucide-react';
 import { Cargo, Setor } from '../types';
 // Card removed: no longer needed after maintenance UI removal
 import PageBanner from '../components/ui/PageBanner';
@@ -10,7 +10,6 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Modal } from '../components/ui/Modal';
 // removed resetHelpers import after removing maintenance UI
 import { FormError } from '../components/ui/FormError';
-import { isValidCNPJ, maxLength } from '../utils/validation';
 import api from '../services/api';
 import { getWelcomeEmailData } from '../utils/emailTemplates';
 import toast from 'react-hot-toast';
@@ -19,6 +18,8 @@ import { useAuthStore } from '../store/authStore';
 import { useSystemStore } from '../store/systemStore';
 import { useCargosSetoresStore } from '../store/cargosSetoresStore';
 import { CargoModalAdvanced } from '../components/CargoModalAdvanced';
+import { HierarquiaSetor } from '../components/HierarquiaSetor';
+import { OrganogramaModal } from '../components/OrganogramaModal';
 import { SetorModalAdvanced } from '../components/SetorModalAdvanced';
 import { HistoricoList } from '../components/HistoricoList';
 import { BulkAssignModal } from '../components/BulkAssignModal';
@@ -29,12 +30,10 @@ import {
   IdentidadeVisual,
   InformacoesLegais,
   Recursos,
-  SmtpConfig,
 } from '../components/ConfiguracoesEmpresa';
 
 export function Configuracoes() {
   const [active, setActive] = useState('empresa');
-  const [empresa, setEmpresa] = useState({ nome: 'CFO Hub Ltda', cnpj: '12.345.678/0001-99', cidade: 'São Paulo' });
   const [users, setUsers] = useState<Array<{
     id: string;
     name: string;
@@ -83,13 +82,15 @@ export function Configuracoes() {
   // Estados para busca e histórico
   const [searchCargos, setSearchCargos] = useState('');
   const [searchSetores, setSearchSetores] = useState('');
+  const [showOrganogramaModal, setShowOrganogramaModal] = useState(false);
   const [showHistoricoCargos, setShowHistoricoCargos] = useState(false);
   const [showHistoricoSetores, setShowHistoricoSetores] = useState(false);
   const [bulkAssignCargoOpen, setBulkAssignCargoOpen] = useState(false);
   const [bulkAssignSetorOpen, setBulkAssignSetorOpen] = useState(false);
+  const [draggingCargoId, setDraggingCargoId] = useState<string | null>(null);
 
   // Estados para Estrutura Organizacional unificada
-  const [estruturaView, setEstruturaView] = useState<'setores' | 'cargos'>('setores');
+  const [estruturaView, setEstruturaView] = useState<'setores' | 'cargos' | 'hierarquia'>('setores');
   const [estruturaLayout, setEstruturaLayout] = useState<'cards' | 'table'>('cards');
 
   // Estados para configuração de email
@@ -239,78 +240,14 @@ export function Configuracoes() {
     relatorios: true,
   });
 
+  // Estados para seções expansíveis na aba Permissões
+  const [isAdministradorOpen, setIsAdministradorOpen] = useState(false);
+  const [isGestorOpen, setIsGestorOpen] = useState(false);
+  const [isColaboradorOpen, setIsColaboradorOpen] = useState(false);
+  const [isClienteOpen, setIsClienteOpen] = useState(false);
+  const [isRecursosOpen, setIsRecursosOpen] = useState(false);
+
   const [isSavingConfigs, setIsSavingConfigs] = useState(false);
-
-  // Mapeamento de permissões para recursos globais
-  const permissaoToRecurso: Record<string, string> = {
-    ponto: 'ponto_ativo',
-    solicitacoes: 'solicitacoes_ativo',
-    mural: 'mural_ativo',
-    chat: 'chat_ativo',
-    documentos: 'documentos_ativo',
-    feedbacks: 'feedbacks_ativo',
-    clientes: 'clientes_ativo',
-    tarefas: 'tarefas_ativo',
-    calendario: 'tarefas_ativo', // Calendário ligado a tarefas
-    beneficios: 'beneficios_ativo',
-    colaboradores: 'colaboradores_ativo',
-    folha_pagamento: 'folha_pagamento_ativo',
-    folha_clientes: 'folha_clientes_ativo',
-    avaliacoes: 'avaliacoes_ativo',
-    okrs: 'okrs_ativo',
-    relatorios: 'relatorios_ativo',
-    dashboard: 'dashboard', // Sempre ativo
-    funcionarios_cliente: 'funcionarios_cliente', // Sempre ativo para cliente
-  };
-
-  // Persistence helpers for system Omie logs
-  const getSystemLogsKey = () => 'omie_logs_system';
-
-  const loadSavedSystemLogs = (): string[] => {
-    try {
-      const raw = localStorage.getItem(getSystemLogsKey());
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    } catch (e) {
-      // ignore
-    }
-    return [];
-  };
-
-  const saveSystemLogs = (logs: string[]) => {
-    try {
-      localStorage.setItem(getSystemLogsKey(), JSON.stringify(logs));
-    } catch (e) {
-      // ignore
-    }
-  };
-
-  const handleTestOmie = async () => {
-    if (omieTest.status === 'testing') return;
-    setOmieTest((p) => ({ ...p, status: 'testing' }));
-    try {
-      const res = await testOmieCredentials(omieTest.appKey, omieTest.appSecret);
-      const simulated = (res.details as any)?.simulated;
-      const prefix = simulated ? 'Simulação: ' : '';
-      const newLine = `${new Date().toLocaleString()}: ${res.ok ? 'OK' : 'ERRO'} - ${prefix}${res.message} (${res.latencyMs}ms)`;
-      const newLogs = [newLine, ...omieTest.logs].slice(0, 3);
-      setOmieTest((p) => ({ ...p, status: res.ok ? 'success' : 'error', result: res, logs: newLogs }));
-      saveSystemLogs(newLogs);
-    } catch (e) {
-      const newLine = `${new Date().toLocaleString()}: ERRO inesperado ao testar conexão`;
-      const newLogs = [newLine, ...omieTest.logs].slice(0, 3);
-      setOmieTest((p) => ({ ...p, status: 'error', logs: newLogs }));
-      saveSystemLogs(newLogs);
-    }
-  };
-
-  // load saved system logs on mount
-  useEffect(() => {
-    const saved = loadSavedSystemLogs();
-    if (saved && saved.length > 0) setOmieTest((p) => ({ ...p, logs: saved }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Carregar configurações de email existentes
   useEffect(() => {
@@ -322,6 +259,7 @@ export function Configuracoes() {
       smtpPassword: systemConfig.smtpPassword || '',
       fromEmail: systemConfig.fromEmail || '',
       fromName: systemConfig.fromName || '',
+      notificationEmail: '',
       useTLS: systemConfig.useTLS ?? true,
       useSSL: systemConfig.useSSL ?? false,
     });
@@ -378,19 +316,16 @@ export function Configuracoes() {
     }
 
     try {
-      // Preparar dados para o backend
-      const updateData = {
-        nome: editForm.name,
-        email: editForm.email,
-        role: editForm.role,
-        ...(editForm.role === 'cliente' && {
-          empresa: editForm.empresa,
-          ...(editForm.grupoId && { grupoId: editForm.grupoId })
-        })
-      };
-
       // TODO: Quando o backend estiver pronto, descomentar:
-      // await api.put(`/users/${editUserId}`, updateData);
+      // await api.put(`/users/${editUserId}`, {
+      //   nome: editForm.name,
+      //   email: editForm.email,
+      //   role: editForm.role,
+      //   ...(editForm.role === 'cliente' && {
+      //     empresa: editForm.empresa,
+      //     ...(editForm.grupoId && { grupoId: editForm.grupoId })
+      //   })
+      // });
 
       // Atualizar estado local
       const grupoNome = editForm.grupoId 
@@ -549,6 +484,48 @@ export function Configuracoes() {
     setConfirmCargoDelete(false);
   };
 
+  const handleUpdateHierarquia = (cargoId: string, novosCargosPai: string[]) => {
+    const userId = user?.id || 'system';
+    const userName = user?.name || 'Sistema';
+
+    // Atualizar o cargo com os novos cargos pai
+    const cargoAtual = cargos.find(c => c.id === cargoId);
+    if (cargoAtual) {
+      const cargoAtualizado = {
+        ...cargoAtual,
+        cargosPai: novosCargosPai.length > 0 ? novosCargosPai : undefined
+      };
+      updateCargo(cargoId, cargoAtualizado, userId, userName);
+      toast.success('Hierarquia atualizada com sucesso');
+    }
+  };
+
+  const handleDropIntoSetor = (setorId: string | null) => {
+    if (!draggingCargoId) return;
+
+    const userId = user?.id || 'system';
+    const userName = user?.name || 'Sistema';
+    const cargoAtual = cargos.find(c => c.id === draggingCargoId);
+    if (cargoAtual) {
+      const setoresVinculados = setorId ? [setorId] : [];
+
+      // Evitar update desnecessário se já está no mesmo setor alvo
+      const alreadyInTarget = setorId
+        ? cargoAtual.setoresVinculados?.length === 1 && cargoAtual.setoresVinculados[0] === setorId
+        : !cargoAtual.setoresVinculados || cargoAtual.setoresVinculados.length === 0;
+
+      if (!alreadyInTarget) {
+        const cargoAtualizado = {
+          ...cargoAtual,
+          setoresVinculados: setoresVinculados.length > 0 ? setoresVinculados : undefined,
+        };
+        updateCargo(draggingCargoId, cargoAtualizado, userId, userName);
+        toast.success('Cargo movido de setor');
+      }
+    }
+    setDraggingCargoId(null);
+  };
+
   // Funções de Setores
   const handleSaveSetor = (setorData: Omit<Setor, 'id' | 'criadoEm' | 'atualizadoEm'>) => {
     const userId = user?.id || 'system';
@@ -606,7 +583,6 @@ export function Configuracoes() {
   // validate empresa form on save
   const handleSaveEmpresa = () => {
     // Validação simplificada - a empresa já é pré-preenchida com dados válidos
-    setEmpresaErrors([]);
     setIsSavingEmpresa(true);
     setTimeout(() => {
       setIsSavingEmpresa(false);
@@ -700,121 +676,8 @@ export function Configuracoes() {
     toast.success('Conta de cliente criada');
   };
 
-  const [empresaErrors, setEmpresaErrors] = useState<string[]>([]);
-
-  const { logo, miniLogo, setLogo, setMiniLogo } = useEmpresaStore();
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
-  const fileInputRefExpanded = useRef<HTMLInputElement | null>(null);
-  const fileInputRefMini = useRef<HTMLInputElement | null>(null);
-  const [uploadingExpanded, setUploadingExpanded] = useState(false);
-  const [uploadingMini, setUploadingMini] = useState(false);
-
-  const handleExpandedUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-      toast.error('Apenas arquivos JPG e PNG são permitidos');
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('O arquivo deve ter no máximo 2MB');
-      return;
-    }
-
-    setUploadingExpanded(true);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        // Max display size for sidebar expanded is 246x55px
-        const maxWidth = 246;
-        const maxHeight = 55;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = (maxWidth / width) * height;
-          width = maxWidth;
-        }
-        if (height > maxHeight) {
-          width = (maxHeight / height) * width;
-          height = maxHeight;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        const resizedDataUrl = canvas.toDataURL(file.type);
-        setLogo(resizedDataUrl);
-        setUploadingExpanded(false);
-        toast.success('Logo Sidebar atualizado com sucesso!');
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleMiniUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-      toast.error('Apenas arquivos JPG e PNG são permitidos');
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('O arquivo deve ter no máximo 2MB');
-      return;
-    }
-
-    setUploadingMini(true);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        // Max display size for sidebar collapsed is 32x32px
-        const maxSize = 32;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxSize) {
-          height = (maxSize / width) * height;
-          width = maxSize;
-        }
-        if (height > maxSize) {
-          width = (maxSize / height) * width;
-          height = maxSize;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        const resizedDataUrl = canvas.toDataURL(file.type);
-        setMiniLogo(resizedDataUrl);
-        setUploadingMini(false);
-        toast.success('Mini Logo Sidebar atualizado com sucesso!');
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // validation / touched states for inline errors
-  const [touchedEmpresa, setTouchedEmpresa] = useState({ nome: false, cnpj: false, cidade: false });
 
   // Handlers para salvar configurações
   const handleSaveConfigOperacional = () => {
@@ -887,14 +750,6 @@ export function Configuracoes() {
     }, 800);
   };
 
-  const handleSaveRecursos = () => {
-    setIsSavingConfigs(true);
-    setTimeout(() => {
-      setIsSavingConfigs(false);
-      toast.success('Configuração de recursos salva');
-    }, 800);
-  };
-
   // Funções para gerenciar permissões
   const handleTogglePermissaoGestor = (key: string) => {
     setPermissoesGestor(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
@@ -938,7 +793,7 @@ export function Configuracoes() {
     if (clienteSaved) setPermissoesCliente(JSON.parse(clienteSaved));
     if (recursosSaved) setRecursos(JSON.parse(recursosSaved));
 
-    toast.info('Alterações descartadas');
+    toast.success('Alterações descartadas');
   };
 
   // Carregar permissões salvas ao montar o componente
@@ -972,8 +827,8 @@ export function Configuracoes() {
           {active === 'empresa' && (
             <div className="mt-4 space-y-6">
               {/* Seção: Informações Legais */}
-              <div className="p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-4">
-                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+              <div className="p-6 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100 flex items-center gap-2">
                   <FileText className="w-5 h-5" />
                   Informações Legais
                 </h3>
@@ -1011,8 +866,8 @@ export function Configuracoes() {
               </div>
 
               {/* Seção: Dados Bancários */}
-              <div className="p-6 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg space-y-4">
-                <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 flex items-center gap-2">
+              <div className="p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg space-y-4">
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
                   <CreditCard className="w-5 h-5" />
                   Dados Bancários
                 </h3>
@@ -1039,11 +894,46 @@ export function Configuracoes() {
               {/* Botões de Ação */}
               <div className="flex gap-3 justify-end pt-4">
                 <Button variant="outline" onClick={() => { 
-                  setConfigOperacional({});
-                  setConfigPonto({});
-                  setDadosBancarios({});
-                  setIdentidadeVisual({});
-                  setInformacoesLegais({});
+                  setConfigOperacional({
+                    moeda_padrao: 'BRL',
+                    idioma_padrao: 'pt-BR',
+                    fuso_horario: 'America/Sao_Paulo',
+                    formato_data: 'DD/MM/YYYY',
+                  });
+                  setConfigPonto({
+                    horario_entrada: '08:00',
+                    horario_saida: '17:00',
+                    carga_horaria_semanal: 40,
+                    jornada_horas: 8,
+                    jornada_dias: 5,
+                    tolerancia_minutos: 10,
+                  });
+                  setDadosBancarios({
+                    codigo_banco: '001',
+                    agencia: '',
+                    conta_corrente: '',
+                    dia_pagamento: '',
+                  });
+                  setIdentidadeVisual({
+                    logo_sidebar: '',
+                    logo_mini: '',
+                    favicon: '',
+                    cor_primaria: '#10B981',
+                    cor_secundaria: '#6366F1',
+                    aplicar_inversao_logo: false,
+                  });
+                  setInformacoesLegais({
+                    cnpj: '',
+                    cpf_responsavel: '',
+                    classificacao: 'LTDA',
+                    estado: 'SP',
+                    cep: '',
+                    endereco: '',
+                    bairro: '',
+                    cidade: '',
+                    numero_endereco: '',
+                    complemento_endereco: '',
+                  });
                 }}>
                   Cancelar
                 </Button>
@@ -1081,21 +971,10 @@ export function Configuracoes() {
 
           {active === 'usuarios' && (
             <div className="mt-4 space-y-6">
-              {/* Info sobre integração backend */}
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  <strong>📋 Preparado para Backend:</strong> A aba Usuários está estruturada e pronta para integração. 
-                  Os payloads incluem todos os campos necessários (nome, email, role, empresa, grupoId). 
-                  Veja os TODOs no código para endpoints: <code className="text-xs bg-amber-100 dark:bg-amber-900/50 px-1 rounded">POST /users</code>, 
-                  <code className="text-xs bg-amber-100 dark:bg-amber-900/50 px-1 rounded mx-1">PUT /users/:id</code>, 
-                  <code className="text-xs bg-amber-100 dark:bg-amber-900/50 px-1 rounded">DELETE /users/:id</code>
-                </p>
-              </div>
-
               {/* Formulário de Criação de Usuário - Apenas para Admin */}
               {user?.role === 'admin' && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100 mb-4">
                     Criar Novo Usuário
                   </h3>
                   <div className="grid gap-4 md:grid-cols-2">
@@ -1231,8 +1110,9 @@ export function Configuracoes() {
                       Criar Usuário
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                    <strong>Nota:</strong> A senha padrão é "Cfo123@@". No primeiro acesso, o usuário será orientado a alterar a senha.
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 flex items-center gap-2">
+                    <Info size={16} className="flex-shrink-0 text-gray-500 dark:text-gray-400" />
+                    <span><strong>Atenção:</strong> A senha automática gerada pelo sistema é "Cfo123@@". No primeiro acesso, o usuário será orientado a alterar a senha.</span>
                   </p>
                 </div>
               )}
@@ -1300,9 +1180,9 @@ export function Configuracoes() {
 
           {active === 'clientes' && (
             <div className="mt-4 space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900">Contas de Clientes</h4>
-                <p className="text-sm text-blue-800">Crie acessos para clientes utilizarem a plataforma (portal do cliente).</p>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <h4 className="font-semibold text-emerald-900">Contas de Clientes</h4>
+                <p className="text-sm text-emerald-800">Crie acessos para clientes utilizarem a plataforma (portal do cliente).</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
@@ -1354,14 +1234,12 @@ export function Configuracoes() {
                         </span>
                         <div className="flex gap-2">
                           <Button
-                            size="sm"
                             variant="outline"
                             onClick={() => toggleClienteAcesso(acc.id)}
                           >
                             {acc.ativo ? 'Desativar' : 'Ativar'}
                           </Button>
                           <Button
-                            size="sm"
                             variant="ghost"
                             onClick={() => removeClienteAcesso(acc.id)}
                           >
@@ -1378,9 +1256,9 @@ export function Configuracoes() {
 
           {active === 'emails' && (
             <div className="mt-4 space-y-6 max-w-2xl">
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Configuração de E-mail</h4>
-                <p className="text-sm text-blue-700 dark:text-blue-400">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+                <h4 className="font-semibold text-emerald-800 dark:text-emerald-300 mb-2">Configuração de E-mail</h4>
+                <p className="text-sm text-emerald-700 dark:text-emerald-400">
                   Configure as credenciais SMTP para envio de notificações automáticas do sistema,
                   como devoluções de cadastros e aprovações.
                 </p>
@@ -1544,6 +1422,16 @@ export function Configuracoes() {
 
           {active === 'estrutura' && (
             <div className="mt-4 space-y-4">
+              {/* Bloco informativo */}
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100 mb-2">
+                  Configuração da Estrutura Organizacional
+                </h3>
+                <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                  Configure de forma personalizada os setores e cargos da sua empresa, defina a hierarquia e informações adicionais.
+                </p>
+              </div>
+
               {/* Header com toggles de visualização */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
@@ -1551,7 +1439,7 @@ export function Configuracoes() {
                     onClick={() => setEstruturaView('setores')}
                     className={`px-4 py-2 rounded-md font-medium transition-all ${
                       estruturaView === 'setores'
-                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
                         : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
                     }`}
                   >
@@ -1561,11 +1449,21 @@ export function Configuracoes() {
                     onClick={() => setEstruturaView('cargos')}
                     className={`px-4 py-2 rounded-md font-medium transition-all ${
                       estruturaView === 'cargos'
-                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
                         : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
                     }`}
                   >
                     Cargos
+                  </button>
+                  <button
+                    onClick={() => setEstruturaView('hierarquia')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      estruturaView === 'hierarquia'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Hierarquia
                   </button>
                 </div>
 
@@ -1574,7 +1472,7 @@ export function Configuracoes() {
                     onClick={() => setEstruturaLayout('cards')}
                     className={`p-2 rounded-md transition-all ${
                       estruturaLayout === 'cards'
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                         : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
                     }`}
                     title="Visualização em cards"
@@ -1585,7 +1483,7 @@ export function Configuracoes() {
                     onClick={() => setEstruturaLayout('table')}
                     className={`p-2 rounded-md transition-all ${
                       estruturaLayout === 'table'
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                         : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
                     }`}
                     title="Visualização em tabela"
@@ -1605,7 +1503,6 @@ export function Configuracoes() {
                         <Button
                           onClick={() => setShowHistoricoSetores(!showHistoricoSetores)}
                           variant="outline"
-                          size="sm"
                           className="whitespace-nowrap inline-flex items-center"
                         >
                           <History size={16} className="mr-1 align-middle" />
@@ -1616,7 +1513,6 @@ export function Configuracoes() {
                             <Button
                               onClick={() => setBulkAssignSetorOpen(true)}
                               variant="outline"
-                              size="sm"
                               className="whitespace-nowrap inline-flex items-center"
                             >
                               <Users size={16} className="mr-1 align-middle" />
@@ -1627,7 +1523,6 @@ export function Configuracoes() {
                                 setEditingSetorId(null);
                                 setSetorModalOpen(true);
                               }}
-                              size="sm"
                               className="whitespace-nowrap inline-flex items-center"
                             >
                               <Plus size={16} className="mr-1 align-middle" />
@@ -1683,7 +1578,7 @@ export function Configuracoes() {
                                   <div className="flex gap-1">
                                     <button
                                       onClick={() => handleEditSetor(setor.id)}
-                                      className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                      className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded"
                                       aria-label={`Editar ${setor.nome}`}
                                     >
                                       <Pencil size={16} />
@@ -1741,7 +1636,7 @@ export function Configuracoes() {
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                       <button
                                         onClick={() => handleEditSetor(setor.id)}
-                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                                        className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300 mr-3"
                                       >
                                         Editar
                                       </button>
@@ -1776,7 +1671,6 @@ export function Configuracoes() {
                         <Button
                           onClick={() => setShowHistoricoCargos(!showHistoricoCargos)}
                           variant="outline"
-                          size="sm"
                           className="whitespace-nowrap inline-flex items-center"
                         >
                           <History size={16} className="mr-1 align-middle" />
@@ -1787,7 +1681,6 @@ export function Configuracoes() {
                             <Button
                               onClick={() => setBulkAssignCargoOpen(true)}
                               variant="outline"
-                              size="sm"
                               className="whitespace-nowrap inline-flex items-center"
                             >
                               <Users size={16} className="mr-1 align-middle" />
@@ -1798,7 +1691,6 @@ export function Configuracoes() {
                                 setEditingCargoId(null);
                                 setCargoModalOpen(true);
                               }}
-                              size="sm"
                               className="whitespace-nowrap inline-flex items-center"
                             >
                               <Plus size={16} className="mr-1 align-middle" />
@@ -1854,7 +1746,7 @@ export function Configuracoes() {
                                   <div className="flex gap-1">
                                     <button
                                       onClick={() => handleEditCargo(cargo.id)}
-                                      className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                      className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded"
                                       aria-label={`Editar ${cargo.nome}`}
                                     >
                                       <Pencil size={16} />
@@ -1912,7 +1804,7 @@ export function Configuracoes() {
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                       <button
                                         onClick={() => handleEditCargo(cargo.id)}
-                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                                        className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300 mr-3"
                                       >
                                         Editar
                                       </button>
@@ -1937,6 +1829,156 @@ export function Configuracoes() {
                   })()}
                 </>
               )}
+
+              {estruturaView === 'hierarquia' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Organograma Hierárquico</h3>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => setShowOrganogramaModal(true)}
+                        variant="outline"
+                        className="inline-flex items-center"
+                      >
+                        <Eye size={16} className="mr-1" />
+                        Visualizar Organograma
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm p-6">
+                    <p className="text-base text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                      <Info size={20} className="text-black dark:text-white flex-shrink-0" />
+                      <span>Para organizar a hierarquia, arraste os cargos para suas posições corretas dentro de cada setor. Quando quiser definir um cargo abaixo hierarquicamente de outro, arraste um cargo para cima do outro, criando então um 'cargo pai'. Você poderá alterar quando e como desejar as posições hierárquicas. Esta organização será refletida em funcionalidades e visualizações do sistema.</span>
+                    </p>
+                  </div>
+
+                  {setores.length === 0 && cargos.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                      <Building2 size={48} className="mx-auto mb-4 text-gray-300 dark:text-slate-600" />
+                      <p>Crie setores e cargos primeiro para organizar a hierarquia</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Setores com seus cargos organizados hierarquicamente */}
+                      {setores.map((setor) => {
+                        const cargosDoSetor = cargos.filter(cargo =>
+                          cargo.setoresVinculados?.includes(setor.id)
+                        );
+
+                        return (
+                          <div
+                            key={setor.id}
+                            className={`border rounded-lg p-6 transition-all ${
+                              draggingCargoId
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900'
+                            }`}
+                            onDragOver={(e) => {
+                              if (draggingCargoId) {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                              }
+                            }}
+                            onDragLeave={(e) => {
+                              // Apenas se for deixando a setor div completamente
+                              if (e.currentTarget === e.target) {
+                                // Deixa o visual como estava
+                              }
+                            }}
+                            onDrop={(e) => {
+                              if (draggingCargoId) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDropIntoSetor(setor.id);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-3 mb-4">
+                              <Building2 size={20} className="text-emerald-600 dark:text-emerald-400" />
+                              <h4 className="text-lg font-semibold text-gray-800 dark:text-white">{setor.nome}</h4>
+                              <span className="text-sm text-gray-500 dark:text-slate-400">
+                                ({cargosDoSetor.length} cargo{cargosDoSetor.length !== 1 ? 's' : ''})
+                              </span>
+                            </div>
+
+                            {cargosDoSetor.length === 0 ? (
+                              <div
+                                className="text-sm text-gray-500 dark:text-slate-400 italic py-8 px-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-center bg-gray-50 dark:bg-slate-800/30"
+                              >
+                                <p>Nenhum cargo atribuído a este setor</p>
+                                <p className="text-xs mt-2 text-gray-400">Arraste cargos de outros setores para aqui</p>
+                              </div>
+                            ) : (
+                              <HierarquiaSetor
+                                cargos={cargosDoSetor}
+                                onUpdateHierarquia={handleUpdateHierarquia}
+                                onDragStartCargo={setDraggingCargoId}
+                                onDragEndCargo={() => setDraggingCargoId(null)}
+                                draggingCargoId={draggingCargoId}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Cargos sem setor */}
+                      {(() => {
+                        const cargosSemSetor = cargos.filter(cargo =>
+                          !cargo.setoresVinculados || cargo.setoresVinculados.length === 0
+                        );
+
+                        if (cargosSemSetor.length === 0) return null;
+
+                        return (
+                          <div
+                            className={`border rounded-lg p-6 transition-all ${
+                              draggingCargoId
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900'
+                            }`}
+                            onDragOver={(e) => {
+                              if (draggingCargoId) {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                              }
+                            }}
+                            onDragLeave={(e) => {
+                              // Apenas se for deixando a div completamente
+                              if (e.currentTarget === e.target) {
+                                // Deixa o visual como estava
+                              }
+                            }}
+                            onDrop={(e) => {
+                              if (draggingCargoId) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDropIntoSetor(null);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-3 mb-4">
+                              <AlertCircle size={20} className="text-amber-600 dark:text-amber-400" />
+                              <h4 className="text-lg font-semibold text-gray-800 dark:text-white">Sem Setor Atribuído</h4>
+                              <span className="text-sm text-gray-500 dark:text-slate-400">
+                                ({cargosSemSetor.length} cargo{cargosSemSetor.length !== 1 ? 's' : ''})
+                              </span>
+                            </div>
+
+                            <HierarquiaSetor
+                              cargos={cargosSemSetor}
+                              onUpdateHierarquia={handleUpdateHierarquia}
+                              onDragStartCargo={setDraggingCargoId}
+                              onDragEndCargo={() => setDraggingCargoId(null)}
+                              draggingCargoId={draggingCargoId}
+                            />
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1946,27 +1988,58 @@ export function Configuracoes() {
 
           {active === 'permissoes' && (
             <div className="mt-4 space-y-6">
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <strong>• Configuração de Permissões:</strong> Defina quais páginas e funcionalidades cada nível de acesso pode visualizar e utilizar no sistema.
+              <div className="rounded-lg shadow-sm border p-4 mb-6" style={{
+                backgroundColor: `hsl(var(--card-bg))`,
+                borderColor: `hsl(var(--card-border))`,
+                color: `hsl(var(--text))`
+              }}>
+                <p className="text-base text-gray-800 dark:text-gray-100 flex items-center gap-3">
+                  <Info size={20} className="text-gray-800 dark:text-gray-100 flex-shrink-0" />
+                  <span><strong>Configuração de Permissões:</strong> Defina quais páginas e funcionalidades cada nível de acesso pode visualizar e utilizar no sistema.</span>
                 </p>
               </div>
 
               {/* Lista de Permissões por Nível */}
               <div className="space-y-6">
+                {/* Seção: Recursos Globais */}
+                <div className="p-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 flex items-center gap-2">
+                      Recursos Globais do Sistema
+                    </h3>
+                    <button onClick={() => setIsRecursosOpen(!isRecursosOpen)} className="p-1 hover:bg-red-200 dark:hover:bg-red-800 rounded">
+                      {isRecursosOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </div>
+                  {isRecursosOpen && (
+                    <>
+                      <Recursos
+                        data={recursos}
+                        onChange={(updates) => setRecursos({ ...recursos, ...updates })}
+                        isLoading={isSavingConfigs}
+                      />
+                    </>
+                  )}
+                </div>
+
                 {/* Administrador */}
                 <div className="border border-purple-200 dark:border-purple-800 rounded-lg p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100">Administrador</h3>
-                      <p className="text-xs text-purple-700 dark:text-purple-300">Acesso total ao sistema</p>
                     </div>
-                    <span className="px-3 py-1 bg-purple-200 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 text-xs font-bold rounded-full">ADMIN</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-purple-200 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 text-xs font-bold rounded-full">ADMIN</span>
+                      <button onClick={() => setIsAdministradorOpen(!isAdministradorOpen)} className="p-1 hover:bg-purple-200 dark:hover:bg-purple-800 rounded">
+                        {isAdministradorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 dark:text-slate-300 mb-2 font-medium">✓ Todas as funcionalidades habilitadas</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400">O administrador tem acesso irrestrito a todos os módulos do sistema.</p>
-                  </div>
+                  {isAdministradorOpen && (
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 dark:text-slate-300 mb-2 font-medium">O administrador tem acesso irrestrito a todos os módulos do sistema.</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Gestor */}
@@ -1974,77 +2047,89 @@ export function Configuracoes() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">Gestor</h3>
-                      <p className="text-xs text-blue-700 dark:text-blue-300">Gerenciamento de equipes</p>
                     </div>
-                    <span className="px-3 py-1 bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 text-xs font-bold rounded-full">GESTOR</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 text-xs font-bold rounded-full">GESTOR</span>
+                      <button onClick={() => setIsGestorOpen(!isGestorOpen)} className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded">
+                        {isGestorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
-                    {[
-                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                      { key: 'colaboradores', label: 'Colaboradores', icon: UserCircle },
-                      { key: 'ponto', label: 'Ponto', icon: Timer },
-                      { key: 'solicitacoes', label: 'Solicitações', icon: FileTextIcon },
-                      { key: 'avaliacoes', label: 'Avaliações', icon: Star },
-                      { key: 'okrs', label: 'OKRs', icon: Target },
-                      { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
-                      { key: 'mural', label: 'Mural', icon: MessageSquare },
-                      { key: 'chat', label: 'Chat', icon: MessageCircle },
-                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
-                      { key: 'relatorios', label: 'Relatórios', icon: BarChart3 },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded accent-blue-600" 
-                            checked={permissoesGestor[item.key as keyof typeof permissoesGestor] || false}
-                            onChange={() => handleTogglePermissaoGestor(item.key)}
-                          />
-                          <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  {isGestorOpen && (
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      {[
+                        { key: 'dashboard', label: 'Dashboard', icon: Home },
+                        { key: 'colaboradores', label: 'Colaboradores', icon: UserCog },
+                        { key: 'ponto', label: 'Ponto', icon: Clock },
+                        { key: 'solicitacoes', label: 'Solicitações', icon: FileText },
+                        { key: 'avaliacoes', label: 'Avaliações', icon: Award },
+                        { key: 'okrs', label: 'Desenvolvimento', icon: Target },
+                        { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                        { key: 'mural', label: 'Mural', icon: MessageSquare },
+                        { key: 'chat', label: 'Chat', icon: MessageCircle },
+                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                        { key: 'relatorios', label: 'Relatórios', icon: BarChart },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-blue-600" 
+                              checked={permissoesGestor[item.key as keyof typeof permissoesGestor] || false}
+                              onChange={() => handleTogglePermissaoGestor(item.key)}
+                            />
+                            <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Colaborador */}
-                <div className="border border-green-200 dark:border-green-800 rounded-lg p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20">
+                <div className="border border-emerald-200 dark:border-emerald-800 rounded-lg p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-bold text-green-900 dark:text-green-100">Colaborador</h3>
-                      <p className="text-xs text-green-700 dark:text-green-300">Acesso padrão</p>
+                      <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-100">Colaborador</h3>
                     </div>
-                    <span className="px-3 py-1 bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-100 text-xs font-bold rounded-full">COLAB</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-emerald-200 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100 text-xs font-bold rounded-full">COLAB</span>
+                      <button onClick={() => setIsColaboradorOpen(!isColaboradorOpen)} className="p-1 hover:bg-emerald-200 dark:hover:bg-emerald-800 rounded">
+                        {isColaboradorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
-                    {[
-                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                      { key: 'ponto', label: 'Ponto', icon: Timer },
-                      { key: 'solicitacoes', label: 'Solicitações', icon: FileTextIcon },
-                      { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
-                      { key: 'mural', label: 'Mural', icon: MessageSquare },
-                      { key: 'chat', label: 'Chat', icon: MessageCircle },
-                      { key: 'documentos', label: 'Documentos', icon: FileStack },
-                      { key: 'beneficios', label: 'Benefícios', icon: Gift },
-                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded accent-green-600" 
-                            checked={permissoesColaborador[item.key as keyof typeof permissoesColaborador] || false}
-                            onChange={() => handleTogglePermissaoColaborador(item.key)}
-                          />
-                          <Icon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  {isColaboradorOpen && (
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      {[
+                        { key: 'dashboard', label: 'Dashboard', icon: Home },
+                        { key: 'ponto', label: 'Ponto', icon: Clock },
+                        { key: 'solicitacoes', label: 'Solicitações', icon: FileText },
+                        { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                        { key: 'mural', label: 'Mural', icon: MessageSquare },
+                        { key: 'chat', label: 'Chat', icon: MessageCircle },
+                        { key: 'documentos', label: 'Documentos', icon: FolderOpen },
+                        { key: 'beneficios', label: 'Benefícios', icon: Gift },
+                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-emerald-600" 
+                              checked={permissoesColaborador[item.key as keyof typeof permissoesColaborador] || false}
+                              onChange={() => handleTogglePermissaoColaborador(item.key)}
+                            />
+                            <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Cliente */}
@@ -2052,52 +2137,42 @@ export function Configuracoes() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-orange-900 dark:text-orange-100">Cliente</h3>
-                      <p className="text-xs text-orange-700 dark:text-orange-300">Portal do cliente</p>
                     </div>
-                    <span className="px-3 py-1 bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 text-xs font-bold rounded-full">CLIENTE</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 text-xs font-bold rounded-full">CLIENTE</span>
+                      <button onClick={() => setIsClienteOpen(!isClienteOpen)} className="p-1 hover:bg-orange-200 dark:hover:bg-orange-800 rounded">
+                        {isClienteOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
-                    {[
-                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                      { key: 'clientes', label: 'Meus Dados', icon: UsersRound },
-                      { key: 'folha_clientes', label: 'Folha de Pagamento', icon: DollarSign },
-                      { key: 'funcionarios_cliente', label: 'Meus Funcionários', icon: UserCircle },
-                      { key: 'chat', label: 'Chat', icon: MessageCircle },
-                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
-                      { key: 'relatorios', label: 'Relatórios', icon: FileSpreadsheet },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded accent-orange-600" 
-                            checked={permissoesCliente[item.key as keyof typeof permissoesCliente] || false}
-                            onChange={() => handleTogglePermissaoCliente(item.key)}
-                          />
-                          <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  {isClienteOpen && (
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      {[
+                        { key: 'dashboard', label: 'Dashboard', icon: Home },
+                        { key: 'clientes', label: 'Clientes', icon: Users },
+                        { key: 'folha_clientes', label: 'Folha de Pagamento', icon: DollarSign },
+                        { key: 'funcionarios_cliente', label: 'Colaboradores', icon: UserCircle },
+                        { key: 'chat', label: 'Chat', icon: MessageCircle },
+                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                        { key: 'relatorios', label: 'Relatórios', icon: BarChart },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-orange-600" 
+                              checked={permissoesCliente[item.key as keyof typeof permissoesCliente] || false}
+                              onChange={() => handleTogglePermissaoCliente(item.key)}
+                            />
+                            <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Seção: Recursos Globais */}
-              <div className="p-6 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-4 mt-6">
-                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  Recursos Globais do Sistema
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Ative ou desative módulos globalmente. Módulos desativados não estarão disponíveis para nenhum nível de acesso.
-                </p>
-                <Recursos
-                  data={recursos}
-                  onChange={(updates) => setRecursos({ ...recursos, ...updates })}
-                  isLoading={isSavingConfigs}
-                />
               </div>
 
               {/* Botões de Ação */}
@@ -2214,7 +2289,6 @@ export function Configuracoes() {
         }}
         onConfirm={handleDeleteCargo}
         title="Remover Cargo"
-        message="Tem certeza que deseja remover este cargo? Esta ação não pode ser desfeita."
       />
 
       {/* Modais de Setor */}
@@ -2236,7 +2310,6 @@ export function Configuracoes() {
         }}
         onConfirm={handleDeleteSetor}
         title="Remover Setor"
-        message="Tem certeza que deseja remover este setor? Esta ação não pode ser desfeita."
       />
 
       {/* Modal Editar Usuário */}
@@ -2282,6 +2355,16 @@ export function Configuracoes() {
         onClose={() => setBulkAssignSetorOpen(false)}
         tipo="setor"
       />
+
+      {/* Modal Organograma */}
+      {showOrganogramaModal && (
+        <OrganogramaModal
+          isOpen={showOrganogramaModal}
+          onClose={() => setShowOrganogramaModal(false)}
+          setores={setores}
+          cargos={cargos}
+        />
+      )}
     </div>
   );
 }

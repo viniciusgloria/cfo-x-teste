@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Info } from 'lucide-react';
 import { Button } from '../ui/Button';
 import toast from 'react-hot-toast';
 
@@ -359,10 +359,11 @@ export function IdentidadeVisual({
 
       {/* Card informativo */}
       <div className="bg-purple-100 dark:bg-purple-900/40 border border-purple-300 dark:border-purple-700 rounded-lg p-4">
-        <p className="text-sm text-purple-900 dark:text-purple-300">
-          <strong>• Dica:</strong> Use imagens em PNG com fundo transparente para melhor
+        <p className="text-sm text-purple-900 dark:text-purple-300 flex items-start gap-2">
+          <Info size={16} className="mt-0.5 flex-shrink-0" />
+          <span><strong>Dica:</strong> Use imagens em PNG com fundo transparente para melhor
           compatibilidade. As dimensões sugeridas devem ser respeitadas para melhor
-          visualização.
+          visualização.</span>
         </p>
       </div>
     </div>
