@@ -116,12 +116,6 @@ export function Recursos({
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          Ative ou desative os módulos e funcionalidades disponíveis para sua empresa. Estas configurações afetarão o acesso aos recursos para todos os colaboradores.
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {FEATURES.map((feature) => {
           const Icon = feature.icon;
@@ -130,7 +124,7 @@ export function Recursos({
               key={feature.key}
               className={`flex items-start gap-4 p-4 rounded-lg border transition-all ${
                 data[feature.key]
-                  ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20'
+                  ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
                   : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60'
               }`}
             >
@@ -141,13 +135,13 @@ export function Recursos({
                 checked={data[feature.key] as boolean || false}
                 onChange={(e) => handleToggle(feature.key, e.target.checked)}
                 disabled={isLoading}
-                className="w-5 h-5 rounded mt-0.5 cursor-pointer accent-emerald-600"
+                className="w-5 h-5 rounded mt-0.5 cursor-pointer accent-red-600"
               />
 
               {/* Conteúdo */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <Icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <Icon className="w-5 h-5 text-red-600 dark:text-red-400" />
                   <label
                     htmlFor={feature.key}
                     className="font-medium text-gray-900 dark:text-white cursor-pointer"
@@ -163,7 +157,7 @@ export function Recursos({
               {/* Badge de status */}
               {data[feature.key] && (
                 <div className="flex-shrink-0">
-                  <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                  <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/40 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-200">
                     Ativo
                   </span>
                 </div>
@@ -171,13 +165,6 @@ export function Recursos({
             </div>
           );
         })}
-      </div>
-
-      {/* Card inf•mativo */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>ℹ️ Dica:</strong> Desativar um módulo oculta-o da interface, mas não deleta os dados. Você pode reativar a qualquer momento.
-        </p>
       </div>
     </div>
   );

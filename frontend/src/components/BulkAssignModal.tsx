@@ -4,6 +4,7 @@ import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { useColaboradoresStore } from '../store/colaboradoresStore';
 import { useCargosSetoresStore } from '../store/cargosSetoresStore';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 
 interface BulkAssignModalProps {
@@ -52,7 +53,7 @@ export function BulkAssignModal({ isOpen, onClose, tipo }: BulkAssignModalProps)
     }
   };
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!selectedValue) {
       toast.error(`Selecione um ${tipo === 'cargo' ? 'cargo' : 'setor'}`);
       return;
@@ -66,21 +67,30 @@ export function BulkAssignModal({ isOpen, onClose, tipo }: BulkAssignModalProps)
     const selectedItem = items.find(i => i.id === selectedValue);
     if (!selectedItem) return;
 
-    selectedUsers.forEach(userId => {
-      const colaborador = colaboradores.find(c => c.id === userId);
-      if (colaborador) {
-        // Atualiza o campo cargo ou setor do colaborador
-        const fieldToUpdate = tipo === 'cargo' ? 'cargo' : (tipo === 'setor' ? 'setor' : 'departamento');
+    try {
+      // Update each user via API
+      const updatePromises = Array.from(selectedUsers).map(async (userId) => {
+        const fieldToUpdate = tipo === 'cargo' ? 'cargo' : 'setor';
+        await api.put(`/users/${userId}`, {
+          [fieldToUpdate]: selectedItem.nome
+        });
+
+        // Also update local store
         atualizarColaborador(userId, {
           [fieldToUpdate]: selectedItem.nome
         });
-      }
-    });
+      });
 
-    toast.success(
-      `${selectedUsers.size} usuário${selectedUsers.size > 1 ? 's' : ''} atribuído${selectedUsers.size > 1 ? 's' : ''} ao ${tipo} "${selectedItem.nome}"`
-    );
-    onClose();
+      await Promise.all(updatePromises);
+
+      toast.success(
+        `${selectedUsers.size} usuário${selectedUsers.size > 1 ? 's' : ''} atribuído${selectedUsers.size > 1 ? 's' : ''} ao ${tipo} "${selectedItem.nome}"`
+      );
+      onClose();
+    } catch (error) {
+      console.error('Erro ao atribuir em massa:', error);
+      toast.error('Erro ao salvar as alterações. Tente novamente.');
+    }
   };
 
   return (

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Settings, Plus, Pencil, Trash2, Search, History, Users, Eye, EyeOff, Building2, Clock, CreditCard, Palette, FileText, Zap, LayoutDashboard, UserCircle, Timer, FileText as FileTextIcon, Star, Target, CheckSquare, MessageSquare, MessageCircle, ThumbsUp, FileStack, Gift, BarChart3, UsersRound, DollarSign, FileSpreadsheet, LayoutGrid, List } from 'lucide-react';
+import { Settings, Plus, Pencil, Trash2, Search, History, Users, Eye, EyeOff, Building2, Clock, CreditCard, Palette, FileText, Zap, Home, UserCog, Award, FolderOpen, BarChart, Receipt, LayoutDashboard, UserCircle, Timer, FileText as FileTextIcon, Star, Target, CheckSquare, MessageSquare, MessageCircle, ThumbsUp, FileStack, Gift, BarChart3, UsersRound, DollarSign, FileSpreadsheet, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
 import { Cargo, Setor } from '../types';
 // Card removed: no longer needed after maintenance UI removal
+import { Card } from '../components/ui/Card';
 import PageBanner from '../components/ui/PageBanner';
 import { Tabs } from '../components/ui/Tabs';
 import { Input } from '../components/ui/Input';
@@ -223,7 +224,36 @@ export function Configuracoes() {
     relatorios: true,
   });
 
+  // Estados para expansão/colapso das seções de permissões
+  const [isAdminExpanded, setIsAdminExpanded] = useState(false);
+  const [isGestorExpanded, setIsGestorExpanded] = useState(false);
+  const [isColaboradorExpanded, setIsColaboradorExpanded] = useState(false);
+  const [isClienteExpanded, setIsClienteExpanded] = useState(false);
+  const [isRecursosExpanded, setIsRecursosExpanded] = useState(false);
+
   const [isSavingConfigs, setIsSavingConfigs] = useState(false);
+
+  // Mapeamento de permissões para recursos globais
+  const permissaoToRecurso: Record<string, string> = {
+    ponto: 'ponto_ativo',
+    solicitacoes: 'solicitacoes_ativo',
+    mural: 'mural_ativo',
+    chat: 'chat_ativo',
+    documentos: 'documentos_ativo',
+    feedbacks: 'feedbacks_ativo',
+    clientes: 'clientes_ativo',
+    tarefas: 'tarefas_ativo',
+    calendario: 'tarefas_ativo', // Calendário ligado a tarefas
+    beneficios: 'beneficios_ativo',
+    colaboradores: 'colaboradores_ativo',
+    folha_pagamento: 'folha_pagamento_ativo',
+    folha_clientes: 'folha_clientes_ativo',
+    avaliacoes: 'avaliacoes_ativo',
+    okrs: 'okrs_ativo',
+    relatorios: 'relatorios_ativo',
+    dashboard: 'dashboard', // Sempre ativo
+    funcionarios_cliente: 'funcionarios_cliente', // Sempre ativo para cliente
+  };
 
   // Persistence helpers for system Omie logs
   const getSystemLogsKey = () => 'omie_logs_system';
@@ -1697,10 +1727,38 @@ export function Configuracoes() {
 
           {active === 'permissoes' && (
             <div className="mt-4 space-y-6">
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
+              <Card className="p-4 mb-6">
+                <p className="text-sm text-gray-900 dark:text-white">
                   <strong>• Configuração de Permissões:</strong> Defina quais páginas e funcionalidades cada nível de acesso pode visualizar e utilizar no sistema.
                 </p>
+              </Card>
+
+              {/* Seção: Recursos Globais */}
+              <div className="p-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-red-900 dark:text-red-100">
+                    Recursos Globais do Sistema
+                  </h3>
+                  <button
+                    onClick={() => setIsRecursosExpanded(!isRecursosExpanded)}
+                    className="p-1 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                    title={isRecursosExpanded ? 'Recolher' : 'Expandir'}
+                  >
+                    {isRecursosExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                </div>
+                {isRecursosExpanded && (
+                  <>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Ative ou desative módulos globalmente. Módulos desativados não estarão disponíveis para nenhum nível de acesso, mas permanecerão com seus dados e funcionalidades.
+                    </p>
+                    <Recursos
+                      data={recursos}
+                      onChange={(updates) => setRecursos({ ...recursos, ...updates })}
+                      isLoading={isSavingConfigs}
+                    />
+                  </>
+                )}
               </div>
 
               {/* Lista de Permissões por Nível */}
@@ -1710,14 +1768,24 @@ export function Configuracoes() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100">Administrador</h3>
-                      <p className="text-xs text-purple-700 dark:text-purple-300">Acesso total ao sistema</p>
                     </div>
-                    <span className="px-3 py-1 bg-purple-200 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 text-xs font-bold rounded-full">ADMIN</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-purple-200 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 text-xs font-bold rounded-full">ADMIN</span>
+                      <button
+                        onClick={() => setIsAdminExpanded(!isAdminExpanded)}
+                        className="p-1 rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                        title={isAdminExpanded ? 'Recolher' : 'Expandir'}
+                      >
+                        {isAdminExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 dark:text-slate-300 mb-2 font-medium">✓ Todas as funcionalidades habilitadas</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400">O administrador tem acesso irrestrito a todos os módulos do sistema.</p>
-                  </div>
+                  {isAdminExpanded && (
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 dark:text-slate-300 mb-2 font-medium">✓ Todas as funcionalidades habilitadas.</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">O administrador tem acesso irrestrito a todos os módulos do sistema.</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Gestor */}
@@ -1725,39 +1793,52 @@ export function Configuracoes() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">Gestor</h3>
-                      <p className="text-xs text-blue-700 dark:text-blue-300">Gerenciamento de equipes</p>
                     </div>
-                    <span className="px-3 py-1 bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 text-xs font-bold rounded-full">GESTOR</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-blue-200 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100 text-xs font-bold rounded-full">GESTOR</span>
+                      <button
+                        onClick={() => setIsGestorExpanded(!isGestorExpanded)}
+                        className="p-1 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                        title={isGestorExpanded ? 'Recolher' : 'Expandir'}
+                      >
+                        {isGestorExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
-                    {[
-                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                      { key: 'colaboradores', label: 'Colaboradores', icon: UserCircle },
-                      { key: 'ponto', label: 'Ponto', icon: Timer },
-                      { key: 'solicitacoes', label: 'Solicitações', icon: FileTextIcon },
-                      { key: 'avaliacoes', label: 'Avaliações', icon: Star },
-                      { key: 'okrs', label: 'OKRs', icon: Target },
-                      { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
-                      { key: 'mural', label: 'Mural', icon: MessageSquare },
-                      { key: 'chat', label: 'Chat', icon: MessageCircle },
-                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
-                      { key: 'relatorios', label: 'Relatórios', icon: BarChart3 },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded accent-blue-600" 
-                            checked={permissoesGestor[item.key as keyof typeof permissoesGestor] || false}
-                            onChange={() => handleTogglePermissaoGestor(item.key)}
-                          />
-                          <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  {isGestorExpanded && (
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      {[
+                        { key: 'dashboard', label: 'Dashboard', icon: Home },
+                        { key: 'colaboradores', label: 'Colaboradores', icon: UserCog },
+                        { key: 'ponto', label: 'Ponto', icon: Clock },
+                        { key: 'solicitacoes', label: 'Solicitações', icon: FileTextIcon },
+                        { key: 'avaliacoes', label: 'Avaliações', icon: Award },
+                        { key: 'okrs', label: 'Desenvolvimento', icon: Target },
+                        { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                        { key: 'mural', label: 'Mural', icon: MessageSquare },
+                        { key: 'chat', label: 'Chat', icon: MessageSquare },
+                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                        { key: 'relatorios', label: 'Relatórios', icon: BarChart },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        const recursoKey = permissaoToRecurso[item.key];
+                        const isGlobalEnabled = recursoKey ? recursos[recursoKey] !== false : true;
+                        return (
+                          <label key={item.key} className={`flex items-center gap-3 p-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 ${!isGlobalEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-blue-600" 
+                              checked={permissoesGestor[item.key as keyof typeof permissoesGestor] || false}
+                              onChange={() => isGlobalEnabled && handleTogglePermissaoGestor(item.key)}
+                              disabled={!isGlobalEnabled}
+                            />
+                            <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Colaborador */}
@@ -1765,37 +1846,50 @@ export function Configuracoes() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-green-900 dark:text-green-100">Colaborador</h3>
-                      <p className="text-xs text-green-700 dark:text-green-300">Acesso padrão</p>
                     </div>
-                    <span className="px-3 py-1 bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-100 text-xs font-bold rounded-full">COLAB</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-100 text-xs font-bold rounded-full">COLAB</span>
+                      <button
+                        onClick={() => setIsColaboradorExpanded(!isColaboradorExpanded)}
+                        className="p-1 rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                        title={isColaboradorExpanded ? 'Recolher' : 'Expandir'}
+                      >
+                        {isColaboradorExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
-                    {[
-                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                      { key: 'ponto', label: 'Ponto', icon: Timer },
-                      { key: 'solicitacoes', label: 'Solicitações', icon: FileTextIcon },
-                      { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
-                      { key: 'mural', label: 'Mural', icon: MessageSquare },
-                      { key: 'chat', label: 'Chat', icon: MessageCircle },
-                      { key: 'documentos', label: 'Documentos', icon: FileStack },
-                      { key: 'beneficios', label: 'Benefícios', icon: Gift },
-                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded accent-green-600" 
-                            checked={permissoesColaborador[item.key as keyof typeof permissoesColaborador] || false}
-                            onChange={() => handleTogglePermissaoColaborador(item.key)}
-                          />
-                          <Icon className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  {isColaboradorExpanded && (
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      {[
+                        { key: 'dashboard', label: 'Dashboard', icon: Home },
+                        { key: 'ponto', label: 'Ponto', icon: Clock },
+                        { key: 'solicitacoes', label: 'Solicitações', icon: FileTextIcon },
+                        { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                        { key: 'mural', label: 'Mural', icon: MessageSquare },
+                        { key: 'chat', label: 'Chat', icon: MessageSquare },
+                        { key: 'documentos', label: 'Documentos', icon: FolderOpen },
+                        { key: 'beneficios', label: 'Benefícios', icon: Gift },
+                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        const recursoKey = permissaoToRecurso[item.key];
+                        const isGlobalEnabled = recursoKey ? recursos[recursoKey] !== false : true;
+                        return (
+                          <label key={item.key} className={`flex items-center gap-3 p-2 rounded hover:bg-green-50 dark:hover:bg-green-900/20 ${!isGlobalEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-green-600" 
+                              checked={permissoesColaborador[item.key as keyof typeof permissoesColaborador] || false}
+                              onChange={() => isGlobalEnabled && handleTogglePermissaoColaborador(item.key)}
+                              disabled={!isGlobalEnabled}
+                            />
+                            <Icon className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Cliente */}
@@ -1803,52 +1897,49 @@ export function Configuracoes() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-orange-900 dark:text-orange-100">Cliente</h3>
-                      <p className="text-xs text-orange-700 dark:text-orange-300">Portal do cliente</p>
                     </div>
-                    <span className="px-3 py-1 bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 text-xs font-bold rounded-full">CLIENTE</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100 text-xs font-bold rounded-full">CLIENTE</span>
+                      <button
+                        onClick={() => setIsClienteExpanded(!isClienteExpanded)}
+                        className="p-1 rounded-md hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
+                        title={isClienteExpanded ? 'Recolher' : 'Expandir'}
+                      >
+                        {isClienteExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
-                    {[
-                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                      { key: 'clientes', label: 'Meus Dados', icon: UsersRound },
-                      { key: 'folha_clientes', label: 'Folha de Pagamento', icon: DollarSign },
-                      { key: 'funcionarios_cliente', label: 'Meus Funcionários', icon: UserCircle },
-                      { key: 'chat', label: 'Chat', icon: MessageCircle },
-                      { key: 'feedbacks', label: 'Feedbacks', icon: ThumbsUp },
-                      { key: 'relatorios', label: 'Relatórios', icon: FileSpreadsheet },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded accent-orange-600" 
-                            checked={permissoesCliente[item.key as keyof typeof permissoesCliente] || false}
-                            onChange={() => handleTogglePermissaoCliente(item.key)}
-                          />
-                          <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                          <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  {isClienteExpanded && (
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      {[
+                        { key: 'dashboard', label: 'Dashboard', icon: Home },
+                        { key: 'clientes', label: 'Clientes', icon: Users },
+                        { key: 'folha_clientes', label: 'Folha de Clientes', icon: Receipt },
+                        { key: 'funcionarios_cliente', label: 'Meus Funcionários', icon: UserCog },
+                        { key: 'chat', label: 'Chat', icon: MessageSquare },
+                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                        { key: 'relatorios', label: 'Relatórios', icon: BarChart },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        const recursoKey = permissaoToRecurso[item.key];
+                        const isGlobalEnabled = recursoKey ? recursos[recursoKey] !== false : true;
+                        return (
+                          <label key={item.key} className={`flex items-center gap-3 p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 ${!isGlobalEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-orange-600" 
+                              checked={permissoesCliente[item.key as keyof typeof permissoesCliente] || false}
+                              onChange={() => isGlobalEnabled && handleTogglePermissaoCliente(item.key)}
+                              disabled={!isGlobalEnabled}
+                            />
+                            <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Seção: Recursos Globais */}
-              <div className="p-6 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-4 mt-6">
-                <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  Recursos Globais do Sistema
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Ative ou desative módulos globalmente. Módulos desativados não estarão disponíveis para nenhum nível de acesso.
-                </p>
-                <Recursos
-                  data={recursos}
-                  onChange={(updates) => setRecursos({ ...recursos, ...updates })}
-                  isLoading={isSavingConfigs}
-                />
               </div>
 
               {/* Botões de Ação */}
