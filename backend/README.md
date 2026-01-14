@@ -1,155 +1,25 @@
+<div align="center">
+
 # Backend - CFO-X SaaS API
 
-API REST em FastAPI para o sistema CFO-X SaaS. Backend completo com autenticação JWT, gerenciamento de empresas, colaboradores, ponto, folha de pagamento e muito mais.
+### API REST em FastAPI
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red.svg)](https://www.sqlalchemy.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
+Backend completo com autenticação JWT, CRUD para todas entidades, validações Pydantic e documentação automática.
 
----
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-red?logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-## Índice
+[Quick Start](#-quick-start) • [Endpoints](#-api-endpoints) • [Autenticação](#-autenticação) • [Deploy](#-deploy)
 
-- [Sobre](#sobre)
-- [Tecnologias](#tecnologias)
-- [Estrutura](#estrutura)
-- [Instalação](#instalação)
-- [Configuração](#configuração)
-- [Uso](#uso)
-- [API Endpoints](#api-endpoints)
-- [Autenticação](#autenticação)
-- [Models](#models)
-- [Testes](#testes)
-- [Deploy](#deploy)
+</div>
 
 ---
 
-## Sobre
+## Quick Start
 
-API REST construída com FastAPI que fornece todos os endpoints necessários para o funcionamento do CFO-X SaaS. Inclui autenticação JWT, CRUD completo para todas as entidades, validações robustas com Pydantic e documentação automática.
-
-### Características:
-- OK API REST completa e documentada
-- OK Autenticação JWT com refresh tokens
-- OK Validação de dados com Pydantic
-- OK ORM com SQLAlchemy 2.0
-- OK Migrations automáticas
-- OK Rate limiting e segurança
-- OK CORS configurável
-- OK Documentação Swagger/OpenAPI automática
-- OK Type hints em todo o código
-
----
-
-## Tecnologias
-
-### Core
-- **FastAPI 0.109** - Framework web moderno e rápido
-- **Python 3.11+** - Linguagem de programação
-- **Uvicorn** - Servidor ASGI de alta performance
-- **Pydantic 2.5** - Validação de dados
-
-### Database
-- **SQLAlchemy 2.0** - ORM Python
-- **PostgreSQL 15** - Banco de dados relacional
-- **psycopg2-binary** - Driver PostgreSQL
-- **Alembic** - Migrations (futuro)
-
-### Segurança & Auth
-- **python-jose** - JWT tokens
-- **passlib[bcrypt]** - Hash de senhas
-- **bcrypt** - Criptografia
-- **python-multipart** - Upload de arquivos
-- **slowapi** - Rate limiting
-
-### Utilidades
-- **python-dotenv** - Variáveis de ambiente
-- **python-dateutil** - Manipulação de datas
-- **email-validator** - Validação de emails
-- **redis** - Cache e sessões
-
-### Development
-- **pytest** - Testes
-- **pytest-asyncio** - Testes async
-- **httpx** - Cliente HTTP para testes
-- **black** - Formatação de código
-- **flake8** - Linting
-
----
-
-## Estrutura
-
-```
-backend/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # Entry point da aplicação
-│   ├── config.py            # Configurações e settings
-│   ├── database.py          # Setup do banco de dados
-│   ├── auth.py              # Autenticação JWT
-│   ├── dependencies.py      # Dependências injetáveis
-│   ├── password_validator.py # Validação de senhas
-│   │
-│   ├── middleware/
-│   │   └── security.py      # Middlewares de segurança
-│   │
-│   ├── models/              # Modelos SQLAlchemy
-│   │   ├── __init__.py
-│   │   ├── user.py          # Usuários
-│   │   ├── empresa.py       # Empresas
-│   │   ├── colaborador.py   # Colaboradores
-│   │   ├── ponto.py         # Registros de ponto
-│   │   ├── folha_pagamento.py
-│   │   ├── documento.py
-│   │   ├── tarefa.py
-│   │   ├── okr.py
-│   │   ├── chat.py
-│   │   ├── avaliacao.py
-│   │   └── ... (outros modelos)
-│   │
-│   ├── schemas/             # Schemas Pydantic
-│   │   ├── __init__.py
-│   │   ├── auth.py          # Schemas de autenticação
-│   │   ├── user.py
-│   │   ├── empresa.py
-│   │   ├── colaborador.py
-│   │   └── ... (schemas correspondentes)
-│   │
-│   └── routes/              # Rotas/Endpoints
-│       ├── __init__.py
-│       ├── auth.py          # Login, refresh, logout
-│       ├── users.py         # CRUD usuários
-│       ├── empresa.py       # CRUD empresas
-│       ├── colaboradores.py # CRUD colaboradores
-│       ├── ponto.py         # Gestão de ponto
-│       ├── folha.py         # Folha de pagamento
-│       ├── documentos.py
-│       ├── tarefas.py
-│       ├── okrs.py
-│       ├── chat.py
-│       ├── avaliacoes.py
-│       └── ... (outras rotas)
-│
-├── tests/                   # Testes
-│   ├── __init__.py
-│   ├── conftest.py
-│   ├── test_auth.py
-│   ├── test_users.py
-│   └── ...
-│
-├── init_db.py              # Script de inicialização do DB
-├── requirements.txt        # Dependências Python
-├── Dockerfile              # Docker para desenvolvimento
-├── .env.example            # Template de variáveis
-└── README.md               # Este arquivo
-```
-
----
-
-## Instalação
-
-### Opção 1: Com Docker (Recomendado)
+### Com Docker (Recomendado)
 
 ```bash
 # Na raiz do projeto
@@ -159,55 +29,144 @@ docker-compose up -d backend
 docker-compose exec backend python init_db.py
 ```
 
-### Opção 2: Desenvolvimento Local
+Acesse:
+- **API**: http://localhost:8000
+- **Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+### Desenvolvimento Local
 
 ```bash
-# Entrar na pasta backend
 cd backend
 
 # Criar ambiente virtual
 python -m venv venv
 
-# Ativar ambiente virtual
-# Windows
+# Ativar (Windows)
 venv\Scripts\activate
-# Linux/Mac
+# Ativar (Linux/macOS)
 source venv/bin/activate
 
 # Instalar dependências
 pip install -r requirements.txt
 
-# Copiar variáveis de ambiente
+# Configurar .env
 cp .env.example .env
-# Edite o .env com suas configurações
+# Edite DATABASE_URL e SECRET_KEY
 
-# Inicializar banco de dados
+# Inicializar DB
 python init_db.py
 
 # Rodar servidor
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload
 ```
 
 ---
 
-## Configuração
+## Sobre
 
-### Variáveis de Ambiente
+API REST construída com FastAPI fornecendo todos os endpoints para o CFO-X SaaS. Autenticação JWT, validações robustas, documentação automática e type hints em todo o código.
 
-Crie um arquivo `.env` baseado no `.env.example`:
+### Características
+
+-  **FastAPI** - Framework async de alta performance
+-  **JWT Auth** - Access & refresh tokens
+-  **Validação** - Pydantic schemas com type safety
+-  **ORM Moderno** - SQLAlchemy 2.0 com async
+-  **Auto Docs** - Swagger UI e ReDoc inclusos
+-  **Segurança** - Rate limiting, CORS, hash bcrypt
+-  **Performance** - Async/await, connection pooling
+-  **Testável** - pytest com fixtures e coverage
+
+---
+
+##  Tecnologias
+
+### Core Stack
+
+```python
+FastAPI 0.109+         → Framework web assíncrono
+Python 3.11+           → Type hints, async/await
+Uvicorn               → Servidor ASGI ultra-rápido
+Pydantic 2.5          → Validação de dados
+```
+
+### Database & ORM
+
+```python
+SQLAlchemy 2.0        → ORM com suporte async
+PostgreSQL 16         → Banco de dados relacional
+psycopg2-binary       → Driver PostgreSQL
+Alembic               → Migrations (futuro)
+```
+
+### Segurança
+
+```python
+python-jose[cryptography]  → JWT tokens
+passlib[bcrypt]            → Hash de senhas bcrypt
+python-multipart           → Upload de arquivos
+slowapi                    → Rate limiting
+```
+
+### Utilidades
+
+```python
+python-dotenv         → Variáveis de ambiente
+python-dateutil       → Manipulação de datas
+email-validator       → Validação de emails
+redis                 → Cache e sessões
+```
+
+### Development
+
+```python
+pytest               → Framework de testes
+pytest-asyncio       → Testes async
+httpx                → Cliente HTTP
+black                → Code formatter
+flake8               → Linter
+```
+
+---
+
+## Instalação
+
+### Pré-requisitos
+
+- Python 3.11+
+- PostgreSQL 15+ (ou Docker)
+- Redis 7+ (opcional, para cache)
+
+### Configuração
 
 ```bash
+# 1. Criar ambiente virtual
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+
+# 2. Instalar dependências
+pip install -r requirements.txt
+
+# 3. Configurar variáveis
+cp .env.example .env
+```
+
+Edite `.env`:
+
+```env
 # Ambiente
 ENVIRONMENT=development
 
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/cfohub_dev
 
-# Redis
+# Redis (opcional)
 REDIS_URL=redis://localhost:6379/0
 
 # JWT
-SECRET_KEY=sua-chave-secreta-min-32-chars
+SECRET_KEY=<generate-with-secrets-module>
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
@@ -221,55 +180,74 @@ DEBUG=true
 LOG_LEVEL=DEBUG
 ```
 
-### Gerar SECRET_KEY
+Gere uma `SECRET_KEY` segura:
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
----
-
-## Uso
-
-### Rodar o servidor
+### Inicializar Banco
 
 ```bash
-# Desenvolvimento (com auto-reload)
+python init_db.py
+```
+
+Isso cria:
+- Todas as tabelas
+- Usuário admin padrão (`admin@cfohub.com` / `admin123`)
+
+---
+
+## Desenvolvimento
+
+### Rodar servidor
+
+```bash
+# Desenvolvimento (auto-reload)
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Produção
+# Produção (múltiplos workers)
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-### Acessar
+### Estrutura de Pastas
 
-- **API**: http://localhost:8000
-- **Documentação Swagger**: http://localhost:8000/docs
-- **Documentação ReDoc**: http://localhost:8000/redoc
-- **OpenAPI JSON**: http://localhost:8000/openapi.json
-
-### Primeiro acesso
-
-Após inicializar o banco (`python init_db.py`), você pode criar um usuário admin:
-
-```python
-# No shell Python
-from app.database import SessionLocal
-from app.models.user import User
-from passlib.context import CryptContext
-
-db = SessionLocal()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-admin = User(
-    nome="Admin",
-    email="admin@example.com",
-    senha_hash=pwd_context.hash("admin123"),
-    tipo_usuario="admin",
-    is_active=True
-)
-db.add(admin)
-db.commit()
+```
+app/
+├── 📄 main.py              # Entry point FastAPI
+├── 📄 config.py            # Settings (Pydantic BaseSettings)
+├── 📄 database.py          # DB engine e session
+├── 📄 auth.py              # JWT auth utils
+├── 📄 dependencies.py      # Dependency injection
+├── 📄 password_validator.py
+│
+├── 📂 middleware/
+│   └── security.py         # Rate limiting, CORS
+│
+├── 📂 models/              # SQLAlchemy models
+│   ├── user.py
+│   ├── empresa.py
+│   ├── colaborador.py
+│   ├── ponto.py
+│   ├── folha_pagamento.py
+│   ├── documento.py
+│   ├── tarefa.py
+│   ├── okr.py
+│   └── ... (20+ models)
+│
+├── 📂 schemas/             # Pydantic schemas
+│   ├── auth.py
+│   ├── user.py
+│   ├── colaborador.py
+│   └── ... (schemas correspondentes)
+│
+└── 📂 routes/              # API endpoints
+    ├── auth.py             # /auth/*
+    ├── users.py            # /users/*
+    ├── colaboradores.py    # /colaboradores/*
+    ├── ponto.py            # /ponto/*
+    ├── folha.py            # /folha/*
+    └── ... (15+ routers)
 ```
 
 ---
@@ -279,61 +257,63 @@ db.commit()
 ### Autenticação
 
 | Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| POST | `/api/auth/login` | Login e geração de tokens | ❌ |
-| POST | `/api/auth/refresh` | Renovar access token | ❌ |
-| POST | `/api/auth/logout` | Logout (invalidar refresh token) | ✅ |
-| GET | `/api/auth/me` | Obter usuário logado | ✅ |
+|--------|----------|-----------|:----:|
+| `POST` | `/api/auth/login` | Login com email/senha | ✕ |
+| `POST` | `/api/auth/refresh` | Renovar access token | ✕ |
+| `POST` | `/api/auth/logout` | Invalidar refresh token | ✓ |
+| `GET` | `/api/auth/me` | Dados do usuário logado | ✓ |
 
 ### Usuários
 
 | Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| GET | `/api/users` | Listar usuários | ✅ |
-| POST | `/api/users` | Criar usuário | ✅ |
-| GET | `/api/users/{id}` | Obter usuário | ✅ |
-| PUT | `/api/users/{id}` | Atualizar usuário | ✅ |
-| DELETE | `/api/users/{id}` | Deletar usuário | ✅ |
+|--------|----------|-----------|:----:|
+| `GET` | `/api/users` | Listar usuários | ✓ |
+| `POST` | `/api/users` | Criar usuário | ✓ |
+| `GET` | `/api/users/{id}` | Buscar por ID | ✓ |
+| `PUT` | `/api/users/{id}` | Atualizar usuário | ✓ |
+| `DELETE` | `/api/users/{id}` | Deletar usuário | ✓ |
 
 ### Empresas
 
 | Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| GET | `/api/empresas` | Listar empresas | ✅ |
-| POST | `/api/empresas` | Criar empresa | ✅ |
-| GET | `/api/empresas/{id}` | Obter empresa | ✅ |
-| PUT | `/api/empresas/{id}` | Atualizar empresa | ✅ |
-| DELETE | `/api/empresas/{id}` | Deletar empresa | ✅ |
+|--------|----------|-----------|:----:|
+| `GET` | `/api/empresas` | Listar empresas | ✓ |
+| `POST` | `/api/empresas` | Criar empresa | ✓ |
+| `GET` | `/api/empresas/{id}` | Buscar por ID | ✓ |
+| `PUT` | `/api/empresas/{id}` | Atualizar empresa | ✓ |
+| `DELETE` | `/api/empresas/{id}` | Deletar empresa | ✓ |
 
 ### Colaboradores
 
 | Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| GET | `/api/colaboradores` | Listar colaboradores | ✅ |
-| POST | `/api/colaboradores` | Criar colaborador | ✅ |
-| GET | `/api/colaboradores/{id}` | Obter colaborador | ✅ |
-| PUT | `/api/colaboradores/{id}` | Atualizar colaborador | ✅ |
-| DELETE | `/api/colaboradores/{id}` | Deletar colaborador | ✅ |
+|--------|----------|-----------|:----:|
+| `GET` | `/api/colaboradores` | Listar (com filtros) | ✓ |
+| `POST` | `/api/colaboradores` | Criar colaborador | ✓ |
+| `GET` | `/api/colaboradores/{id}` | Buscar por ID | ✓ |
+| `PUT` | `/api/colaboradores/{id}` | Atualizar | ✓ |
+| `DELETE` | `/api/colaboradores/{id}` | Deletar | ✓ |
 
 ### Ponto
 
 | Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| POST | `/api/ponto/registrar` | Registrar ponto | ✅ |
-| GET | `/api/ponto/hoje` | Pontos de hoje | ✅ |
-| GET | `/api/ponto/mes` | Pontos do mês | ✅ |
-| POST | `/api/ponto/solicitacao-ajuste` | Solicitar ajuste | ✅ |
+|--------|----------|-----------|:----:|
+| `POST` | `/api/ponto/registrar` | Registrar entrada/saída | ✓ |
+| `GET` | `/api/ponto/hoje` | Pontos de hoje | ✓ |
+| `GET` | `/api/ponto/mes` | Pontos do mês atual | ✓ |
+| `POST` | `/api/ponto/solicitacao` | Solicitar ajuste | ✓ |
+| `PUT` | `/api/ponto/{id}/aprovar` | Aprovar solicitação | ✓ |
 
 ### Folha de Pagamento
 
 | Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| GET | `/api/folha` | Listar folhas | ✅ |
-| POST | `/api/folha/gerar` | Gerar folha | ✅ |
-| GET | `/api/folha/{id}` | Obter folha | ✅ |
-| PUT | `/api/folha/{id}` | Atualizar folha | ✅ |
+|--------|----------|-----------|:----:|
+| `GET` | `/api/folha` | Listar folhas | ✓ |
+| `POST` | `/api/folha/gerar` | Gerar nova folha | ✓ |
+| `GET` | `/api/folha/{id}` | Detalhes da folha | ✓ |
+| `PUT` | `/api/folha/{id}` | Editar folha | ✓ |
+| `GET` | `/api/folha/{id}/pdf` | Export PDF | ✓ |
 
-_E muitos outros endpoints... Veja a documentação completa em `/docs`_
+**Documentação completa:** http://localhost:8000/docs
 
 ---
 
@@ -342,42 +322,70 @@ _E muitos outros endpoints... Veja a documentação completa em `/docs`_
 ### JWT Flow
 
 ```
-1. Login → POST /auth/login
-   {
-     "email": "user@example.com",
-     "password": "senha123"
-   }
-   
-   Response:
-   {
-     "access_token": "eyJ...",
-     "refresh_token": "eyJ...",
-     "token_type": "bearer"
-   }
-
-2. Usar access_token nas requisições
-   Authorization: Bearer eyJ...
-
-3. Quando expirar, renovar com refresh_token
-   POST /auth/refresh
-   {
-     "refresh_token": "eyJ..."
-   }
+┌─────────┐                                    ┌─────────┐
+│ Cliente │                                    │   API   │
+└────┬────┘                                    └────┬────┘
+     │                                              │
+     │  1. POST /auth/login                         │
+     │  { email, password }                         │
+     │ ──────────────────────────────────────────>  │
+     │                                              │
+     │  2. Valida credenciais                       │
+     │     Gera access_token (30min)                │
+     │     Gera refresh_token (7 dias)              │
+     │  <────────────────────────────────────────── │
+     │  { access_token, refresh_token }             │
+     │                                              │
+     │  3. Requisições autenticadas                 │
+     │  Authorization: Bearer <access_token>        │
+     │ ──────────────────────────────────────────>  │
+     │                                              │
+     │  4. Quando access_token expira               │
+     │  POST /auth/refresh                          │
+     │  { refresh_token }                           │
+     │ ──────────────────────────────────────────>  │
+     │                                              │
+     │  5. Novo access_token                        │
+     │  <────────────────────────────────────────── │
+     │  { access_token }                            │
+     │                                              │
 ```
 
-### Headers
+### Exemplo de Uso
 
-Todas as rotas protegidas precisam do header:
+```python
+# Login
+POST /api/auth/login
+{
+  "email": "user@example.com",
+  "password": "senha123"
+}
 
-```
+# Response
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+
+# Usar em requisições
+GET /api/users
 Authorization: Bearer <access_token>
+
+# Refresh quando expirar
+POST /api/auth/refresh
+{
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
 ```
 
 ### Permissões
 
-- **Admin**: Acesso total
-- **Gestor**: Gerencia sua empresa
-- **Colaborador**: Acesso limitado aos seus dados
+| Tipo | Acesso |
+|------|--------|
+| **admin** | Acesso total ao sistema |
+| **gestor** | Gerencia sua empresa e colaboradores |
+| **colaborador** | Acesso limitado aos próprios dados |
 
 ---
 
@@ -385,8 +393,8 @@ Authorization: Bearer <access_token>
 
 ### Principais Entidades
 
-#### User
 ```python
+# User
 - id: int (PK)
 - nome: str
 - email: str (unique)
@@ -394,40 +402,47 @@ Authorization: Bearer <access_token>
 - tipo_usuario: enum (admin|gestor|colaborador)
 - is_active: bool
 - created_at: datetime
-```
 
-#### Empresa
-```python
+# Empresa
 - id: int (PK)
 - razao_social: str
-- cnpj: str (unique)
+- cnpj: str (unique, 14 dígitos)
 - nome_fantasia: str
+- email: str
+- telefone: str
 - created_at: datetime
-```
 
-#### Colaborador
-```python
+# Colaborador
 - id: int (PK)
 - nome: str
-- cpf: str (unique)
+- cpf: str (unique, 11 dígitos)
 - email: str
-- cargo_id: int (FK)
-- empresa_id: int (FK)
+- cargo_id: int (FK → Cargo)
+- empresa_id: int (FK → Empresa)
 - data_admissao: date
 - salario: decimal
-```
+- is_active: bool
 
-#### RegistroPonto
-```python
+# RegistroPonto
 - id: int (PK)
-- colaborador_id: int (FK)
+- colaborador_id: int (FK → Colaborador)
 - data: date
 - entrada: time
 - saida: time
-- tipo: enum (normal|extra|falta)
+- tipo: enum (normal|extra|falta|atestado)
+- observacao: str
+
+# FolhaPagamento
+- id: int (PK)
+- empresa_id: int (FK → Empresa)
+- mes: int (1-12)
+- ano: int
+- status: enum (rascunho|aprovada|paga)
+- total_bruto: decimal
+- total_liquido: decimal
 ```
 
-_Veja todos os models em `app/models/`_
+Veja todos os models em `app/models/`
 
 ---
 
@@ -443,21 +458,33 @@ pytest --cov=app --cov-report=html
 # Teste específico
 pytest tests/test_auth.py -v
 
-# Ver cobertura
+# Ver relatório de coverage
 open htmlcov/index.html
 ```
 
-### Estrutura de Testes
+### Exemplo de Teste
 
 ```python
 # tests/test_auth.py
-def test_login(client):
+def test_login_success(client, test_user):
     response = client.post("/api/auth/login", json={
         "email": "test@example.com",
         "password": "test123"
     })
+    
     assert response.status_code == 200
-    assert "access_token" in response.json()
+    data = response.json()
+    assert "access_token" in data
+    assert "refresh_token" in data
+    assert data["token_type"] == "bearer"
+
+def test_login_invalid_credentials(client):
+    response = client.post("/api/auth/login", json={
+        "email": "wrong@example.com",
+        "password": "wrong"
+    })
+    
+    assert response.status_code == 401
 ```
 
 ---
@@ -466,20 +493,25 @@ def test_login(client):
 
 ### Azure App Service
 
-#### Configurações:
-- **Runtime**: Python 3.11
-- **Startup Command**: `python -m uvicorn app.main:app --host 0.0.0.0 --port 8000`
-- **Path**: `/backend` (se monorepo)
+#### Configuração
 
-#### Application Settings (Portal Azure):
+```yaml
+Runtime: Python 3.11
+Startup Command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+Path: /backend (monorepo)
 ```
+
+#### Application Settings
+
+```env
 ENVIRONMENT=production
-DATABASE_URL=postgresql://user:pass@azure-postgres.database.azure.com:5432/cfohub
+DATABASE_URL=postgresql://user:pass@azure-postgres.database.azure.com/cfohub
 REDIS_URL=redis://azure-redis.redis.cache.windows.net:6380/0?ssl=True
-SECRET_KEY=<secret-key-64-chars>
+SECRET_KEY=<64-char-secret-different-from-dev>
 FRONTEND_URL=https://cfohub.azurestaticapps.net
 DEBUG=false
 LOG_LEVEL=WARNING
+CORS_ORIGINS=https://cfohub.azurestaticapps.net
 ```
 
 ### Docker (Desenvolvimento)
@@ -497,18 +529,14 @@ docker run -p 8000:8000 --env-file .env cfohub-backend
 ## Comandos Úteis
 
 ```bash
-# Formatar código
-black app/
+# Code quality
+black app/                    # Formatar código
+flake8 app/                   # Linting
+mypy app/                     # Type checking
 
-# Lint
-flake8 app/
-
-# Type check
-mypy app/
-
-# Ver rotas
-uvicorn app.main:app --reload &
-curl http://localhost:8000/openapi.json | jq '.paths | keys'
+# Database
+python init_db.py             # Inicializar DB
+python -c "from app.database import engine; print(engine.url)"
 
 # Shell interativo
 python
@@ -517,21 +545,19 @@ python
 >>> db = SessionLocal()
 >>> db.query(User).all()
 
-# Gerar requirements.txt
+# Gerar requirements
 pip freeze > requirements.txt
+
+# Listar rotas
+python -c "from app.main import app; print([route.path for route in app.routes])"
 ```
 
 ---
 
 ## Padrões de Código
 
-### Nomenclatura
-- **Arquivos**: snake_case.py
-- **Classes**: PascalCase
-- **Funções**: snake_case
-- **Constantes**: UPPER_CASE
-
 ### Type Hints
+
 ```python
 from typing import List, Optional
 from app.schemas.user import UserCreate, UserResponse
@@ -540,11 +566,13 @@ async def create_user(
     user: UserCreate,
     db: Session
 ) -> UserResponse:
+    """Cria um novo usuário."""
     # implementação
     pass
 ```
 
 ### Docstrings
+
 ```python
 def get_user_by_email(email: str, db: Session) -> Optional[User]:
     """
@@ -555,9 +583,32 @@ def get_user_by_email(email: str, db: Session) -> Optional[User]:
         db: Sessão do banco de dados
         
     Returns:
-        User ou None se não encontrado
+        User se encontrado, None caso contrário
+        
+    Example:
+        >>> user = get_user_by_email("admin@example.com", db)
     """
     return db.query(User).filter(User.email == email).first()
+```
+
+### Nomenclatura
+
+```python
+# Arquivos: snake_case.py
+colaborador.py
+folha_pagamento.py
+
+# Classes: PascalCase
+class Colaborador(Base): ...
+class FolhaPagamento(Base): ...
+
+# Funções: snake_case
+def get_colaborador_by_cpf(): ...
+def calculate_folha(): ...
+
+# Constantes: UPPER_CASE
+MAX_FILE_SIZE = 5 * 1024 * 1024
+DEFAULT_PAGE_SIZE = 50
 ```
 
 ---
@@ -570,7 +621,7 @@ def get_user_by_email(email: str, db: Session) -> Optional[User]:
 # Verificar se PostgreSQL está rodando
 docker-compose ps db
 
-# Verificar logs
+# Ver logs
 docker-compose logs db
 
 # Testar conexão
@@ -582,30 +633,40 @@ psql postgresql://user:password@localhost:5432/cfohub_dev
 ```bash
 # Reinstalar dependências
 pip install -r requirements.txt --force-reinstall
+
+# Verificar ambiente virtual ativo
+which python  # Linux/macOS
+where python  # Windows
 ```
 
-### Erro de migração
+### Erro ao inicializar DB
 
 ```bash
-# Resetar banco (CUIDADO: apaga tudo)
+# Resetar banco (⚠ APAGA TUDO)
 docker-compose down -v
 docker-compose up -d db
+# Aguardar ~10s
 python init_db.py
+```
+
+### Porta 8000 ocupada
+
+```bash
+# Ver processo
+lsof -i :8000                # Linux/macOS
+netstat -ano | findstr :8000 # Windows
+
+# Matar processo
+kill -9 <PID>               # Linux/macOS
+taskkill /PID <PID> /F      # Windows
 ```
 
 ---
 
 ## Recursos
 
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
-- [SQLAlchemy Docs](https://docs.sqlalchemy.org/en/20/)
-- [Pydantic Docs](https://docs.pydantic.dev/)
-- [PostgreSQL Docs](https://www.postgresql.org/docs/)
+- [FastAPI Docs](https://fastapi.tiangolo.com/) - Framework oficial
+- [SQLAlchemy Docs](https://docs.sqlalchemy.org/en/20/) - ORM 2.0
+- [Pydantic Docs](https://docs.pydantic.dev/latest/) - Validação
+- [PostgreSQL Docs](https://www.postgresql.org/docs/) - Database
 
----
-
-<div align="center">
-
-[⬆ Voltar ao topo](#backend---cfo-x-saas-api-)
-
-</div>
