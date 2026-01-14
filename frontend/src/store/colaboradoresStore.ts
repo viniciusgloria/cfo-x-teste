@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ColaboradorCompleto } from '../types';
+import { getWelcomeEmailData } from '../utils/emailTemplates';
 
 export interface Colaborador {
   id: number;
@@ -135,29 +136,18 @@ export const useColaboradoresStore = create<ColaboradoresState>()(
             return state;
           }
 
-          // Simula envio de email (backend real necessário)
+          // Preparar dados do email usando template
           const docsStore = useDocumentosStore.getState();
           const docsObrigatorios = docsStore.getDocumentosObrigatorios(colaborador.cargo);
           
-          console.log(`
-            📧 E-mail de Boas-Vindas Enviado para ${colaborador.email}
-            
-            Olá ${colaborador.nome},
-            
-            Bem-vindo(a) à CenterFlow!
-            
-            Credenciais de Acesso:
-            - E-mail: ${colaborador.email}
-            - Senha temporária: Cfo@2024
-            
-            Link de acesso: https://cfo-hub.com/login
-            
-            Por favor, faça upload dos seguintes documentos obrigatórios:
-            ${docsObrigatorios.map(doc => `- ${doc}`).join('\n')}
-            
-            Atenciosamente,
-            Equipe CenterFlow
-          `);
+          const { subject, body } = getWelcomeEmailData(
+            colaborador.nome,
+            colaborador.email,
+            'Cfo@2024', // Senha temporária
+            docsObrigatorios
+          );
+          
+          console.log(`📧 ${subject}\n\nPara: ${colaborador.email}\n\n${body}`);
           
           toast.success(`E-mail de boas-vindas enviado para ${colaborador.email}!`);
           

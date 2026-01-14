@@ -1,7 +1,7 @@
 # PRD - CFO X SaaS
 
 **Versão:** 1.0 (Beta)  
-**Data de Atualização:** 13 de Janeiro de 2026  
+**Data de Atualização:** 13 de Janeiro de 2026 (Atualizado: Melhoria futura de templates de email)  
 **Status:** 🔄 Em Desenvolvimento - Beta  
 **Próximo Release:** CPA Dashboard (Estimado: Fim de Janeiro/2026)  
 
@@ -670,6 +670,14 @@ POST /api/email/send-test
 - Alerta Crítico
 - Bem-vindo (novo usuário)
 
+**Melhoria Futura (v1.3+):** Edição de corpo dos templates para despachos automáticos do sistema
+- Interface de edição visual para corpos de email
+- Suporte a placeholders dinâmicos (nome, empresa, etc.)
+- Preview em tempo real das alterações
+- Validação de HTML/template
+- Backup de versões anteriores
+- Controle de permissões (apenas admin)
+
 ---
 
 ### 🔀 Múltiplas Contas SMTP (v1.3+)
@@ -959,4 +967,4 @@ Empresa (tenant)
 
 ---
 
-**Última Atualização:** 13 de Janeiro de 2026
+**Última Atualização:** 13 de Janeiro de 2026 (Atualizado: Melhoria futura de templates de email)

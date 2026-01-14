@@ -63,6 +63,7 @@ export interface User {
   email: string;
   role: UserRole;
   avatar: string;
+  primeiro_acesso?: boolean;
   cargoId?: string; // ID do cargo
   setorId?: string; // ID do setor
   clienteId?: number; // ID do cliente vinculado (para role cliente)

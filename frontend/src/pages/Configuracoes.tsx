@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Settings, Plus, Pencil, Trash2, Search, History, Users, Eye, EyeOff, Building2, Clock, CreditCard, Palette, FileText, Zap, Home, UserCog, Award, FolderOpen, BarChart, Receipt, LayoutDashboard, UserCircle, Timer, FileText as FileTextIcon, Star, Target, CheckSquare, MessageSquare, MessageCircle, ThumbsUp, FileStack, Gift, BarChart3, UsersRound, DollarSign, FileSpreadsheet, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { Settings, Plus, Pencil, Trash2, Search, History, Users, Building2, Clock, CreditCard, Palette, FileText, Zap, Home, UserCog, Award, FolderOpen, BarChart, Receipt, LayoutDashboard, UserCircle, Timer, FileText as FileTextIcon, Star, Target, CheckSquare, MessageSquare, MessageCircle, ThumbsUp, FileStack, Gift, BarChart3, UsersRound, DollarSign, FileSpreadsheet, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
 import { Cargo, Setor } from '../types';
 // Card removed: no longer needed after maintenance UI removal
 import { Card } from '../components/ui/Card';
@@ -12,11 +12,12 @@ import { Modal } from '../components/ui/Modal';
 // removed resetHelpers import after removing maintenance UI
 import { FormError } from '../components/ui/FormError';
 import { isValidCNPJ, maxLength } from '../utils/validation';
+import api from '../services/api';
+import { getWelcomeEmailData } from '../utils/emailTemplates';
 import toast from 'react-hot-toast';
 import { useEmpresaStore } from '../store/empresaStore';
 import { useAuthStore } from '../store/authStore';
 import { useSystemStore } from '../store/systemStore';
-import { testOmieCredentials, OmieTestResult } from '../utils/omie';
 import { useCargosSetoresStore } from '../store/cargosSetoresStore';
 import { CargoModalAdvanced } from '../components/CargoModalAdvanced';
 import { SetorModalAdvanced } from '../components/SetorModalAdvanced';
@@ -35,7 +36,15 @@ import {
 export function Configuracoes() {
   const [active, setActive] = useState('empresa');
   const [empresa, setEmpresa] = useState({ nome: 'CFO Hub Ltda', cnpj: '12.345.678/0001-99', cidade: 'São Paulo' });
-  const [users, setUsers] = useState([
+  const [users, setUsers] = useState<Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    grupoId?: string;
+    grupoNome?: string;
+    empresa?: string;
+  }>>([
     { id: '1', name: 'João Silva', email: 'joao@cfocompany.com', role: 'admin' },
     { id: '2', name: 'Maria Santos', email: 'maria@cfocompany.com', role: 'colaborador' },
   ]);
@@ -44,7 +53,23 @@ export function Configuracoes() {
   const [toRemoveUser, setToRemoveUser] = useState<string | null>(null);
   
   const [editUserId, setEditUserId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ name: string; email: string; role: string }>({ name: '', email: '', role: 'colaborador' });
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState<{ 
+    name: string; 
+    email: string; 
+    role: string; 
+    empresa?: string;
+    grupoId?: string;
+  }>({ name: '', email: '', role: 'colaborador' });
+
+  // Estado para criação de usuário
+  const [createUserForm, setCreateUserForm] = useState<{
+    nome: string;
+    email: string;
+    role: string;
+    empresa?: string;
+  }>({ nome: '', email: '', role: 'colaborador' });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   // Estados para modais de Cargos e Setores
   const [cargoModalOpen, setCargoModalOpen] = useState(false);
@@ -88,7 +113,6 @@ export function Configuracoes() {
   const {
     updateEmailConfig,
     addOmieGrupo,
-    removeOmieGrupo,
     addClienteAcesso,
     toggleClienteAcesso,
     removeClienteAcesso,
@@ -109,19 +133,11 @@ export function Configuracoes() {
     searchSetores: searchSetoresFunction,
   } = useCargosSetoresStore();
 
-  const [novoGrupo, setNovoGrupo] = useState({ nome: '', descricao: '' });
+  const [novoGrupo, setNovoGrupo] = useState({ nome: '' });
+  const [grupoSelecionadoId, setGrupoSelecionadoId] = useState('');
+  const [criandoGrupoCliente, setCriandoGrupoCliente] = useState(false);
+  const [vincularGrupo, setVincularGrupo] = useState(false);
   const [clienteAcessoForm, setClienteAcessoForm] = useState({ nome: '', email: '', empresa: '', ativo: true });
-
-  // Teste de credenciais Omie (aba Omie)
-  const [omieTest, setOmieTest] = useState<{
-    appKey: string;
-    appSecret: string;
-    status: 'idle' | 'testing' | 'success' | 'error';
-    result?: OmieTestResult;
-    logs: string[];
-  }>({ appKey: '', appSecret: '', status: 'idle', logs: [] });
-  const [showTestKey, setShowTestKey] = useState(false);
-  const [showTestSecret, setShowTestSecret] = useState(false);
 
   // Estados para novas abas de Configurações
   const [configOperacional, setConfigOperacional] = useState({
@@ -255,55 +271,6 @@ export function Configuracoes() {
     funcionarios_cliente: 'funcionarios_cliente', // Sempre ativo para cliente
   };
 
-  // Persistence helpers for system Omie logs
-  const getSystemLogsKey = () => 'omie_logs_system';
-
-  const loadSavedSystemLogs = (): string[] => {
-    try {
-      const raw = localStorage.getItem(getSystemLogsKey());
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    } catch (e) {
-      // ignore
-    }
-    return [];
-  };
-
-  const saveSystemLogs = (logs: string[]) => {
-    try {
-      localStorage.setItem(getSystemLogsKey(), JSON.stringify(logs));
-    } catch (e) {
-      // ignore
-    }
-  };
-
-  const handleTestOmie = async () => {
-    if (omieTest.status === 'testing') return;
-    setOmieTest((p) => ({ ...p, status: 'testing' }));
-    try {
-      const res = await testOmieCredentials(omieTest.appKey, omieTest.appSecret);
-      const simulated = (res.details as any)?.simulated;
-      const prefix = simulated ? 'Simulação: ' : '';
-      const newLine = `${new Date().toLocaleString()}: ${res.ok ? 'OK' : 'ERRO'} - ${prefix}${res.message} (${res.latencyMs}ms)`;
-      const newLogs = [newLine, ...omieTest.logs].slice(0, 3);
-      setOmieTest((p) => ({ ...p, status: res.ok ? 'success' : 'error', result: res, logs: newLogs }));
-      saveSystemLogs(newLogs);
-    } catch (e) {
-      const newLine = `${new Date().toLocaleString()}: ERRO inesperado ao testar conexão`;
-      const newLogs = [newLine, ...omieTest.logs].slice(0, 3);
-      setOmieTest((p) => ({ ...p, status: 'error', logs: newLogs }));
-      saveSystemLogs(newLogs);
-    }
-  };
-
-  // load saved system logs on mount
-  useEffect(() => {
-    const saved = loadSavedSystemLogs();
-    if (saved && saved.length > 0) setOmieTest((p) => ({ ...p, logs: saved }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Carregar configurações de email existentes
   useEffect(() => {
     const systemConfig = useSystemStore.getState().config.emailConfig;
@@ -319,28 +286,194 @@ export function Configuracoes() {
     });
   }, []);
 
-  const handleConfirmRemove = (_reason?: string) => {
+  const handleConfirmRemove = async (_reason?: string) => {
     if (!toRemoveUser) return;
-    setUsers((prev) => prev.filter((u) => u.id !== toRemoveUser));
-    setToRemoveUser(null);
-    setConfirmOpen(false);
+    
+    try {
+      // TODO: Quando o backend estiver pronto, descomentar:
+      // await api.delete(`/users/${toRemoveUser}`);
+      
+      setUsers((prev) => prev.filter((u) => u.id !== toRemoveUser));
+      toast.success('Usuário removido com sucesso');
+    } catch (error: any) {
+      console.error('Erro ao remover usuário:', error);
+      toast.error(error.detail || 'Erro ao remover usuário');
+    } finally {
+      setToRemoveUser(null);
+      setConfirmOpen(false);
+    }
   };
 
   const openEditUser = (id: string) => {
     const u = users.find((x) => x.id === id);
     if (!u) return;
     setEditUserId(id);
-    setEditForm({ name: u.name, email: u.email, role: u.role });
+    setEditForm({ 
+      name: u.name, 
+      email: u.email, 
+      role: u.role,
+      empresa: u.empresa,
+      grupoId: u.grupoId
+    });
+    setEditModalOpen(true);
   };
 
-  const saveEditUser = () => {
+  const saveEditUser = async () => {
     if (!editForm.name.trim() || !editForm.email.trim()) {
       toast.error('Preencha nome e e-mail');
       return;
     }
-    setUsers((prev) => prev.map((u) => (u.id === editUserId ? { ...u, name: editForm.name, email: editForm.email, role: editForm.role } : u)));
-    toast.success('Usuário atualizado');
-    setEditUserId(null);
+
+    // Validar formato de e-mail
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editForm.email)) {
+      toast.error('E-mail inválido');
+      return;
+    }
+
+    if (editForm.role === 'cliente' && !editForm.empresa?.trim()) {
+      toast.error('Para clientes, preencha a empresa');
+      return;
+    }
+
+    try {
+      // Preparar dados para o backend
+      const updateData = {
+        nome: editForm.name,
+        email: editForm.email,
+        role: editForm.role,
+        ...(editForm.role === 'cliente' && {
+          empresa: editForm.empresa,
+          ...(editForm.grupoId && { grupoId: editForm.grupoId })
+        })
+      };
+
+      // TODO: Quando o backend estiver pronto, descomentar:
+      // await api.put(`/users/${editUserId}`, updateData);
+
+      // Atualizar estado local
+      const grupoNome = editForm.grupoId 
+        ? config.omieConfig.grupos.find(g => g.id === editForm.grupoId)?.nome 
+        : undefined;
+
+      setUsers((prev) => prev.map((u) => 
+        u.id === editUserId 
+          ? { 
+              ...u, 
+              name: editForm.name, 
+              email: editForm.email, 
+              role: editForm.role,
+              empresa: editForm.empresa,
+              grupoId: editForm.grupoId,
+              grupoNome
+            } 
+          : u
+      ));
+      
+      toast.success('Usuário atualizado com sucesso');
+      setEditModalOpen(false);
+      setEditUserId(null);
+    } catch (error: any) {
+      console.error('Erro ao atualizar usuário:', error);
+      toast.error(error.detail || 'Erro ao atualizar usuário');
+    }
+  };
+
+  const createUser = async () => {
+    if (!createUserForm.nome.trim() || !createUserForm.email.trim()) {
+      toast.error('Preencha nome e e-mail');
+      return;
+    }
+
+    // Validar formato de e-mail
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(createUserForm.email)) {
+      toast.error('E-mail inválido');
+      return;
+    }
+
+    if (createUserForm.role === 'cliente' && !createUserForm.empresa?.trim()) {
+      toast.error('Para clientes, preencha a empresa');
+      return;
+    }
+
+    let resolvedGrupoId = grupoSelecionadoId;
+    let resolvedGrupoNome = '';
+
+    if (createUserForm.role === 'cliente' && vincularGrupo) {
+      const existingGrupos = useSystemStore.getState().config.omieConfig.grupos;
+
+      if (!resolvedGrupoId && !novoGrupo.nome.trim()) {
+        toast.error('Selecione ou crie um grupo para clientes');
+        return;
+      }
+
+      if (!resolvedGrupoId && novoGrupo.nome.trim()) {
+        addOmieGrupo({ nome: novoGrupo.nome.trim() });
+        const atualizados = useSystemStore.getState().config.omieConfig.grupos;
+        resolvedGrupoId = atualizados[atualizados.length - 1]?.id || '';
+        resolvedGrupoNome = novoGrupo.nome.trim();
+      } else {
+        const found = existingGrupos.find((g) => g.id === resolvedGrupoId);
+        resolvedGrupoNome = found?.nome || '';
+      }
+
+      if (!resolvedGrupoId) {
+        toast.error('Não foi possível criar/atribuir o grupo');
+        return;
+      }
+    }
+
+    setIsCreatingUser(true);
+
+    try {
+      const userData = {
+        nome: createUserForm.nome,
+        email: createUserForm.email,
+        senha: 'Cfo123@@',
+        role: createUserForm.role,
+        ...(createUserForm.role === 'cliente' && { 
+          empresa: createUserForm.empresa,
+          ...(resolvedGrupoId && { grupoId: resolvedGrupoId })
+        }),
+      };
+
+      await api.post('/users', userData);
+
+      // Add to local state
+      const newUser = {
+        id: Date.now().toString(), // Temporary ID
+        name: createUserForm.nome,
+        email: createUserForm.email,
+        role: createUserForm.role,
+        grupoId: resolvedGrupoId || undefined,
+        grupoNome: resolvedGrupoNome || undefined,
+      };
+      setUsers(prev => [...prev, newUser]);
+
+      // Simular envio de email de boas vindas
+      const { subject, body } = getWelcomeEmailData(
+        createUserForm.nome,
+        createUserForm.email,
+        'Cfo123@@',
+        createUserForm.role,
+        undefined, // requiredDocuments - pode ser implementado depois
+        createUserForm.empresa // company para clientes
+      );
+      console.log(`📧 ${subject}\n\nPara: ${createUserForm.email}\n\n${body}`);
+
+      toast.success('Usuário criado com sucesso');
+      setCreateUserForm({ nome: '', email: '', role: 'colaborador' });
+      setGrupoSelecionadoId('');
+      setNovoGrupo({ nome: '' });
+      setCriandoGrupoCliente(false);
+      setVincularGrupo(false);
+    } catch (error: any) {
+      console.error('Erro ao criar usuário:', error);
+      toast.error(error.detail || 'Erro ao criar usuário');
+    } finally {
+      setIsCreatingUser(false);
+    }
   };
 
   // Funções de Cargos
@@ -504,16 +637,6 @@ export function Configuracoes() {
       setIsSavingEmail(false);
       toast.success('Configuração de e-mail salva com sucesso');
     }, 800);
-  };
-
-  const handleAddGrupoOmie = () => {
-    if (!novoGrupo.nome.trim()) {
-      toast.error('Informe o nome do grupo');
-      return;
-    }
-    addOmieGrupo({ nome: novoGrupo.nome.trim(), descricao: novoGrupo.descricao.trim() });
-    setNovoGrupo({ nome: '', descricao: '' });
-    toast.success('Grupo Omie adicionado');
   };
 
   const handleAddClienteAcesso = () => {
@@ -797,8 +920,6 @@ export function Configuracoes() {
           tabs={[
             { id: 'empresa', label: 'Empresa' },
             { id: 'usuarios', label: 'Usuários' },
-            { id: 'clientes', label: 'Clientes' },
-            { id: 'omie', label: 'Omie' },
             { id: 'emails', label: 'E-mails' },
             { id: 'estrutura', label: 'Estrutura Organizacional' },
             { id: 'permissoes', label: 'Permissões' },
@@ -918,7 +1039,164 @@ export function Configuracoes() {
           {/* Agora integrada na aba Empresa como seção */}
 
           {active === 'usuarios' && (
-            <div className="mt-4">
+            <div className="mt-4 space-y-6">
+              {/* Info sobre integração backend */}
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  <strong>📋 Preparado para Backend:</strong> A aba Usuários está estruturada e pronta para integração. 
+                  Os payloads incluem todos os campos necessários (nome, email, role, empresa, grupoId). 
+                  Veja os TODOs no código para endpoints: <code className="text-xs bg-amber-100 dark:bg-amber-900/50 px-1 rounded">POST /users</code>, 
+                  <code className="text-xs bg-amber-100 dark:bg-amber-900/50 px-1 rounded mx-1">PUT /users/:id</code>, 
+                  <code className="text-xs bg-amber-100 dark:bg-amber-900/50 px-1 rounded">DELETE /users/:id</code>
+                </p>
+              </div>
+
+              {/* Formulário de Criação de Usuário - Apenas para Admin */}
+              {user?.role === 'admin' && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">
+                    Criar Novo Usuário
+                  </h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Nome do Usuário
+                      </label>
+                      <Input
+                        value={createUserForm.nome}
+                        onChange={(e) => setCreateUserForm({ ...createUserForm, nome: e.target.value })}
+                        placeholder="Digite o nome completo"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        E-mail de Acesso
+                      </label>
+                      <Input
+                        type="email"
+                        value={createUserForm.email}
+                        onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
+                        placeholder="usuario@empresa.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Tipo de Acesso
+                      </label>
+                      <select
+                        value={createUserForm.role}
+                        onChange={(e) => setCreateUserForm({ ...createUserForm, role: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      >
+                        <option value="admin">Administrador</option>
+                        <option value="gestor">Gestor</option>
+                        <option value="colaborador">Colaborador</option>
+                        <option value="cliente">Cliente</option>
+                      </select>
+                    </div>
+                    {createUserForm.role === 'cliente' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Empresa/Cliente
+                          </label>
+                          <Input
+                            value={createUserForm.empresa || ''}
+                            onChange={(e) => setCreateUserForm({ ...createUserForm, empresa: e.target.value })}
+                            placeholder="Nome da empresa"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={vincularGrupo}
+                              onChange={(e) => {
+                                setVincularGrupo(e.target.checked);
+                                if (!e.target.checked) {
+                                  setGrupoSelecionadoId('');
+                                  setCriandoGrupoCliente(false);
+                                  setNovoGrupo({ nome: '' });
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            Vincular cliente a um grupo
+                          </label>
+                        </div>
+
+                        {vincularGrupo && (
+                          <>
+                            {(config.omieConfig.grupos.length > 0 || criandoGrupoCliente) && (
+                              <div className="md:col-span-2 space-y-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                                  Grupo do cliente
+                                </label>
+                                <div className="grid gap-2 md:grid-cols-[2fr,1fr]">
+                                  <select
+                                    value={grupoSelecionadoId}
+                                    onChange={(e) => {
+                                      setGrupoSelecionadoId(e.target.value);
+                                      setCriandoGrupoCliente(false);
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                    disabled={criandoGrupoCliente}
+                                  >
+                                    <option value="">Selecione um grupo existente</option>
+                                    {config.omieConfig.grupos.map((grupo) => (
+                                      <option key={grupo.id} value={grupo.id}>{grupo.nome}</option>
+                                    ))}
+                                  </select>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setCriandoGrupoCliente((v) => !v);
+                                      setGrupoSelecionadoId('');
+                                    }}
+                                  >
+                                    {criandoGrupoCliente ? 'Cancelar' : 'Criar grupo'}
+                                  </Button>
+                                </div>
+                                {criandoGrupoCliente && (
+                                  <Input
+                                    placeholder="Nome do grupo"
+                                    value={novoGrupo.nome}
+                                    onChange={(e) => setNovoGrupo({ nome: e.target.value })}
+                                  />
+                                )}
+                              </div>
+                            )}
+                            {config.omieConfig.grupos.length === 0 && !criandoGrupoCliente && (
+                              <div className="md:col-span-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => setCriandoGrupoCliente(true)}
+                                  className="w-full"
+                                >
+                                  Criar primeiro grupo
+                                </Button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <Button onClick={createUser} loading={isCreatingUser}>
+                      Criar Usuário
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    <strong>Nota:</strong> A senha padrão é "Cfo123@@". No primeiro acesso, o usuário será orientado a alterar a senha.
+                  </p>
+                </div>
+              )}
+
+              {/* Lista de Usuários */}
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
                 {users.map((u) => (
@@ -926,8 +1204,14 @@ export function Configuracoes() {
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="text-sm text-gray-500 dark:text-slate-400">{u.role}</div>
-                        <div className="font-medium text-gray-800">{u.name}</div>
+                        <div className="font-medium text-gray-800 dark:text-gray-200">{u.name}</div>
                         <div className="text-sm text-gray-600 dark:text-slate-300">{u.email}</div>
+                        {u.empresa && (
+                          <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Empresa: {u.empresa}</div>
+                        )}
+                        {u.grupoNome && (
+                          <div className="text-xs text-gray-500 dark:text-slate-400">Grupo: {u.grupoNome}</div>
+                        )}
                       </div>
                       <div className="flex flex-col gap-2 ml-4">
                         <Button variant="ghost" aria-label={`Editar usuário ${u.name}`} onClick={() => openEditUser(u.id)}>Editar</Button>
@@ -946,15 +1230,19 @@ export function Configuracoes() {
                       <th className="p-2">Nome</th>
                       <th className="p-2">E-mail</th>
                       <th className="p-2">Cargo</th>
+                      <th className="p-2">Empresa</th>
+                      <th className="p-2">Grupo</th>
                       <th className="p-2">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id} className="border-t">
+                      <tr key={u.id} className="border-t dark:border-slate-700">
                         <td className="p-2">{u.name}</td>
                         <td className="p-2">{u.email}</td>
                         <td className="p-2">{u.role}</td>
+                        <td className="p-2 text-sm">{u.empresa || '—'}</td>
+                        <td className="p-2 text-sm">{u.grupoNome || '—'}</td>
                         <td className="p-2">
                           <div className="flex gap-2">
                             <Button variant="ghost" aria-label={`Editar usuário ${u.name}`} onClick={() => openEditUser(u.id)}>Editar</Button>
@@ -1041,116 +1329,6 @@ export function Configuracoes() {
                         </div>
                       </div>
                     ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {active === 'omie' && (
-            <div className="mt-4 space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                <h4 className="font-semibold text-emerald-900">Grupos Omie</h4>
-                <p className="text-sm text-emerald-800">Cadastre grupos (holdings) para associar clientes na aba de cadastro.</p>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <Input
-                  placeholder="Nome do grupo"
-                  value={novoGrupo.nome}
-                  onChange={(e) => setNovoGrupo({ ...novoGrupo, nome: e.target.value })}
-                />
-                <Input
-                  placeholder="Descrição (opcional)"
-                  value={novoGrupo.descricao}
-                  onChange={(e) => setNovoGrupo({ ...novoGrupo, descricao: e.target.value })}
-                />
-                <Button onClick={handleAddGrupoOmie}>Adicionar grupo</Button>
-              </div>
-
-              <div className="border border-gray-200 dark:border-slate-700 rounded-lg">
-                <div className="p-3 border-b text-sm font-semibold text-gray-700 dark:text-slate-200">Grupos cadastrados</div>
-                {config.omieConfig.grupos.length === 0 ? (
-                  <div className="p-4 text-sm text-gray-500 dark:text-slate-400">Nenhum grupo cadastrado.</div>
-                ) : (
-                  <div className="divide-y">
-                    {config.omieConfig.grupos.map((grupo) => (
-                      <div key={grupo.id} className="p-4 flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold text-gray-800">{grupo.nome}</div>
-                          {grupo.descricao && <div className="text-sm text-gray-600 dark:text-slate-300">{grupo.descricao}</div>}
-                        </div>
-                        <Button size="sm" variant="ghost" onClick={() => removeOmieGrupo(grupo.id)}>Remover</Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Teste de credenciais Omie */}
-              <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50">
-                <h4 className="font-semibold text-emerald-900 mb-2">Testar conexão Omie</h4>
-                <p className="text-sm text-emerald-800 mb-3">Informe App Key e App Secret e execute um teste rápido de conexão.</p>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="relative">
-                    <Input
-                      type={showTestKey ? 'text' : 'password'}
-                      placeholder="App Key"
-                      value={omieTest.appKey}
-                      onChange={(e) => setOmieTest((p) => ({ ...p, appKey: e.target.value }))}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 dark:text-slate-300 hover:text-gray-800"
-                      aria-label={showTestKey ? 'Ocultar App Key' : 'Mostrar App Key'}
-                      onClick={() => setShowTestKey((v) => !v)}
-                    >
-                      {showTestKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      type={showTestSecret ? 'text' : 'password'}
-                      placeholder="App Secret"
-                      value={omieTest.appSecret}
-                      onChange={(e) => setOmieTest((p) => ({ ...p, appSecret: e.target.value }))}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 dark:text-slate-300 hover:text-gray-800"
-                      aria-label={showTestSecret ? 'Ocultar App Secret' : 'Mostrar App Secret'}
-                      onClick={() => setShowTestSecret((v) => !v)}
-                    >
-                      {showTestSecret ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                  <Button onClick={handleTestOmie} loading={omieTest.status === 'testing'}>
-                    {omieTest.status === 'testing' ? 'Testando...' : 'Testar conexão'}
-                  </Button>
-                </div>
-
-                {omieTest.status !== 'idle' && (
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      omieTest.status === 'success' ? 'bg-green-100 text-green-700' : omieTest.status === 'error' ? 'bg-red-100 text-red-700' : 'bg-slate-200 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200'
-                    }`}>
-                      {omieTest.status === 'success' ? 'Conexão válida' : omieTest.status === 'error' ? 'Falha na conexão' : 'Aguardando'}
-                    </span>
-                    {/* description moved below logs to avoid duplication */}
-                  </div>
-                )}
-
-                {omieTest.logs.length > 0 && (
-                  <div className="mt-3">
-                    <div className="text-xs font-semibold text-gray-700 dark:text-slate-200 mb-1">Logs recentes</div>
-                    <ul className="text-xs text-gray-600 dark:text-slate-300 list-disc pl-4 space-y-1">
-                      {omieTest.logs.map((l, i) => (
-                        <li key={i}>{l}</li>
-                      ))}
-                    </ul>
-                    {/* description removed — keep logs only */}
                   </div>
                 )}
               </div>
@@ -1722,7 +1900,7 @@ export function Configuracoes() {
           )}
 
           {active === 'integracoes' && (
-            <div className="text-sm text-gray-600 dark:text-slate-300 mt-4">Integrações e webhooks (mock)</div>
+            <div className="text-sm text-gray-600 dark:text-slate-300 mt-4">Página em desenvolvimento.</div>
           )}
 
           {active === 'permissoes' && (
@@ -1956,6 +2134,85 @@ export function Configuracoes() {
         </Tabs>
 
       {/* Manutenção de dados removida */}
+
+      {/* Modal de Edição de Usuário */}
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Usuário">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nome do Usuário
+            </label>
+            <Input
+              value={editForm.name}
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              placeholder="Digite o nome completo"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              E-mail de Acesso
+            </label>
+            <Input
+              type="email"
+              value={editForm.email}
+              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              placeholder="usuario@empresa.com"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Tipo de Acesso
+            </label>
+            <select
+              value={editForm.role}
+              onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            >
+              <option value="admin">Administrador</option>
+              <option value="gestor">Gestor</option>
+              <option value="colaborador">Colaborador</option>
+              <option value="cliente">Cliente</option>
+            </select>
+          </div>
+          {editForm.role === 'cliente' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Empresa/Cliente
+                </label>
+                <Input
+                  value={editForm.empresa || ''}
+                  onChange={(e) => setEditForm({ ...editForm, empresa: e.target.value })}
+                  placeholder="Nome da empresa"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Grupo (Opcional)
+                </label>
+                <select
+                  value={editForm.grupoId || ''}
+                  onChange={(e) => setEditForm({ ...editForm, grupoId: e.target.value || undefined })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="">Nenhum grupo</option>
+                  {config.omieConfig.grupos.map((grupo) => (
+                    <option key={grupo.id} value={grupo.id}>{grupo.nome}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+          <div className="flex gap-3 justify-end pt-4">
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={saveEditUser}>
+              Salvar Alterações
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <ConfirmModal isOpen={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleConfirmRemove} title="Remover usuário" />
 
