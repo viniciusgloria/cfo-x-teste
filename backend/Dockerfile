@@ -1,5 +1,4 @@
 # APENAS PARA DESENVOLVIMENTO LOCAL COM DOCKER
-# Azure App Service NÃO usa este arquivo
 
 FROM python:3.11-slim
 

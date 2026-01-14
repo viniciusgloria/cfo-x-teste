@@ -83,39 +83,6 @@ docker system prune -a
 
 ---
 
-## Azure CLI
-
-```bash
-# Login
-az login
-
-# Listar App Services
-az webapp list --output table
-
-# Ver logs em tempo real
-az webapp log tail --name cfohub-backend-staging --resource-group cfohub-rg
-
-# Restart App Service
-az webapp restart --name cfohub-backend-staging --resource-group cfohub-rg
-
-# Listar variáveis de ambiente
-az webapp config appsettings list --name cfohub-backend-staging --resource-group cfohub-rg
-
-# Adicionar variável
-az webapp config appsettings set --name cfohub-backend-staging --resource-group cfohub-rg --settings SECRET_KEY="your-key"
-
-# SSH no container Azure
-az webapp ssh --name cfohub-backend-staging --resource-group cfohub-rg
-
-# Rodar migration no Azure
-az webapp ssh --name cfohub-backend-staging --resource-group cfohub-rg
-# Depois dentro do SSH:
-cd /home/site/wwwroot/backend
-python init_db.py
-```
-
----
-
 ## Backend (Python)
 
 ```bash
@@ -262,9 +229,6 @@ docker-compose logs -f -t backend
 
 # Ver últimas 100 linhas
 docker-compose logs --tail=100 backend
-
-# Azure - métricas
-az monitor metrics list --resource <app-service-id> --metric "CpuPercentage"
 ```
 
 ---
@@ -294,7 +258,6 @@ gitleaks detect --source . --verbose
 2. **Sempre teste localmente** antes de subir para staging
 3. **Use SECRET_KEY diferente** em cada ambiente
 4. **Faça backup do banco** antes de rodar migrations em produção
-5. **Veja os logs** quando algo der errado no Azure
 
 ---
 
