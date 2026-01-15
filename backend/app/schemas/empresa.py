@@ -7,6 +7,31 @@ from datetime import datetime
 
 
 # Empresa
+class EmpresaUpsert(BaseModel):
+    """Create or update company settings"""
+    nome: str
+    cnpj: Optional[str] = None
+    razao_social: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    site: Optional[str] = None
+    endereco: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    logo: Optional[str] = None
+    cor_primaria: Optional[str] = None
+    cor_secundaria: Optional[str] = None
+    jornada_horas: Optional[float] = None
+    jornada_dias: Optional[int] = None
+    tolerancia_minutos: Optional[int] = None
+    ponto_ativo: Optional[bool] = None
+    solicitacoes_ativo: Optional[bool] = None
+    okrs_ativo: Optional[bool] = None
+    mural_ativo: Optional[bool] = None
+    configuracoes: Optional[dict] = None
+
+
 class EmpresaUpdate(BaseModel):
     """Update company settings"""
     nome: Optional[str] = None

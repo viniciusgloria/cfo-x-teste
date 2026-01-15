@@ -110,6 +110,8 @@ export function Configuracoes() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{success: boolean; message: string} | null>(null);
 
+  const { nomeEmpresa } = useEmpresaStore();
+
   const {
     updateEmailConfig,
     addOmieGrupo,
@@ -581,13 +583,56 @@ export function Configuracoes() {
   
 
   // validate empresa form on save
-  const handleSaveEmpresa = () => {
-    // Validação simplificada - a empresa já é pré-preenchida com dados válidos
+  const handleSaveEmpresa = async () => {
     setIsSavingEmpresa(true);
-    setTimeout(() => {
+    try {
+      const enderecoParts = [
+        informacoesLegais.endereco,
+        informacoesLegais.numero_endereco,
+        informacoesLegais.complemento_endereco,
+        informacoesLegais.bairro,
+      ]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean);
+
+      const payload = {
+        nome: (informacoesLegais.nome_empresa || nomeEmpresa || 'CFO Hub').trim(),
+        cnpj: informacoesLegais.cnpj?.trim() || null,
+        razao_social: informacoesLegais.nome_empresa?.trim() || null,
+        email: informacoesLegais.email_fiscal?.trim() || null,
+        telefone: informacoesLegais.telefone_principal?.trim() || null,
+        site: informacoesLegais.website?.trim() || null,
+        endereco: enderecoParts.length ? enderecoParts.join(', ') : null,
+        cidade: informacoesLegais.cidade?.trim() || null,
+        estado: informacoesLegais.estado || null,
+        cep: informacoesLegais.cep?.trim() || null,
+        logo: identidadeVisual.logo_sidebar || null,
+        cor_primaria: identidadeVisual.cor_primaria || null,
+        cor_secundaria: identidadeVisual.cor_secundaria || null,
+        jornada_horas: configPonto.jornada_horas,
+        jornada_dias: configPonto.jornada_dias,
+        tolerancia_minutos: configPonto.tolerancia_minutos,
+        ponto_ativo: recursos.ponto_ativo,
+        solicitacoes_ativo: recursos.solicitacoes_ativo,
+        okrs_ativo: recursos.okrs_ativo,
+        mural_ativo: recursos.mural_ativo,
+        configuracoes: {
+          informacoes_legais: informacoesLegais,
+          identidade_visual: identidadeVisual,
+          config_ponto: configPonto,
+          dados_bancarios: dadosBancarios,
+          config_operacional: configOperacional,
+          recursos,
+        },
+      };
+
+      await api.post('/api/empresa', payload);
+    } catch (error: any) {
+      console.error('Erro ao salvar empresa:', error);
+      toast.error(error?.message || 'Erro ao salvar empresa');
+    } finally {
       setIsSavingEmpresa(false);
-      // Não mostrar mensagem redundante já que as seções individuais mostram suas próprias mensagens
-    }, 800);
+    }
   };
 
   const handleTestSMTPConnection = async () => {
@@ -2368,8 +2413,3 @@ export function Configuracoes() {
     </div>
   );
 }
-
-
-
-
-
