@@ -66,9 +66,11 @@ export function Login() {
 
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 450));
-      login(email, password);
+      await login(email, password);
       toast.success('Login realizado com sucesso.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Falha no login.';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -77,9 +79,7 @@ export function Login() {
   const handleGoogleLogin = async () => {
     setLoadingGoogle(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 480));
-      login('google@cfocompany.com', 'oauth-google');
-      toast.success('Login via Google simulado.');
+      toast.error('Login Google nao configurado.');
     } finally {
       setLoadingGoogle(false);
     }

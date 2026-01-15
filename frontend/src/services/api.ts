@@ -16,13 +16,15 @@ class ApiService {
   }
 
   private getAuthToken(): string | null {
-    const authData = localStorage.getItem('auth-storage');
-    if (authData) {
+    const storageKeys = ['cfo:auth', 'auth-storage'];
+    for (const storageKey of storageKeys) {
+      const authData = localStorage.getItem(storageKey);
+      if (!authData) continue;
       try {
         const parsed = JSON.parse(authData);
-        return parsed.state?.token || null;
+        return parsed.state?.accessToken || parsed.state?.token || null;
       } catch {
-        return null;
+        continue;
       }
     }
     return null;
@@ -47,7 +49,7 @@ class ApiService {
       ...(fetchOptions.headers as Record<string, string>),
     };
 
-    if (token) {
+    if (token && !headers.Authorization) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
@@ -69,33 +71,36 @@ class ApiService {
     return response.json();
   }
 
-  async get<T>(endpoint: string, params?: Record<string, string | number>): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET', params });
+  async get<T>(endpoint: string, params?: Record<string, string | number>, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'GET', params });
   }
 
-  async post<T>(endpoint: string, data?: unknown): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown, options: RequestOptions = {}): Promise<T> {
     return this.request<T>(endpoint, {
+      ...options,
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async put<T>(endpoint: string, data?: unknown): Promise<T> {
+  async put<T>(endpoint: string, data?: unknown, options: RequestOptions = {}): Promise<T> {
     return this.request<T>(endpoint, {
+      ...options,
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+  async patch<T>(endpoint: string, data?: unknown, options: RequestOptions = {}): Promise<T> {
     return this.request<T>(endpoint, {
+      ...options,
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+  async delete<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
 }
 

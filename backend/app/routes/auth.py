@@ -53,7 +53,7 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
     
     # Create access token (15 min)
     access_token = create_access_token(
-        data={"sub": user.id, "email": user.email, "role": user.role.value}
+        data={"sub": str(user.id), "email": user.email, "role": user.role.value}
     )
     
     # Create refresh token (7 days)
@@ -202,7 +202,7 @@ async def refresh_access_token(
     
     # Criar novo access token
     new_access_token = create_access_token(
-        data={"sub": user.id, "email": user.email, "role": user.role.value}
+        data={"sub": str(user.id), "email": user.email, "role": user.role.value}
     )
     
     # Criar novo refresh token (rotation)
