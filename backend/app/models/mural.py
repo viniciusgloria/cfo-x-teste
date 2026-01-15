@@ -1,5 +1,7 @@
 """
-Mural (Social wall) models
+Modelos de Mural.
+
+Implementa posts, comentários e reações para comunicação interna.
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import relationship
@@ -9,7 +11,7 @@ import enum
 
 
 class TipoPost(str, enum.Enum):
-    """Post type"""
+    """Categoria do post usada em rótulos e filtros."""
     AVISO = "aviso"
     COMUNICADO = "comunicado"
     CELEBRACAO = "celebracao"
@@ -17,67 +19,67 @@ class TipoPost(str, enum.Enum):
 
 
 class Post(Base):
-    """Social wall posts"""
+    """Post no mural com mídia opcional e reações."""
     __tablename__ = "posts"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
-    # Post content
+    # Campos principais do post.
     tipo = Column(SQLEnum(TipoPost), nullable=False)
     titulo = Column(String(255), nullable=False)
     conteudo = Column(Text, nullable=False)
     
-    # Media
+    # Mídias armazenadas como texto ou JSON.
     imagem = Column(String(500))
-    anexos = Column(Text)  # JSON array
+    anexos = Column(Text)  # Lista em JSON
     
-    # Visibility
+    # Fixado mantém posts importantes em destaque.
     fixado = Column(Boolean, default=False)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Relationships
+    # Exclusão em cascata garante comentários/reações removidos com o post.
     user = relationship("User", backref="posts")
     comments = relationship("PostComment", back_populates="post", cascade="all, delete-orphan")
     reactions = relationship("PostReaction", back_populates="post", cascade="all, delete-orphan")
 
 
 class PostComment(Base):
-    """Comments on posts"""
+    """Comentário feito em um post."""
     __tablename__ = "post_comments"
     
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
-    # Comment content
+    # Corpo do comentário.
     conteudo = Column(Text, nullable=False)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
-    # Relationships
+    # Referências ao post e ao autor.
     post = relationship("Post", back_populates="comments")
     user = relationship("User")
 
 
 class PostReaction(Base):
-    """Reactions to posts"""
+    """Reação (emoji) a um post."""
     __tablename__ = "post_reactions"
     
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
-    # Reaction type (emoji)
-    tipo = Column(String(50), nullable=False)  # like, love, celebrate, etc.
+    # String simples para permitir emojis customizados.
+    tipo = Column(String(50), nullable=False)  # curtir, amar, celebrar, etc.
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
-    # Relationships
+    # Referências ao post e ao usuário que reagiu.
     post = relationship("Post", back_populates="reactions")
     user = relationship("User")

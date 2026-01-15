@@ -1,5 +1,7 @@
 """
-Solicitação (Request) model
+Modelo de Solicitação.
+
+Registra solicitações de colaboradores e o fluxo de aprovação.
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Enum as SQLEnum, Float
 from sqlalchemy.orm import relationship
@@ -9,7 +11,7 @@ import enum
 
 
 class TipoSolicitacao(str, enum.Enum):
-    """Request types"""
+    """Categorias de solicitação; define campos aplicáveis."""
     MATERIAL = "material"
     SALA = "sala"
     REEMBOLSO = "reembolso"
@@ -19,7 +21,7 @@ class TipoSolicitacao(str, enum.Enum):
 
 
 class StatusSolicitacao(str, enum.Enum):
-    """Request status"""
+    """Status de aprovação da solicitação."""
     PENDENTE = "pendente"
     APROVADA = "aprovada"
     REJEITADA = "rejeitada"
@@ -27,28 +29,28 @@ class StatusSolicitacao(str, enum.Enum):
 
 
 class Solicitacao(Base):
-    """Request/Approval model"""
+    """Solicitação genérica que pode ser aprovada ou rejeitada."""
     __tablename__ = "solicitacoes"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
-    # Request details
+    # Descrição principal da solicitação.
     tipo = Column(SQLEnum(TipoSolicitacao), nullable=False)
     titulo = Column(String(255), nullable=False)
     descricao = Column(Text)
     
-    # Specific fields based on type
-    data_inicio = Column(DateTime(timezone=True))  # For ferias, home_office
+    # Campos opcionais conforme o tipo.
+    data_inicio = Column(DateTime(timezone=True))  # Para férias, home office
     data_fim = Column(DateTime(timezone=True))
-    valor = Column(Float)  # For reembolso
-    sala = Column(String(100))  # For sala
-    quantidade = Column(Integer)  # For material
+    valor = Column(Float)  # Para reembolso
+    sala = Column(String(100))  # Para sala
+    quantidade = Column(Integer)  # Para material
     
-    # Files/attachments
-    anexos = Column(Text)  # JSON array of file URLs
+    # Lista de anexos em JSON com URLs.
+    anexos = Column(Text)
     
-    # Status and approval
+    # Dados do fluxo de aprovação.
     status = Column(SQLEnum(StatusSolicitacao), default=StatusSolicitacao.PENDENTE, nullable=False)
     aprovador_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     resposta = Column(Text)
@@ -58,6 +60,6 @@ class Solicitacao(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     data_aprovacao = Column(DateTime(timezone=True))
     
-    # Relationships
+    # Relacionamentos separados para solicitante e aprovador.
     user = relationship("User", foreign_keys=[user_id], backref="solicitacoes")
     aprovador = relationship("User", foreign_keys=[aprovador_id])

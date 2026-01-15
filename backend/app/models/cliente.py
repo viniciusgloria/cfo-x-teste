@@ -1,5 +1,7 @@
 """
-Cliente (Client/Customer) model
+Modelo de Cliente.
+
+Representa dados de CRM e contrato de cada cliente.
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import relationship
@@ -9,7 +11,7 @@ import enum
 
 
 class StatusContrato(str, enum.Enum):
-    """Contract status"""
+    """Status do ciclo de vida do contrato do cliente."""
     ATIVO = "ativo"
     INATIVO = "inativo"
     SUSPENSO = "suspenso"
@@ -17,31 +19,31 @@ class StatusContrato(str, enum.Enum):
 
 
 class Cliente(Base):
-    """Client/Customer CRM"""
+    """Registro de cliente usado por CRM e cobrança."""
     __tablename__ = "clientes"
     
     id = Column(Integer, primary_key=True, index=True)
     
-    # Basic info
+    # Identificação básica.
     nome = Column(String(255), nullable=False, index=True)
     cnpj = Column(String(18), unique=True)
     razao_social = Column(String(255))
     
-    # Contact
+    # Contatos principais.
     email = Column(String(255))
     telefone = Column(String(20))
     endereco = Column(String(500))
     
-    # Contract
+    # Status do contrato e termos comerciais.
     status = Column(SQLEnum(StatusContrato), default=StatusContrato.ATIVO, nullable=False)
-    mrr = Column(Float, default=0)  # Monthly Recurring Revenue
+    mrr = Column(Float, default=0)  # Receita recorrente mensal (MRR)
     data_inicio = Column(DateTime(timezone=True))
     data_fim = Column(DateTime(timezone=True))
     
-    # Responsible
+    # Responsável interno pela conta.
     responsavel_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     
-    # OMIE integration
+    # Metadados de sincronização OMIE.
     omie_id = Column(String(100), unique=True, index=True)
     omie_sync = Column(Boolean, default=False)
     
@@ -49,5 +51,5 @@ class Cliente(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Relationships
+    # Referência ao usuário responsável (opcional).
     responsavel = relationship("User", backref="clientes_responsavel")

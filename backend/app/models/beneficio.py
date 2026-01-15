@@ -1,5 +1,7 @@
 """
-Benefício (Benefit) model
+Modelo de Benefício.
+
+Representa um item do catálogo de benefícios e suas regras de elegibilidade.
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Text, Boolean
 from sqlalchemy.orm import relationship
@@ -8,26 +10,26 @@ from ..database import Base
 
 
 class Beneficio(Base):
-    """Employee benefits"""
+    """Definição de benefício e divisão de custos."""
     __tablename__ = "beneficios"
     
     id = Column(Integer, primary_key=True, index=True)
     
-    # Benefit info
+    # Descrição base exibida aos colaboradores.
     nome = Column(String(255), nullable=False)
     descricao = Column(Text)
     tipo = Column(String(100))  # VR, VT, Saúde, etc.
     
-    # Value
+    # Valor total e como é dividido entre empresa e colaborador.
     valor = Column(Float)
-    valor_empresa = Column(Float)  # Company contribution
-    valor_colaborador = Column(Float)  # Employee contribution
+    valor_empresa = Column(Float)  # Parcela da empresa
+    valor_colaborador = Column(Float)  # Parcela do colaborador
     
-    # Eligibility
+    # Flags de elegibilidade por tipo de contrato.
     elegivel_clt = Column(Boolean, default=True)
     elegivel_pj = Column(Boolean, default=False)
     
-    # Status
+    # Toggle para desativar sem apagar histórico.
     ativo = Column(Boolean, default=True)
     
     # Timestamps

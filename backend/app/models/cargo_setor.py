@@ -1,5 +1,7 @@
 """
-Cargo (Position) and Setor (Department) models
+Modelos de Cargo e Setor.
+
+São tabelas de referência usadas por RH e telas de permissão.
 """
 from sqlalchemy import Column, Integer, String, DateTime, Text
 from sqlalchemy.sql import func
@@ -7,15 +9,15 @@ from ..database import Base
 
 
 class Cargo(Base):
-    """Job positions/roles"""
+    """Catálogo de cargos/funções."""
     __tablename__ = "cargos"
     
     id = Column(Integer, primary_key=True, index=True)
     
-    # Position info
+    # Nome único para evitar cargos duplicados.
     nome = Column(String(100), nullable=False, unique=True)
     descricao = Column(Text)
-    nivel = Column(String(50))  # Junior, Pleno, Senior, etc.
+    nivel = Column(String(50))  # Júnior, Pleno, Sênior, etc.
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -23,17 +25,17 @@ class Cargo(Base):
 
 
 class Setor(Base):
-    """Departments/sectors"""
+    """Catálogo de setores/departamentos."""
     __tablename__ = "setores"
     
     id = Column(Integer, primary_key=True, index=True)
     
-    # Department info
+    # Nome único para evitar setores duplicados.
     nome = Column(String(100), nullable=False, unique=True)
     descricao = Column(Text)
     
-    # Manager
-    gestor_id = Column(Integer)  # Reference to user, but not FK to avoid circular dependency
+    # Gestor armazenado como user_id sem FK para manter independência.
+    gestor_id = Column(Integer)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

@@ -1,5 +1,7 @@
 """
-Database models (SQLAlchemy ORM)
+Modelos de banco (SQLAlchemy ORM).
+
+Importar este módulo garante que todos os modelos sejam registrados.
 """
 from .user import User
 from .refresh_token import RefreshToken
@@ -22,6 +24,7 @@ from .cargo_setor import Cargo, Setor
 from .folha_clientes import FolhaCliente
 from .folha_pagamento import FolhaPagamento
 
+# Lista explícita de reexportação para clareza.
 __all__ = [
     "User",
     "RefreshToken",
