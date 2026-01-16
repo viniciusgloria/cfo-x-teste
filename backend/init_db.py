@@ -4,7 +4,9 @@ Creates first admin user and basic setup data
 """
 import sys
 import os
+import time
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -13,6 +15,26 @@ from app.database import SessionLocal, engine, Base
 from app.models.user import User, UserRole, UserType
 from app.models.empresa import Empresa
 from app.auth import get_password_hash
+
+
+def wait_for_db(max_retries=30, delay=1):
+    """Wait for database to be ready"""
+    retries = 0
+    while retries < max_retries:
+        try:
+            # Try to connect
+            connection = engine.connect()
+            connection.close()
+            print("Database is ready!")
+            return True
+        except OperationalError as e:
+            retries += 1
+            print(f"Database not ready yet (attempt {retries}/{max_retries})...")
+            if retries >= max_retries:
+                print(f"Failed to connect to database after {max_retries} attempts")
+                raise
+            time.sleep(delay)
+    return False
 
 
 def init_db():
@@ -86,4 +108,7 @@ if __name__ == "__main__":
     print("=" * 50)
     print("CFO Hub - Database Initialization")
     print("=" * 50)
+    print("\nWaiting for database to be ready...")
+    wait_for_db()
+    print("\nInitializing database...")
     init_db()
