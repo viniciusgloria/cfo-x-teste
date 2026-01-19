@@ -3,20 +3,17 @@ Rotas de autenticacao - login, cadastro e gestao de senha
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from ..database import get_db
 from ..models.user import User
-from ..models.refresh_token import RefreshToken
 from ..schemas.auth import LoginRequest, TokenResponse, PasswordChange
 from ..schemas.user import UserCreate, UserResponse
-from ..schemas.refresh_token import RefreshTokenRequest, TokenPairResponse
 from ..auth import (
     verify_password, 
     get_password_hash, 
-    create_access_token,
-    create_refresh_token
+    create_access_token
 )
 from ..password_validator import validate_password_policy
 from ..dependencies import get_current_user
@@ -25,12 +22,11 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.post("/login", response_model=TokenPairResponse)
+@router.post("/login", response_model=TokenResponse)
 @limiter.limit("5/minute")
 async def login(request: Request, credentials: LoginRequest, db: Session = Depends(get_db)):
     """
-    Endpoint de login
-    Retorna token de acesso (15 min) e token de renovacao (7 dias)
+    Endpoint de login - Retorna token JWT com validade de 7 dias
     """
     # Busca usuario por email
     user = db.query(User).filter(User.email == credentials.email).first()
@@ -50,28 +46,16 @@ async def login(request: Request, credentials: LoginRequest, db: Session = Depen
     
     # Atualiza ultimo login
     user.last_login = datetime.utcnow()
+    db.commit()
     
-    # Cria token de acesso (15 min)
+    # Cria token de acesso JWT (7 dias)
     access_token = create_access_token(
         data={"sub": str(user.id), "email": user.email, "role": user.role.value}
     )
     
-    # Cria token de renovacao (7 dias)
-    refresh_token_str = create_refresh_token()
-    refresh_token_obj = RefreshToken(
-        token=refresh_token_str,
-        user_id=user.id,
-        expires_at=datetime.utcnow() + timedelta(days=7)
-    )
-    db.add(refresh_token_obj)
-    db.commit()
-    
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token_str,
-        "token_type": "bearer",
-        "access_expires_in": 900,  # 15 min
-        "refresh_expires_in": 604800,  # 7 dias
+        "token_type": "bearer"
     }
 
 
@@ -161,96 +145,9 @@ async def change_password(
     return {"message": "Password changed successfully"}
 
 
-@router.post("/refresh", response_model=TokenPairResponse)
-@limiter.limit("10/minute")
-async def refresh_access_token(
-    request: Request,
-    refresh_data: RefreshTokenRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    Renova token de acesso usando token de renovacao
-    """
-    # Busca token de renovacao no banco
-    refresh_token = db.query(RefreshToken).filter(
-        RefreshToken.token == refresh_data.refresh_token
-    ).first()
-    
-    if not refresh_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
-        )
-    
-    # Verifica se o token e valido
-    if not refresh_token.is_valid():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token expired or revoked"
-        )
-    
-    # Busca usuario
-    user = db.query(User).filter(User.id == refresh_token.user_id).first()
-    if not user or not user.ativo:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive"
-        )
-    
-    # Atualiza last_used do token de renovacao
-    refresh_token.last_used = datetime.utcnow()
-    
-    # Cria novo token de acesso
-    new_access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email, "role": user.role.value}
-    )
-    
-    # Cria novo token de renovacao (rotacao)
-    new_refresh_token_str = create_refresh_token()
-    new_refresh_token_obj = RefreshToken(
-        token=new_refresh_token_str,
-        user_id=user.id,
-        expires_at=datetime.utcnow() + timedelta(days=7)
-    )
-    
-    # Revoga token de renovacao antigo
-    refresh_token.revoked = True
-    
-    db.add(new_refresh_token_obj)
-    db.commit()
-    
-    return {
-        "access_token": new_access_token,
-        "refresh_token": new_refresh_token_str,
-        "token_type": "bearer",
-        "access_expires_in": 900,
-        "refresh_expires_in": 604800,
-    }
-
-
 @router.post("/logout")
-async def logout(
-    refresh_data: RefreshTokenRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+async def logout(current_user: User = Depends(get_current_user)):
     """
-    Logout - revoga token de renovacao
+    Logout - Cliente deve limpar o token localmente
     """
-    refresh_token = db.query(RefreshToken).filter(
-        RefreshToken.token == refresh_data.refresh_token,
-        RefreshToken.user_id == current_user.id
-    ).first()
-    
-    if refresh_token:
-        refresh_token.revoked = True
-        db.commit()
-    
     return {"message": "Logged out successfully"}
-    
-    # Atualiza senha
-    current_user.senha_hash = get_password_hash(password_data.senha_nova)
-    current_user.primeiro_acesso = False
-    db.commit()
-    
-    return {"message": "Password changed successfully"}

@@ -14,7 +14,6 @@ class TokenResponse(BaseModel):
     """Resposta de token JWT"""
     access_token: str
     token_type: str = "bearer"
-    user: dict
 
 
 class PasswordChange(BaseModel):

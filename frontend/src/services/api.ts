@@ -58,6 +58,15 @@ class ApiService {
       headers,
     });
 
+    // Se receber 401, limpar autenticação e redirecionar para login
+    if (response.status === 401) {
+      localStorage.removeItem('cfo:auth');
+      localStorage.removeItem('auth-storage');
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Erro desconhecido' }));
       throw new Error(error.detail || `Erro ${response.status}`);

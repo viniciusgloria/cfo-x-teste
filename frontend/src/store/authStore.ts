@@ -7,7 +7,6 @@ interface AuthState {
   user: User | null;
   isAuth: boolean;
   accessToken: string | null;
-  refreshToken: string | null;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
   updateAvatar: (avatarUrl: string) => void;
@@ -16,10 +15,7 @@ interface AuthState {
 
 type LoginResponse = {
   access_token: string;
-  refresh_token: string;
   token_type: string;
-  access_expires_in: number;
-  refresh_expires_in: number;
 };
 
 type ApiUser = {
@@ -59,43 +55,39 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuth: false,
       accessToken: null,
-      refreshToken: null,
       login: async (email: string, pass: string) => {
         try {
           const loginResponse = await api.post<LoginResponse>('/api/auth/login', { email, senha: pass });
           const accessToken = loginResponse.access_token;
-          const refreshToken = loginResponse.refresh_token;
           const apiUser = await api.get<ApiUser>('/api/auth/me', undefined, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           const user = mapApiUserToUser(apiUser);
-          set({ user, isAuth: true, accessToken, refreshToken });
+          set({ user, isAuth: true, accessToken });
         } catch (error) {
-          set({ user: null, isAuth: false, accessToken: null, refreshToken: null });
+          set({ user: null, isAuth: false, accessToken: null });
           throw error;
         }
       },
       logout: async () => {
-        const { accessToken, refreshToken } = get();
-        if (accessToken && refreshToken) {
+        const { accessToken } = get();
+        if (accessToken) {
           try {
-            await api.post(
-              '/api/auth/logout',
-              { refresh_token: refreshToken },
-              { headers: { Authorization: `Bearer ${accessToken}` } }
-            );
+            await api.post('/api/auth/logout', {}, { 
+              headers: { Authorization: `Bearer ${accessToken}` } 
+            });
           } catch {
             // ignore logout failures and clear local state anyway
           }
         }
-        set({ user: null, isAuth: false, accessToken: null, refreshToken: null });
+        set({ user: null, isAuth: false, accessToken: null });
       },
       updateAvatar: (avatarUrl: string) => {
         set((state) => ({
           user: state.user ? { ...state.user, avatar: avatarUrl } : null,
         }));
       },
-      reset: () => set({ user: null, isAuth: false, accessToken: null, refreshToken: null }),
+      reset: () => set({ user: null, isAuth: false, accessToken: null }),
     }),
     {
       name: 'cfo:auth',
@@ -103,7 +95,6 @@ export const useAuthStore = create<AuthState>()(
         user: s.user,
         isAuth: s.isAuth,
         accessToken: s.accessToken,
-        refreshToken: s.refreshToken,
       }),
     }
   )
