@@ -1,8 +1,7 @@
 # CFO X SaaS
 
-**Versão:** 1.0 (Beta)  
-**Status:** Em Desenvolvimento  
-**Data:** Janeiro 2026
+**Versão:** 1.0 (Beta)
+**Status:** Em Desenvolvimento
 
 ## Sobre o Projeto
 
@@ -92,16 +91,16 @@ npm run dev
 
 ## Funcionalidades Principais
 
-- ✅ **Gestão de Colaboradores** - Cadastro, edição e controle de colaboradores
-- ✅ **Ponto Eletrônico** - Registro e controle de jornada de trabalho
-- ✅ **Folha de Pagamento** - Cálculo e gestão de folha
-- ✅ **Documentos** - Upload, organização e compartilhamento
-- ✅ **Tarefas e OKRs** - Gestão de tarefas e objetivos
-- ✅ **Chat Interno** - Comunicação entre colaboradores
-- ✅ **Notificações** - Sistema de alertas e lembretes
-- ✅ **Dashboard Analytics** - Visualização de métricas e KPIs
-- ✅ **Multi-tenant** - Suporte para múltiplas empresas
-- ✅ **RBAC** - Controle de acesso baseado em funções
+- ✓ **Gestão de Colaboradores** - Cadastro, edição e controle de colaboradores
+- ✓ **Ponto Eletrônico** - Registro e controle de jornada de trabalho
+- ✓ **Folha de Pagamento** - Cálculo e gestão de folha
+- ✓ **Documentos** - Upload, organização e compartilhamento
+- ✓ **Tarefas e OKRs** - Gestão de tarefas e objetivos
+- ✓ **Chat Interno** - Comunicação entre colaboradores
+- ✓ **Notificações** - Sistema de alertas e lembretes
+- ✓ **Dashboard Analytics** - Visualização de métricas e KPIs
+- ✓ **Multi-tenant** - Suporte para múltiplas empresas
+- ✓ **RBAC** - Controle de acesso baseado em funções
 
 ## Segurança
 
@@ -114,7 +113,6 @@ npm run dev
 
 ## Documentação
 
-- **PRD Completo:** [PRD.md](PRD.md)
 - **Backend:** [backend/README.md](backend/README.md)
 - **Frontend:** [frontend/README.md](frontend/README.md)
 - **API Docs:** http://localhost:8000/docs (quando rodando)
@@ -145,10 +143,3 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```env
 VITE_API_URL=http://localhost:8000
 ```
-
-## Roadmap
-
-### v1.0 Beta (Atual)
-- ✅ Funcionalidades core implementadas
-- ✅ Multi-tenant funcional
-- ⏳ Dashboard CPA (em desenvolvimento)
