@@ -55,8 +55,5 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_login = Column(DateTime(timezone=True))
     
-    # Exclusão em cascata remove tokens de atualização (refresh) quando o usuário é excluído.
-    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
-    
     def __repr__(self):
         return f"<User {self.email} ({self.role})>"
