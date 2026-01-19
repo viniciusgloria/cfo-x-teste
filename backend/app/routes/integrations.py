@@ -1,6 +1,6 @@
 """
-Placeholder for external API integrations (OMIE, Google, etc)
-Reserved for future implementation
+Espaco reservado para integracoes com APIs externas (OMIE, Google, etc)
+Reservado para implementacao futura
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -17,8 +17,8 @@ async def integration_status(
     db: Session = Depends(get_db)
 ):
     """
-    Check integration status
-    PLACEHOLDER - To be implemented
+    Verifica status das integracoes
+    RESERVADO - A implementar
     """
     return {
         "omie": {
@@ -45,14 +45,14 @@ async def sync_omie(
     db: Session = Depends(get_db)
 ):
     """
-    Sync data with OMIE
-    PLACEHOLDER - To be implemented
+    Sincroniza dados com OMIE
+    RESERVADO - A implementar
     
-    Future implementation will:
-    - Fetch clients from OMIE API
-    - Sync financial data
-    - Update MRR values
-    - Send payroll entries
+    Implementacao futura deve:
+    - Buscar clientes na API da OMIE
+    - Sincronizar dados financeiros
+    - Atualizar valores de MRR
+    - Enviar itens de folha
     """
     return {
         "status": "not_implemented",
@@ -63,14 +63,14 @@ async def sync_omie(
 @router.post("/external/webhook")
 async def external_webhook(data: dict):
     """
-    Receive data from external APIs
-    PLACEHOLDER - To be implemented
+    Recebe dados de APIs externas
+    RESERVADO - A implementar
     
-    This endpoint will receive webhooks from:
-    - OMIE (new clients, payment updates)
-    - Google (calendar events, drive files)
-    - Slack (notifications)
-    - Other integrations
+    Este endpoint deve receber webhooks de:
+    - OMIE (novos clientes, atualizacoes de pagamento)
+    - Google (eventos de calendario, arquivos do Drive)
+    - Slack (notificacoes)
+    - Outras integracoes
     """
     return {
         "status": "received",
@@ -85,8 +85,8 @@ async def fetch_omie_clients(
     db: Session = Depends(get_db)
 ):
     """
-    Fetch clients from OMIE
-    PLACEHOLDER - To be implemented
+    Busca clientes na OMIE
+    RESERVADO - A implementar
     """
     return {
         "status": "not_implemented",

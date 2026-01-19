@@ -1,6 +1,6 @@
 """
-Security middleware for FastAPI
-Adds security headers and additional protections
+Middleware de seguranca para FastAPI
+Adiciona headers de seguranca e protecoes adicionais
 """
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -9,7 +9,7 @@ from ..config import settings
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
-    Adiciona headers de segurança em todas as respostas
+    Adiciona headers de seguranca em todas as respostas
     """
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
@@ -17,13 +17,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Previne clickjacking
         response.headers["X-Frame-Options"] = "DENY"
         
-        # Previne MIME type sniffing
+        # Previne sniffing de tipo MIME
         response.headers["X-Content-Type-Options"] = "nosniff"
         
-        # XSS Protection (browsers antigos)
+        # Protecao XSS (navegadores antigos)
         response.headers["X-XSS-Protection"] = "1; mode=block"
         
-        # Content Security Policy (básico)
+        # Politica de Seguranca de Conteudo (basico)
         if not settings.DEBUG:
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
@@ -34,16 +34,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "connect-src 'self';"
             )
         
-        # HSTS - Force HTTPS (apenas em produção)
+        # HSTS - Forca HTTPS (apenas em producao)
         if not settings.DEBUG:
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains; preload"
             )
         
-        # Referrer Policy
+        # Politica de referer
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         
-        # Permissions Policy (Feature Policy)
+        # Politica de permissoes (Feature Policy)
         response.headers["Permissions-Policy"] = (
             "geolocation=(), "
             "microphone=(), "
@@ -60,13 +60,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
-    Log de requisições (sem dados sensíveis)
+    Log de requisicoes (sem dados sensiveis)
     """
     async def dispatch(self, request: Request, call_next):
         import logging
         logger = logging.getLogger("api.requests")
         
-        # Log request info (sem dados sensíveis)
+        # Registra info da requisicao (sem dados sensiveis)
         logger.info(
             f"Request: {request.method} {request.url.path} "
             f"from {request.client.host if request.client else 'unknown'}"
@@ -74,7 +74,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         
         response = await call_next(request)
         
-        # Log response status
+        # Registra status da resposta
         logger.info(
             f"Response: {request.method} {request.url.path} "
             f"status={response.status_code}"

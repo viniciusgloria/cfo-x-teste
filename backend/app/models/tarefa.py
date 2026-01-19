@@ -67,7 +67,7 @@ class Tarefa(Base):
     bloqueada = Column(Boolean, default=False)
     motivo_bloqueio = Column(Text)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -89,7 +89,7 @@ class TarefaComment(Base):
     # Corpo do comentário.
     conteudo = Column(Text, nullable=False)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Referências à tarefa e ao autor.
@@ -111,7 +111,7 @@ class TarefaAttachment(Base):
     tamanho = Column(Integer)  # bytes
     tipo = Column(String(100))  # Tipo MIME (formato do arquivo)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Referências à tarefa e ao autor do upload.

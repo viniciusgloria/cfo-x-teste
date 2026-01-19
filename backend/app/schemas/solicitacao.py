@@ -1,5 +1,5 @@
 """
-Solicitação schemas
+Esquemas de solicitacao
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -8,7 +8,7 @@ from ..models.solicitacao import TipoSolicitacao, StatusSolicitacao
 
 
 class SolicitacaoCreate(BaseModel):
-    """Create request"""
+    """Cria solicitacao"""
     tipo: TipoSolicitacao
     titulo: str
     descricao: Optional[str] = None
@@ -21,13 +21,13 @@ class SolicitacaoCreate(BaseModel):
 
 
 class SolicitacaoUpdate(BaseModel):
-    """Update request status"""
+    """Atualiza status da solicitacao"""
     status: StatusSolicitacao
     resposta: Optional[str] = None
 
 
 class SolicitacaoResponse(BaseModel):
-    """Request response"""
+    """Resposta de solicitacao"""
     id: int
     user_id: int
     tipo: TipoSolicitacao

@@ -1,6 +1,6 @@
 """
-Database initialization script
-Creates first admin user and basic setup data
+Script de inicializacao do banco de dados
+Cria o primeiro usuario admin e dados basicos de configuracao
 """
 import sys
 import os
@@ -8,7 +8,7 @@ import time
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
 
-# Add parent directory to path
+# Adiciona o diretorio pai ao path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.database import SessionLocal, engine, Base
@@ -18,11 +18,11 @@ from app.auth import get_password_hash
 
 
 def wait_for_db(max_retries=30, delay=1):
-    """Wait for database to be ready"""
+    """Aguarda o banco de dados ficar pronto"""
     retries = 0
     while retries < max_retries:
         try:
-            # Try to connect
+            # Tenta conectar
             connection = engine.connect()
             connection.close()
             print("Database is ready!")
@@ -38,9 +38,9 @@ def wait_for_db(max_retries=30, delay=1):
 
 
 def init_db():
-    """Initialize database with basic data"""
+    """Inicializa o banco de dados com dados basicos"""
     
-    # Create all tables
+    # Cria todas as tabelas
     print("Creating database tables...")
     Base.metadata.create_all(bind=engine)
     print("Tables created")
@@ -48,7 +48,7 @@ def init_db():
     db = SessionLocal()
     
     try:
-        # Check if admin already exists
+        # Verifica se o admin ja existe
         admin_exists = db.query(User).filter(User.email == "admin@cfohub.com").first()
         
         if not admin_exists:
@@ -72,7 +72,7 @@ def init_db():
         else:
             print("Admin user already exists")
         
-        # Check if company exists
+        # Verifica se a empresa ja existe
         company_exists = db.query(Empresa).first()
         
         if not company_exists:

@@ -37,7 +37,7 @@ class Post(Base):
     # Fixado mantém posts importantes em destaque.
     fixado = Column(Boolean, default=False)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -58,7 +58,7 @@ class PostComment(Base):
     # Corpo do comentário.
     conteudo = Column(Text, nullable=False)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Referências ao post e ao autor.
@@ -77,7 +77,7 @@ class PostReaction(Base):
     # String simples para permitir emojis customizados.
     tipo = Column(String(50), nullable=False)  # curtir, amar, celebrar, etc.
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Referências ao post e ao usuário que reagiu.

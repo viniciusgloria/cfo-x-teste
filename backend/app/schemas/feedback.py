@@ -1,5 +1,5 @@
 """
-Feedback schemas
+Esquemas de feedback
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -8,7 +8,7 @@ from ..models.feedback import TipoFeedback
 
 
 class FeedbackCreate(BaseModel):
-    """Create feedback"""
+    """Cria feedback"""
     destinatario_id: int
     tipo: TipoFeedback
     titulo: str
@@ -18,7 +18,7 @@ class FeedbackCreate(BaseModel):
 
 
 class FeedbackResponse(BaseModel):
-    """Feedback response"""
+    """Resposta de feedback"""
     id: int
     remetente_id: int
     destinatario_id: int

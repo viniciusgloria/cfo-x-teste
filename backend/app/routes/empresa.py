@@ -1,4 +1,4 @@
-"""Empresa routes"""
+"""Rotas de empresa"""
 import json
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,7 +20,7 @@ async def upsert_empresa(
     current_user: User = Depends(get_current_admin)
 ):
     """
-    Create or update company settings.
+    Cria ou atualiza configuracoes da empresa.
     """
     data = payload.model_dump()
     logger.info("empresa_upsert payload=%s", data)

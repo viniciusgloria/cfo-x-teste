@@ -1,6 +1,6 @@
 """
-FastAPI Main Application
-CFO Hub Backend API
+Aplicacao principal FastAPI
+API do backend CFO Hub
 """
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,13 +34,13 @@ from .routes import (
     integrations_router,
 )
 
-# Database tables are created by init_db.py in Docker
-# or manually by running: python init_db.py
+# As tabelas do banco sao criadas pelo init_db.py no Docker
+# ou manualmente ao executar: python init_db.py
 
-# Initialize rate limiter
+# Inicializa o limitador de taxa
 limiter = Limiter(key_func=get_remote_address)
 
-# Initialize FastAPI app
+# Inicializa o app FastAPI
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
@@ -50,11 +50,11 @@ app = FastAPI(
     openapi_url="/api/openapi.json" if settings.DEBUG else None
 )
 
-# Add rate limiter to app state
+# Registra o limitador no estado do app
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS
+# Configura o CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -63,24 +63,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add security headers middleware
+# Adiciona o middleware de cabecalhos de seguranca
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Add request logging (apenas em desenvolvimento)
+# Adiciona log de requisicoes (apenas em desenvolvimento)
 if settings.DEBUG:
     app.add_middleware(RequestLoggingMiddleware)
 
-# Add trusted host middleware (apenas em produção)
+# Adiciona middleware de host confiavel (apenas em producao)
 if not settings.DEBUG:
     # Configurar hosts permitidos
-    allowed_hosts = ["*"]  # TODO: Configurar domínios específicos em produção
+    allowed_hosts = ["*"]  # TODO: Configurar dominios especificos em producao
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 
-# Health check endpoint
+# Endpoint de checagem de saude
 @app.get("/", tags=["Health"])
 async def root():
-    """API root endpoint - health check"""
+    """Endpoint raiz da API - checagem de saude"""
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
@@ -91,14 +91,14 @@ async def root():
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint"""
+    """Endpoint de checagem de saude"""
     return {
         "status": "healthy",
         "database": "connected"
     }
 
 
-# Register all routers
+# Registra todas as rotas
 app.include_router(auth_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(ponto_router, prefix="/api")

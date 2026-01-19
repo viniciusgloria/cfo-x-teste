@@ -80,10 +80,6 @@ FRONTEND_URL=http://localhost:5173
 # Redis (não usado no rate limiting por enquanto)
 REDIS_URL=redis://localhost:6379/0
 
-# OMIE (futuro)
-OMIE_API_KEY=
-OMIE_API_SECRET=
-OMIE_APP_KEY=
 ```
 
 Observação: o CORS usa `FRONTEND_URL` e, em `ENVIRONMENT=development`, libera também `localhost:5173`, `localhost:3000` e `127.0.0.1:5173`.
@@ -214,9 +210,7 @@ Ainda não há testes automatizados no repositório.
 - Docstrings em funções importantes
 - Type hints quando possível
 
-## Contribuindo
+## Dúvidas?
 
-1. Crie uma branch (`git checkout -b feature/nova-feature`)
-2. Commit (`git commit -m "Add nova feature"`)
-3. Push (`git push origin feature/nova-feature`)
-4. Abra um Pull Request
+- **Documentação Python:** [Documentação Python](https://www.python.org/doc/)
+- **Documentação PostgreSQL:** [Documentação PostgreSQL](https://www.postgresql.org/docs/)

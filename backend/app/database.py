@@ -1,12 +1,12 @@
 """
-Database configuration and session management
+Configuracao do banco de dados e gerenciamento de sessao
 """
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
 
-# Create database engine
+# Cria engine do banco de dados
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
@@ -15,17 +15,17 @@ engine = create_engine(
     echo=settings.DEBUG
 )
 
-# Create session factory
+# Cria a sessao
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base class for models
+# Classe base para os modelos
 Base = declarative_base()
 
 
 def get_db():
     """
-    Dependency to get database session
-    Usage: db: Session = Depends(get_db)
+    Dependencia para obter a sessao do banco
+    Uso: db: Session = Depends(get_db)
     """
     db = SessionLocal()
     try:

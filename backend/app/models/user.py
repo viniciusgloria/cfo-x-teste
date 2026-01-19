@@ -40,7 +40,7 @@ class User(Base):
     role = Column(SQLEnum(UserRole), default=UserRole.COLABORADOR, nullable=False)
     tipo = Column(SQLEnum(UserType), nullable=True)  # CLT ou PJ (nulo para não colaboradores)
     
-    # Additional info
+    # Informacoes adicionais
     cargo = Column(String(100))
     setor = Column(String(100))
     telefone = Column(String(20))
@@ -50,7 +50,7 @@ class User(Base):
     ativo = Column(Boolean, default=True, nullable=False)
     primeiro_acesso = Column(Boolean, default=True, nullable=False)
     
-    # Timestamps: created_at é definido na criação; updated_at só em atualizações.
+    # Carimbos de data/hora: created_at é definido na criação; updated_at só em atualizações.
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_login = Column(DateTime(timezone=True))

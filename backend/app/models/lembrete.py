@@ -27,7 +27,7 @@ class Lembrete(Base):
     concluido = Column(Boolean, default=False)
     notificado = Column(Boolean, default=False)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

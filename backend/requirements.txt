@@ -1,35 +1,35 @@
-# Core Framework
+# Framework principal
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
 python-multipart==0.0.6
 
-# Database
+# Banco de dados
 sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
 
-# Authentication & Security
+# Autenticacao e seguranca
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dotenv==1.0.0
 bcrypt==4.1.2
 
-# Validation & Serialization
+# Validacao e serializacao
 pydantic==2.5.3
 pydantic-settings==2.1.0
 email-validator==2.1.0
 
-# Date & Time
+# Data e hora
 python-dateutil==2.8.2
 
-# Testing (optional)
+# Testes (opcional)
 pytest==7.4.3
 pytest-asyncio==0.21.1
 httpx==0.26.0
 
-# Rate Limiting & Security
+# Limitacao de taxa e seguranca
 slowapi==0.1.9
 redis==7.1.0
 
-# Development
+# Desenvolvimento
 black==23.12.1
 flake8==7.0.0

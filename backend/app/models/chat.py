@@ -25,7 +25,7 @@ class ChatMessage(Base):
     # Status de leitura para o destinatário.
     lida = Column(Boolean, default=False)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Relacionamentos separados por papel (remetente vs destinatário).

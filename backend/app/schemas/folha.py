@@ -1,5 +1,5 @@
 """
-Folha (Payroll) schemas
+Esquemas de folha (folha de pagamento)
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -8,7 +8,7 @@ from ..models.folha_clientes import SituacaoFolha, StatusOMIE
 
 
 class FolhaClienteCreate(BaseModel):
-    """Create client payroll entry"""
+    """Cria item de folha do cliente"""
     cliente_id: int
     colaborador_nome: str
     funcao: Optional[str] = None
@@ -24,7 +24,7 @@ class FolhaClienteCreate(BaseModel):
 
 
 class FolhaClienteUpdate(BaseModel):
-    """Update client payroll entry"""
+    """Atualiza item de folha do cliente"""
     situacao: Optional[SituacaoFolha] = None
     data_pagamento: Optional[date] = None
     nota_fiscal: Optional[str] = None
@@ -32,7 +32,7 @@ class FolhaClienteUpdate(BaseModel):
 
 
 class FolhaClienteResponse(BaseModel):
-    """Client payroll response"""
+    """Resposta de folha do cliente"""
     id: int
     cliente_id: int
     colaborador_nome: str
@@ -50,7 +50,7 @@ class FolhaClienteResponse(BaseModel):
 
 
 class FolhaPagamentoCreate(BaseModel):
-    """Create internal payroll entry"""
+    """Cria item de folha interna"""
     user_id: int
     mes_referencia: str
     salario_base: float
@@ -70,7 +70,7 @@ class FolhaPagamentoCreate(BaseModel):
 
 
 class FolhaPagamentoResponse(BaseModel):
-    """Internal payroll response"""
+    """Resposta de folha interna"""
     id: int
     user_id: int
     mes_referencia: str

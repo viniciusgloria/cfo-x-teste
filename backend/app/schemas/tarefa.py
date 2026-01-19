@@ -1,5 +1,5 @@
 """
-Tarefa schemas
+Esquemas de tarefa
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -8,7 +8,7 @@ from ..models.tarefa import StatusTarefa, PrioridadeTarefa
 
 
 class TarefaCreate(BaseModel):
-    """Create task"""
+    """Cria tarefa"""
     titulo: str
     descricao: Optional[str] = None
     responsavel_id: Optional[int] = None
@@ -23,7 +23,7 @@ class TarefaCreate(BaseModel):
 
 
 class TarefaUpdate(BaseModel):
-    """Update task"""
+    """Atualiza tarefa"""
     titulo: Optional[str] = None
     descricao: Optional[str] = None
     responsavel_id: Optional[int] = None
@@ -36,12 +36,12 @@ class TarefaUpdate(BaseModel):
 
 
 class TarefaCommentCreate(BaseModel):
-    """Create task comment"""
+    """Cria comentario de tarefa"""
     conteudo: str
 
 
 class TarefaResponse(BaseModel):
-    """Task response"""
+    """Resposta de tarefa"""
     id: int
     titulo: str
     descricao: Optional[str] = None

@@ -1,5 +1,5 @@
 """
-Avaliação schemas
+Esquemas de avaliacao
 """
 from pydantic import BaseModel
 from datetime import datetime

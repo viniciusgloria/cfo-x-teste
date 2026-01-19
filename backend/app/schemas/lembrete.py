@@ -1,5 +1,5 @@
 """
-Lembrete schemas
+Esquemas de lembrete
 """
 from pydantic import BaseModel
 from datetime import datetime

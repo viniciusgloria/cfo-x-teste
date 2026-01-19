@@ -1,5 +1,5 @@
 """
-Authentication utilities - Password hashing and JWT tokens
+Utilitarios de autenticacao - hash de senha e tokens JWT
 """
 from datetime import datetime, timedelta
 from typing import Optional
@@ -8,28 +8,28 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from .config import settings
 
-# Password hashing context
+# Contexto de hash de senha
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against a hash"""
+    """Valida uma senha contra o hash"""
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password"""
+    """Gera hash de senha"""
     return pwd_context.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create JWT access token (curta duração)"""
+    """Cria token de acesso JWT (duracao curta)"""
     to_encode = data.copy()
     
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        # Access token com duração curta (15 minutos)
+        # Token de acesso com duracao curta (15 minutos)
         expire = datetime.utcnow() + timedelta(minutes=15)
     
     to_encode.update({"exp": expire, "type": "access"})
@@ -39,12 +39,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 def create_refresh_token() -> str:
-    """Create refresh token (token aleatório seguro)"""
+    """Cria token de renovacao (token aleatorio seguro)"""
     return secrets.token_urlsafe(64)
 
 
 def decode_access_token(token: str) -> Optional[dict]:
-    """Decode and verify JWT token"""
+    """Decodifica e valida token JWT"""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         if payload.get("type") != "access":

@@ -19,7 +19,7 @@ class Cargo(Base):
     descricao = Column(Text)
     nivel = Column(String(50))  # Júnior, Pleno, Sênior, etc.
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -37,6 +37,6 @@ class Setor(Base):
     # Gestor armazenado como user_id sem FK para manter independência.
     gestor_id = Column(Integer)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

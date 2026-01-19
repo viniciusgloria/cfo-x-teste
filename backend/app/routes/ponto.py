@@ -1,5 +1,5 @@
 """
-Ponto (Time tracking) routes
+Rotas de ponto (controle de jornada)
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ async def registrar_ponto(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Register time entry"""
+    """Registra ponto"""
     novo_ponto = Ponto(
         user_id=current_user.id,
         tipo=ponto_data.tipo,
@@ -50,16 +50,16 @@ async def listar_pontos(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """List time entries"""
+    """Lista pontos"""
     query = db.query(Ponto)
     
-    # Filter by user
+    # Filtra por usuario
     if user_id:
         query = query.filter(Ponto.user_id == user_id)
     else:
         query = query.filter(Ponto.user_id == current_user.id)
     
-    # Filter by date range
+    # Filtra por intervalo de datas
     if data_inicio:
         query = query.filter(Ponto.timestamp >= data_inicio)
     if data_fim:
@@ -75,7 +75,7 @@ async def solicitar_ajuste(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Request time adjustment"""
+    """Solicita ajuste de ponto"""
     novo_ajuste = AjustePonto(
         user_id=current_user.id,
         data=ajuste_data.data,
@@ -99,7 +99,7 @@ async def listar_ajustes(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """List adjustment requests"""
+    """Lista solicitacoes de ajuste"""
     query = db.query(AjustePonto)
     
     if user_id:
@@ -121,7 +121,7 @@ async def atualizar_ajuste(
     current_user: User = Depends(get_current_gestor_or_admin),
     db: Session = Depends(get_db)
 ):
-    """Update adjustment status (Manager/Admin only)"""
+    """Atualiza status do ajuste (gestor/admin)"""
     ajuste = db.query(AjustePonto).filter(AjustePonto.id == ajuste_id).first()
     if not ajuste:
         raise HTTPException(

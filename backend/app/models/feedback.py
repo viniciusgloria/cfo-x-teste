@@ -36,7 +36,7 @@ class Feedback(Base):
     okr_id = Column(Integer, ForeignKey("okrs.id", ondelete="SET NULL"))
     tarefa_id = Column(Integer, ForeignKey("tarefas.id", ondelete="SET NULL"))
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     # Relacionamentos separados por papel para evitar ambiguidade.

@@ -1,5 +1,5 @@
 """
-Documento schemas
+Esquemas de documento
 """
 from pydantic import BaseModel
 from datetime import datetime
