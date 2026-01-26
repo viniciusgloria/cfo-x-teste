@@ -26,6 +26,7 @@ import Beneficios from './pages/Beneficios';
 import { Notificacoes } from './pages/Notificacoes';
 import Tarefas from './pages/Tarefas';
 import Automacoes from './pages/Automacoes';
+import PerformanceResultados from './pages/PerformanceResultados';
 import { NavigationProgress } from './components/ui/NavigationProgress';
 import { GuidedTour } from './components/GuidedTour';
 import { useThemeStore } from './store/themeStore';
@@ -92,6 +93,7 @@ function App() {
           <Route path="/okrs" element={<OKRs />} />
           <Route path="/tarefas" element={<Tarefas />} />
           <Route path="/automacoes" element={<Automacoes />} />
+          <Route path="/performance" element={<PerformanceResultados />} />
           <Route path="/feedbacks" element={<Feedbacks />} />
           <Route path="/mural" element={<Mural />} />
           <Route path="/clientes" element={<Clientes />} />

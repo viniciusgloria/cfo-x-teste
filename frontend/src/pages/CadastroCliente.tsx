@@ -67,16 +67,14 @@ const field = (key: AuthFieldKey, label: string, placeholder?: string): Integrat
 
 const ERP_SYSTEMS: IntegrationSystem[] = [
   { key: 'omie', label: 'Omie', fields: [field('appKey', 'App Key'), field('appSecret', 'App Secret')] },
+  { key: 'conta_azul', label: 'Conta Azul', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret')] },
   { key: 'bling', label: 'Bling', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret')] },
   { key: 'tiny', label: 'Tiny', fields: [field('apiToken', 'API Token')] },
-  { key: 'conta_azul', label: 'Conta Azul', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret')] },
-  { key: 'linx', label: 'Linx', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret')] },
-  { key: 'totvs', label: 'TOTVS', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret')] },
 ];
 
 const MARKETPLACE_SYSTEMS: IntegrationSystem[] = [
   { key: 'mercado_livre', label: 'Mercado Livre', fields: [field('clientId', 'App ID'), field('clientSecret', 'App Secret'), field('refreshToken', 'Refresh Token (opcional)')] },
-  { key: 'tiktok_shop', label: 'TikTok Shop', fields: [field('appKey', 'App Key'), field('appSecret', 'App Secret')] },
+  { key: 'tiktok_shop', label: 'TikTok Shop', fields: [field('appId', 'App ID'), field('appSecret', 'App Secret')] },
   { key: 'shopee', label: 'Shopee', fields: [field('partnerId', 'Partner ID'), field('partnerKey', 'Partner Key'), field('accessToken', 'Access Token (seller)')] },
   { key: 'amazon_br', label: 'Amazon BR (SP-API)', fields: [field('clientId', 'LWA Client ID'), field('clientSecret', 'LWA Client Secret'), field('refreshToken', 'LWA Refresh Token'), field('awsAccessKey', 'AWS Access Key'), field('awsSecretKey', 'AWS Secret Key'), field('roleArn', 'Role ARN')] },
   { key: 'magalu', label: 'Magalu', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret')] },
@@ -97,15 +95,14 @@ const ADS_SYSTEMS: IntegrationSystem[] = [
 
 const GATEWAY_SYSTEMS: IntegrationSystem[] = [
   { key: 'yampi', label: 'Yampi', fields: [field('apiToken', 'API Token')] },
+  { key: 'cartpanda', label: 'CartPanda', fields: [field('apiToken', 'API Key')] },
+  { key: 'appmax', label: 'Appmax', fields: [field('apiToken', 'API Key')] },
   { key: 'shopify', label: 'Shopify', fields: [field('accessToken', 'Admin API Access Token')] },
   { key: 'mercado_pago', label: 'Mercado Pago', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret'), field('accessToken', 'Access Token (opcional)')] },
-  { key: 'nuvemshop', label: 'Nuvemshop', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret'), field('accessToken', 'Access Token (opcional)')] },
-  { key: 'cartpanda', label: 'CartPanda', fields: [field('apiToken', 'API Secret Key')] },
-  { key: 'appmax', label: 'Appmax', fields: [field('apiToken', 'API Key')] },
   { key: 'pagarme', label: 'Pagar.me', fields: [field('appSecret', 'Secret Key'), field('encryptionKey', 'Encryption Key (opcional)')] },
-  { key: 'pagseguro', label: 'PagSeguro', fields: [field('appId', 'App ID'), field('appKey', 'App Key')] },
+  { key: 'nuvemshop', label: 'Nuvemshop', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret'), field('accessToken', 'Access Token (opcional)')] },
   { key: 'paypal', label: 'PayPal', fields: [field('clientId', 'Client ID'), field('clientSecret', 'Client Secret')] },
-  { key: 'vtex', label: 'VTEX', fields: [field('appKey', 'App Key'), field('appToken', 'App Token')] },
+  { key: 'pagseguro', label: 'PagSeguro', fields: [field('appId', 'App ID'), field('appKey', 'App Key')] },
 ];
 
 const INTEGRATION_SECTIONS: { key: IntegrationSection; title: string; systems: IntegrationSystem[] }[] = [

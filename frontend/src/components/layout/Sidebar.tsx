@@ -19,7 +19,8 @@ import {
   Receipt,
   Gift,
   Bell,
-  CheckSquare
+  CheckSquare,
+  Activity
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -49,6 +50,7 @@ const navItems: NavItem[] = [
 // Menu secundário (visualizações por nível de acesso) na ordem solicitada
 const navItemsGestor: NavItem[] = [
   { label: 'Benefícios', path: '/beneficios', icon: Gift },
+  { label: 'Performance', path: '/performance', icon: Activity },
   { label: 'Colaboradores', path: '/colaboradores', icon: UserCog },
   { label: 'Folha de Pagamento', path: '/folha-pagamento', icon: DollarSign },
   { label: 'Folha de Clientes', path: '/folha-clientes', icon: Receipt },
@@ -79,48 +81,59 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
   // Inverter somente se: dark mode está ativo E opção está selecionada
   const shouldInvert = isDarkMode && aplicarInversaoLogo === true;
 
-  // Carregar recursos ativos do localStorage
+  // Carregar recursos ativos e permissões do role do localStorage
   const [recursosAtivos, setRecursosAtivos] = useState<Record<string, boolean>>({});
   const [permissoesPorRole, setPermissoesPorRole] = useState<Record<string, boolean>>({});
+  const [isLoadingPermissoes, setIsLoadingPermissoes] = useState(true);
 
   useEffect(() => {
-    const loadRecursos = () => {
-      const saved = localStorage.getItem('recursos_sistema');
-      if (saved) {
-        setRecursosAtivos(JSON.parse(saved));
-      } else {
-        // Valores padrão: todos ativos
-        setRecursosAtivos({
-          ponto_ativo: true,
-          solicitacoes_ativo: true,
-          okrs_ativo: true,
-          mural_ativo: true,
-          chat_ativo: true,
-          documentos_ativo: true,
-          feedbacks_ativo: true,
-          beneficios_ativo: true,
-          avaliacoes_ativo: true,
-          clientes_ativo: true,
-          colaboradores_ativo: true,
-          folha_pagamento_ativo: true,
-          folha_clientes_ativo: true,
-          tarefas_ativo: true,
-          relatorios_ativo: true,
-        });
-      }
-    };
+    const loadPermissoesPorRole = async () => {
+      try {
+        if (!user?.role) {
+          setIsLoadingPermissoes(false);
+          return;
+        }
 
-    const loadPermissoesPorRole = () => {
-      // Carregar permissões do role atual
-      let roleKey = '';
-      if (user?.role === 'gestor') {
-        roleKey = 'permissoes_gestor';
-      } else if (user?.role === 'colaborador') {
-        roleKey = 'permissoes_colaborador';
-      } else if (user?.role === 'cliente') {
-        roleKey = 'permissoes_cliente';
-      } else if (user?.role === 'admin') {
-        // Admin tem acesso a tudo
+        // Carregar permissões da API
+        const response = await fetch(`/api/permissoes/role/${user.role}`);
+        if (response.ok) {
+          const data = await response.json();
+          // Converter resposta para formato de permissões
+          const permissoes: Record<string, boolean> = {};
+          Object.keys(data).forEach((key) => {
+            if (typeof data[key] === 'boolean') {
+              permissoes[key] = data[key];
+            }
+          });
+          setPermissoesPorRole(permissoes);
+        } else {
+          // Se houver erro, usar valores padrão
+          setPermissoesPorRole({
+            dashboard: true,
+            notificacoes: true,
+            tarefas: true,
+            ponto: true,
+            mural: true,
+            calendario: true,
+            clientes: true,
+            chat: true,
+            documentos: true,
+            feedbacks: true,
+            solicitacoes: true,
+            configuracoes: true,
+            beneficios: true,
+            performance: true,
+            colaboradores: true,
+            folha_pagamento: true,
+            folha_clientes: true,
+            avaliacoes: true,
+            okrs: true,
+            relatorios: true,
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar permissões:', error);
+        // Usar valores padrão em caso de erro
         setPermissoesPorRole({
           dashboard: true,
           notificacoes: true,
@@ -135,6 +148,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
           solicitacoes: true,
           configuracoes: true,
           beneficios: true,
+          performance: true,
           colaboradores: true,
           folha_pagamento: true,
           folha_clientes: true,
@@ -142,31 +156,20 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
           okrs: true,
           relatorios: true,
         });
-        return;
-      }
-
-      if (roleKey) {
-        const saved = localStorage.getItem(roleKey);
-        if (saved) {
-          setPermissoesPorRole(JSON.parse(saved));
-        } else {
-          // Valores padrão baseado no role
-          setPermissoesPorRole({});
-        }
+      } finally {
+        setIsLoadingPermissoes(false);
       }
     };
 
-    loadRecursos();
     loadPermissoesPorRole();
 
-    // Adicionar listener para mudanças no localStorage
-    const handleStorageChange = () => {
-      loadRecursos();
+    // Adicionar listener para mudanças de permissões
+    const handlePermissoesUpdated = () => {
       loadPermissoesPorRole();
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('permissoes-updated', handlePermissoesUpdated);
+    return () => window.removeEventListener('permissoes-updated', handlePermissoesUpdated);
   }, [user?.role]);
 
   // Filtrar navItems baseado nos recursos ativos E permissões por role
@@ -203,6 +206,8 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
       '/clientes': 'clientes',
       '/tarefas': 'tarefas',
       '/calendario': 'calendario',
+      '/notificacoes': 'notificacoes',
+      '/configuracoes': 'configuracoes',
     };
 
     const permissao = pathToPermissao[item.path];
@@ -215,6 +220,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
   const filteredNavItemsGestor = navItemsGestor.filter((item) => {
     const pathToRecurso: Record<string, string> = {
       '/beneficios': 'beneficios_ativo',
+      '/performance': 'tarefas_ativo',
       '/colaboradores': 'colaboradores_ativo',
       '/folha-pagamento': 'folha_pagamento_ativo',
       '/folha-clientes': 'folha_clientes_ativo',
@@ -225,6 +231,7 @@ export function Sidebar({ isOpen = true, onClose, collapsed = false }: SidebarPr
 
     const pathToPermissao: Record<string, string> = {
       '/beneficios': 'beneficios',
+      '/performance': 'performance',
       '/colaboradores': 'colaboradores',
       '/folha-pagamento': 'folha_pagamento',
       '/folha-clientes': 'folha_clientes',
