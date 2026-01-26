@@ -1,23 +1,22 @@
 """
-Authentication schemas
+Esquemas de autenticacao
 """
 from pydantic import BaseModel, EmailStr
 
 
 class LoginRequest(BaseModel):
-    """Login credentials"""
+    """Credenciais de login"""
     email: EmailStr
     senha: str
 
 
 class TokenResponse(BaseModel):
-    """JWT token response"""
+    """Resposta de token JWT"""
     access_token: str
     token_type: str = "bearer"
-    user: dict
 
 
 class PasswordChange(BaseModel):
-    """Password change request"""
+    """Requisicao de troca de senha"""
     senha_atual: str
     senha_nova: str

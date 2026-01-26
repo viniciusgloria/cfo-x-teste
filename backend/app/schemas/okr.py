@@ -1,5 +1,5 @@
 """
-OKR schemas
+Esquemas de OKR
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -8,7 +8,7 @@ from ..models.okr import TipoOKR
 
 
 class OKRCreate(BaseModel):
-    """Create OKR"""
+    """Cria OKR"""
     tipo: TipoOKR
     objetivo: str
     key_result: str
@@ -22,7 +22,7 @@ class OKRCreate(BaseModel):
 
 
 class OKRUpdate(BaseModel):
-    """Update OKR"""
+    """Atualiza OKR"""
     atual: Optional[float] = None
     objetivo: Optional[str] = None
     key_result: Optional[str] = None
@@ -30,7 +30,7 @@ class OKRUpdate(BaseModel):
 
 
 class OKRResponse(BaseModel):
-    """OKR response"""
+    """Resposta de OKR"""
     id: int
     user_id: int
     tipo: TipoOKR

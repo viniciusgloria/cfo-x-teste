@@ -2,7 +2,6 @@ version: '3.8'
 
 # APENAS PARA DESENVOLVIMENTO LOCAL
 # Este arquivo está em todas as branches mas só é usado localmente
-# Azure App Service NÃO usa este arquivo
 
 services:
   db:
@@ -17,7 +16,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user"]
+      test: ["CMD-SHELL", "pg_isready -U user -d cfohub_dev"]
       interval: 10s
       timeout: 5s
       retries: 5

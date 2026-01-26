@@ -1,5 +1,8 @@
 """
-User model - Authentication and user data
+Modelo de Usuário - autenticação e dados de perfil.
+
+Esta é a tabela central de identidade. Outros modelos a referenciam para
+permissões, propriedade e auditoria.
 """
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum
 from sqlalchemy.orm import relationship
@@ -9,7 +12,7 @@ import enum
 
 
 class UserRole(str, enum.Enum):
-    """User roles in the system"""
+    """Perfis de acesso usados nas verificações de autorização."""
     ADMIN = "admin"
     GESTOR = "gestor"
     COLABORADOR = "colaborador"
@@ -18,41 +21,39 @@ class UserRole(str, enum.Enum):
 
 
 class UserType(str, enum.Enum):
-    """User employment type"""
+    """Tipo de contrato de trabalho do colaborador."""
     CLT = "CLT"
     PJ = "PJ"
 
 
 class User(Base):
-    """User model for authentication and profile"""
+    """Registro de autenticação e perfil do usuário."""
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     nome = Column(String(255), nullable=False)
+    # A senha é armazenada como hash; nunca persistir senha em texto puro.
     senha_hash = Column(String(255), nullable=False)
     
-    # Role and type
+    # Perfil define autorização; tipo é usado apenas para colaboradores.
     role = Column(SQLEnum(UserRole), default=UserRole.COLABORADOR, nullable=False)
-    tipo = Column(SQLEnum(UserType), nullable=True)  # CLT or PJ (null for non-employees)
+    tipo = Column(SQLEnum(UserType), nullable=True)  # CLT ou PJ (nulo para não colaboradores)
     
-    # Additional info
+    # Informacoes adicionais
     cargo = Column(String(100))
     setor = Column(String(100))
     telefone = Column(String(20))
     avatar = Column(String(500))
     
-    # Status
+    # Flags de status usadas para acesso e fluxo de primeiro login.
     ativo = Column(Boolean, default=True, nullable=False)
     primeiro_acesso = Column(Boolean, default=True, nullable=False)
     
-    # Timestamps
+    # Carimbos de data/hora: created_at é definido na criação; updated_at só em atualizações.
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_login = Column(DateTime(timezone=True))
-    
-    # Relationships
-    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User {self.email} ({self.role})>"

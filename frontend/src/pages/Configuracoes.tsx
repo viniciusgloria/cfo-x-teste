@@ -43,8 +43,6 @@ export function Configuracoes() {
     grupoNome?: string;
     empresa?: string;
   }>>([
-    { id: '1', name: 'João Silva', email: 'joao@cfocompany.com', role: 'admin' },
-    { id: '2', name: 'Maria Santos', email: 'maria@cfocompany.com', role: 'colaborador' },
   ]);
   const [isSavingEmpresa, setIsSavingEmpresa] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -109,6 +107,8 @@ export function Configuracoes() {
   const [emailErrors, setEmailErrors] = useState<Record<string, string>>({});
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{success: boolean; message: string} | null>(null);
+
+  const { nomeEmpresa } = useEmpresaStore();
 
   const {
     updateEmailConfig,
@@ -248,6 +248,36 @@ export function Configuracoes() {
   const [isRecursosOpen, setIsRecursosOpen] = useState(false);
 
   const [isSavingConfigs, setIsSavingConfigs] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  // Carregar usuários quando a aba 'usuarios' está ativa
+  useEffect(() => {
+    if (active === 'usuarios') {
+      loadUsers();
+    }
+  }, [active]);
+
+  const loadUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const response = await api.get('/api/users');
+      const formattedUsers = response.map((u: any) => ({
+        id: u.id.toString(),
+        name: u.nome,
+        email: u.email,
+        role: u.role,
+        empresa: u.empresa,
+        grupoId: u.grupoId,
+        grupoNome: u.grupoNome,
+      }));
+      setUsers(formattedUsers);
+    } catch (error: any) {
+      console.error('Erro ao carregar usuários:', error);
+      toast.error('Erro ao carregar usuários');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   // Carregar configurações de email existentes
   useEffect(() => {
@@ -269,14 +299,13 @@ export function Configuracoes() {
     if (!toRemoveUser) return;
     
     try {
-      // TODO: Quando o backend estiver pronto, descomentar:
-      // await api.delete(`/users/${toRemoveUser}`);
+      await api.delete(`/api/users/${toRemoveUser}`);
       
       setUsers((prev) => prev.filter((u) => u.id !== toRemoveUser));
       toast.success('Usuário removido com sucesso');
     } catch (error: any) {
       console.error('Erro ao remover usuário:', error);
-      toast.error(error.detail || 'Erro ao remover usuário');
+      toast.error(error.response?.data?.detail || 'Erro ao remover usuário');
     } finally {
       setToRemoveUser(null);
       setConfirmOpen(false);
@@ -316,16 +345,14 @@ export function Configuracoes() {
     }
 
     try {
-      // TODO: Quando o backend estiver pronto, descomentar:
-      // await api.put(`/users/${editUserId}`, {
-      //   nome: editForm.name,
-      //   email: editForm.email,
-      //   role: editForm.role,
-      //   ...(editForm.role === 'cliente' && {
-      //     empresa: editForm.empresa,
-      //     ...(editForm.grupoId && { grupoId: editForm.grupoId })
-      //   })
-      // });
+      await api.put(`/api/users/${editUserId}`, {
+        nome: editForm.name,
+        role: editForm.role,
+        ...(editForm.role === 'cliente' && {
+          empresa: editForm.empresa,
+          ...(editForm.grupoId && { grupoId: editForm.grupoId })
+        })
+      });
 
       // Atualizar estado local
       const grupoNome = editForm.grupoId 
@@ -351,7 +378,7 @@ export function Configuracoes() {
       setEditUserId(null);
     } catch (error: any) {
       console.error('Erro ao atualizar usuário:', error);
-      toast.error(error.detail || 'Erro ao atualizar usuário');
+      toast.error(error.response?.data?.detail || 'Erro ao atualizar usuário');
     }
   };
 
@@ -414,18 +441,7 @@ export function Configuracoes() {
         }),
       };
 
-      await api.post('/users', userData);
-
-      // Add to local state
-      const newUser = {
-        id: Date.now().toString(), // Temporary ID
-        name: createUserForm.nome,
-        email: createUserForm.email,
-        role: createUserForm.role,
-        grupoId: resolvedGrupoId || undefined,
-        grupoNome: resolvedGrupoNome || undefined,
-      };
-      setUsers(prev => [...prev, newUser]);
+      await api.post('/api/users', userData);
 
       // Simular envio de email de boas vindas
       const { subject, body } = getWelcomeEmailData(
@@ -444,9 +460,12 @@ export function Configuracoes() {
       setNovoGrupo({ nome: '' });
       setCriandoGrupoCliente(false);
       setVincularGrupo(false);
+      
+      // Recarregar lista de usuários
+      await loadUsers();
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
-      toast.error(error.detail || 'Erro ao criar usuário');
+      toast.error(error.response?.data?.detail || 'Erro ao criar usuário');
     } finally {
       setIsCreatingUser(false);
     }
@@ -581,13 +600,56 @@ export function Configuracoes() {
   
 
   // validate empresa form on save
-  const handleSaveEmpresa = () => {
-    // Validação simplificada - a empresa já é pré-preenchida com dados válidos
+  const handleSaveEmpresa = async () => {
     setIsSavingEmpresa(true);
-    setTimeout(() => {
+    try {
+      const enderecoParts = [
+        informacoesLegais.endereco,
+        informacoesLegais.numero_endereco,
+        informacoesLegais.complemento_endereco,
+        informacoesLegais.bairro,
+      ]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean);
+
+      const payload = {
+        nome: (informacoesLegais.nome_empresa || nomeEmpresa || 'CFO Hub').trim(),
+        cnpj: informacoesLegais.cnpj?.trim() || null,
+        razao_social: informacoesLegais.nome_empresa?.trim() || null,
+        email: informacoesLegais.email_fiscal?.trim() || null,
+        telefone: informacoesLegais.telefone_principal?.trim() || null,
+        site: informacoesLegais.website?.trim() || null,
+        endereco: enderecoParts.length ? enderecoParts.join(', ') : null,
+        cidade: informacoesLegais.cidade?.trim() || null,
+        estado: informacoesLegais.estado || null,
+        cep: informacoesLegais.cep?.trim() || null,
+        logo: identidadeVisual.logo_sidebar || null,
+        cor_primaria: identidadeVisual.cor_primaria || null,
+        cor_secundaria: identidadeVisual.cor_secundaria || null,
+        jornada_horas: configPonto.jornada_horas,
+        jornada_dias: configPonto.jornada_dias,
+        tolerancia_minutos: configPonto.tolerancia_minutos,
+        ponto_ativo: recursos.ponto_ativo,
+        solicitacoes_ativo: recursos.solicitacoes_ativo,
+        okrs_ativo: recursos.okrs_ativo,
+        mural_ativo: recursos.mural_ativo,
+        configuracoes: {
+          informacoes_legais: informacoesLegais,
+          identidade_visual: identidadeVisual,
+          config_ponto: configPonto,
+          dados_bancarios: dadosBancarios,
+          config_operacional: configOperacional,
+          recursos,
+        },
+      };
+
+      await api.post('/api/empresa', payload);
+    } catch (error: any) {
+      console.error('Erro ao salvar empresa:', error);
+      toast.error(error?.message || 'Erro ao salvar empresa');
+    } finally {
       setIsSavingEmpresa(false);
-      // Não mostrar mensagem redundante já que as seções individuais mostram suas próprias mensagens
-    }, 800);
+    }
   };
 
   const handleTestSMTPConnection = async () => {
@@ -1118,8 +1180,23 @@ export function Configuracoes() {
               )}
 
               {/* Lista de Usuários */}
-              {/* Mobile: cards */}
-              <div className="space-y-3 md:hidden">
+              {isLoadingUsers ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Carregando usuários...</p>
+                  </div>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 dark:text-gray-400">Nenhum usuário encontrado</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Crie o primeiro usuário usando o formulário acima</p>
+                </div>
+              ) : (
+                <>
+                  {/* Mobile: cards */}
+                  <div className="space-y-3 md:hidden">
                 {users.map((u) => (
                   <div key={u.id} className="p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg">
                     <div className="flex items-start justify-between">
@@ -1144,38 +1221,40 @@ export function Configuracoes() {
               </div>
 
               {/* Desktop: table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full table-auto">
-                  <thead>
-                    <tr className="text-left text-sm text-gray-600 dark:text-slate-300">
-                      <th className="p-2">Nome</th>
-                      <th className="p-2">E-mail</th>
-                      <th className="p-2">Cargo</th>
-                      <th className="p-2">Empresa</th>
-                      <th className="p-2">Grupo</th>
-                      <th className="p-2">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id} className="border-t dark:border-slate-700">
-                        <td className="p-2">{u.name}</td>
-                        <td className="p-2">{u.email}</td>
-                        <td className="p-2">{u.role}</td>
-                        <td className="p-2 text-sm">{u.empresa || '—'}</td>
-                        <td className="p-2 text-sm">{u.grupoNome || '—'}</td>
-                        <td className="p-2">
-                          <div className="flex gap-2">
-                            <Button variant="ghost" aria-label={`Editar usuário ${u.name}`} onClick={() => openEditUser(u.id)}>Editar</Button>
-                            <Button variant="outline" onClick={() => { setToRemoveUser(u.id); setConfirmOpen(true); }} aria-label={`Remover usuário ${u.name}`}>Remover</Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              </div>
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full table-auto">
+                      <thead>
+                        <tr className="text-left text-sm text-gray-600 dark:text-slate-300">
+                          <th className="p-2">Nome</th>
+                          <th className="p-2">E-mail</th>
+                          <th className="p-2">Cargo</th>
+                          <th className="p-2">Empresa</th>
+                          <th className="p-2">Grupo</th>
+                          <th className="p-2">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map((u) => (
+                          <tr key={u.id} className="border-t dark:border-slate-700">
+                            <td className="p-2">{u.name}</td>
+                            <td className="p-2">{u.email}</td>
+                            <td className="p-2">{u.role}</td>
+                            <td className="p-2 text-sm">{u.empresa || '—'}</td>
+                            <td className="p-2 text-sm">{u.grupoNome || '—'}</td>
+                            <td className="p-2">
+                              <div className="flex gap-2">
+                                <Button variant="ghost" aria-label={`Editar usuário ${u.name}`} onClick={() => openEditUser(u.id)}>Editar</Button>
+                                <Button variant="outline" onClick={() => { setToRemoveUser(u.id); setConfirmOpen(true); }} aria-label={`Remover usuário ${u.name}`}>Remover</Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
           )}
 
           {active === 'clientes' && (
@@ -2368,8 +2447,3 @@ export function Configuracoes() {
     </div>
   );
 }
-
-
-
-
-

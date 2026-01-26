@@ -1,5 +1,5 @@
 """
-Cargo and Setor schemas
+Esquemas de cargo e setor
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -7,14 +7,14 @@ from datetime import datetime
 
 
 class CargoCreate(BaseModel):
-    """Create position"""
+    """Cria cargo"""
     nome: str
     descricao: Optional[str] = None
     nivel: Optional[str] = None
 
 
 class CargoResponse(BaseModel):
-    """Position response"""
+    """Resposta de cargo"""
     id: int
     nome: str
     descricao: Optional[str] = None
@@ -26,14 +26,14 @@ class CargoResponse(BaseModel):
 
 
 class SetorCreate(BaseModel):
-    """Create department"""
+    """Cria setor"""
     nome: str
     descricao: Optional[str] = None
     gestor_id: Optional[int] = None
 
 
 class SetorResponse(BaseModel):
-    """Department response"""
+    """Resposta de setor"""
     id: int
     nome: str
     descricao: Optional[str] = None

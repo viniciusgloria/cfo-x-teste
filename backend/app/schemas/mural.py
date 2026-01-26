@@ -1,5 +1,5 @@
 """
-Mural (social wall) schemas
+Esquemas de mural (social)
 """
 from pydantic import BaseModel
 from typing import Optional, List
@@ -8,7 +8,7 @@ from ..models.mural import TipoPost
 
 
 class PostCreate(BaseModel):
-    """Create post"""
+    """Cria post"""
     tipo: TipoPost
     titulo: str
     conteudo: str
@@ -17,24 +17,24 @@ class PostCreate(BaseModel):
 
 
 class PostUpdate(BaseModel):
-    """Update post"""
+    """Atualiza post"""
     titulo: Optional[str] = None
     conteudo: Optional[str] = None
     fixado: Optional[bool] = None
 
 
 class PostCommentCreate(BaseModel):
-    """Create comment"""
+    """Cria comentario"""
     conteudo: str
 
 
 class PostReactionCreate(BaseModel):
-    """Create reaction"""
+    """Cria reacao"""
     tipo: str
 
 
 class PostResponse(BaseModel):
-    """Post response"""
+    """Resposta de post"""
     id: int
     user_id: int
     tipo: TipoPost

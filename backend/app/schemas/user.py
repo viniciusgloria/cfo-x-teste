@@ -1,5 +1,5 @@
 """
-User schemas for validation
+Schemas de usuario para validacao
 """
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
@@ -8,7 +8,7 @@ from ..models.user import UserRole, UserType
 
 
 class UserBase(BaseModel):
-    """Base user schema"""
+    """Schema base de usuario"""
     email: EmailStr
     nome: str = Field(..., min_length=1, max_length=255)
     role: UserRole = UserRole.COLABORADOR
@@ -20,12 +20,12 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    """Schema for creating a user"""
+    """Schema para criar usuario"""
     senha: str = Field(..., min_length=6)
 
 
 class UserUpdate(BaseModel):
-    """Schema for updating a user"""
+    """Schema para atualizar usuario"""
     nome: Optional[str] = None
     role: Optional[UserRole] = None
     tipo: Optional[UserType] = None
@@ -37,7 +37,7 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(UserBase):
-    """Schema for user response"""
+    """Schema  de resposta de usuario"""
     id: int
     ativo: bool
     primeiro_acesso: bool
@@ -49,5 +49,5 @@ class UserResponse(UserBase):
 
 
 class UserInDB(UserResponse):
-    """User with hashed password (internal use)"""
+    """Usuario com hash de senha (uso interno)"""
     senha_hash: str

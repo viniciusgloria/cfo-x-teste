@@ -1,5 +1,7 @@
 """
-Notificação (Notification) model
+Modelo de Notificação.
+
+Armazena alertas para o usuário com links opcionais.
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
@@ -9,7 +11,7 @@ import enum
 
 
 class TipoNotificacao(str, enum.Enum):
-    """Notification type"""
+    """Tipo/gravidade exibida na UI."""
     INFO = "info"
     SUCESSO = "sucesso"
     AVISO = "aviso"
@@ -17,25 +19,25 @@ class TipoNotificacao(str, enum.Enum):
 
 
 class Notificacao(Base):
-    """User notifications"""
+    """Notificação ligada a um usuário específico."""
     __tablename__ = "notificacoes"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
-    # Notification content
+    # Conteúdo principal exibido ao usuário.
     tipo = Column(SQLEnum(TipoNotificacao), default=TipoNotificacao.INFO, nullable=False)
     titulo = Column(String(255), nullable=False)
     mensagem = Column(Text, nullable=False)
     
-    # Link/action
+    # Link opcional para uma tela relacionada.
     link = Column(String(500))
     
-    # Status
+    # Status de leitura para indicadores e contadores.
     lida = Column(Boolean, default=False)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
-    # Relationships
+    # Referência ao usuário dono da notificação.
     user = relationship("User", backref="notificacoes")

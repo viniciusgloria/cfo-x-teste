@@ -224,6 +224,10 @@ npm test
 # Ver uso de recursos Docker
 docker stats
 
+# Logs completos (containers + eventos do daemon)
+.\docker-logs.ps1
+docker-logs.bat
+
 # Ver logs com timestamp
 docker-compose logs -f -t backend
 

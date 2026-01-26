@@ -1,5 +1,5 @@
 """
-User management routes
+Rotas de gestao de usuarios
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
@@ -23,7 +23,7 @@ async def list_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """List users with optional filters"""
+    """Lista usuarios com filtros opcionais"""
     query = db.query(User)
     
     if role:
@@ -43,7 +43,7 @@ async def get_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get user by ID"""
+    """Busca usuario por ID"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
@@ -59,8 +59,8 @@ async def create_user(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Create new user (Admin only)"""
-    # Check if email exists
+    """Cria novo usuario (apenas admin)"""
+    # Verifica se email existe
     existing = db.query(User).filter(User.email == user_data.email).first()
     if existing:
         raise HTTPException(
@@ -94,7 +94,7 @@ async def update_user(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Update user (Admin only)"""
+    """Atualiza usuario (apenas admin)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
@@ -102,7 +102,7 @@ async def update_user(
             detail="User not found"
         )
     
-    # Update fields
+    # Atualiza campos
     for field, value in user_data.model_dump(exclude_unset=True).items():
         setattr(user, field, value)
     
@@ -118,7 +118,7 @@ async def delete_user(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Delete user (Admin only)"""
+    """Remove usuario (apenas admin)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
@@ -126,7 +126,7 @@ async def delete_user(
             detail="User not found"
         )
     
-    # Soft delete - just mark as inactive
+    # Exclusao logica - apenas marca como inativo
     user.ativo = False
     db.commit()
     

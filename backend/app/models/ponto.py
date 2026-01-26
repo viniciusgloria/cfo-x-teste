@@ -1,5 +1,7 @@
 """
-Ponto (Time tracking) models
+Modelos de Ponto (controle de jornada).
+
+Registra batidas e solicitações de ajuste.
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Enum as SQLEnum
 from sqlalchemy.orm import relationship
@@ -9,7 +11,7 @@ import enum
 
 
 class TipoPonto(str, enum.Enum):
-    """Type of time tracking entry"""
+    """Tipo de evento de ponto."""
     ENTRADA = "entrada"
     SAIDA = "saida"
     INTERVALO_INICIO = "intervalo_inicio"
@@ -17,58 +19,58 @@ class TipoPonto(str, enum.Enum):
 
 
 class StatusAjuste(str, enum.Enum):
-    """Status of adjustment request"""
+    """Status de aprovação dos ajustes."""
     PENDENTE = "pendente"
     APROVADO = "aprovado"
     REJEITADO = "rejeitado"
 
 
 class Ponto(Base):
-    """Time tracking entries"""
+    """Registro único de ponto de um usuário."""
     __tablename__ = "pontos"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
-    # Entry details
+    # Tipo do evento e data/hora (UTC).
     tipo = Column(SQLEnum(TipoPonto), nullable=False)
     timestamp = Column(DateTime(timezone=True), nullable=False)
     
-    # Location (optional)
+    # Metadados de geolocalização opcionais para auditoria.
     latitude = Column(String(50))
     longitude = Column(String(50))
     localizacao = Column(String(255))
     
-    # Metadata
+    # Data/hora de criação no servidor.
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
-    # Relationships
+    # Referência ao usuário dono do ponto.
     user = relationship("User", backref="pontos")
 
 
 class AjustePonto(Base):
-    """Time tracking adjustment requests"""
+    """Solicitação de ajuste de um evento de ponto."""
     __tablename__ = "ajustes_ponto"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
-    # Adjustment details
+    # Horário original vs ajustado, com motivo obrigatório.
     data = Column(DateTime(timezone=True), nullable=False)
     tipo = Column(SQLEnum(TipoPonto), nullable=False)
     horario_original = Column(DateTime(timezone=True))
     horario_ajustado = Column(DateTime(timezone=True), nullable=False)
     motivo = Column(Text, nullable=False)
     
-    # Status
+    # Campos do fluxo de aprovação.
     status = Column(SQLEnum(StatusAjuste), default=StatusAjuste.PENDENTE, nullable=False)
     aprovador_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     resposta = Column(Text)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Relationships
+    # Relacionamentos separados para solicitante e aprovador.
     user = relationship("User", foreign_keys=[user_id], backref="ajustes_ponto")
     aprovador = relationship("User", foreign_keys=[aprovador_id])

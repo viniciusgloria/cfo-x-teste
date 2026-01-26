@@ -1,5 +1,5 @@
 """
-Ponto (time tracking) schemas
+Esquemas de ponto (controle de jornada)
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -8,7 +8,7 @@ from ..models.ponto import TipoPonto, StatusAjuste
 
 
 class PontoCreate(BaseModel):
-    """Create time entry"""
+    """Cria registro de ponto"""
     tipo: TipoPonto
     latitude: Optional[str] = None
     longitude: Optional[str] = None
@@ -16,7 +16,7 @@ class PontoCreate(BaseModel):
 
 
 class PontoResponse(BaseModel):
-    """Time entry response"""
+    """Resposta de registro de ponto"""
     id: int
     user_id: int
     tipo: TipoPonto
@@ -31,7 +31,7 @@ class PontoResponse(BaseModel):
 
 
 class AjustePontoCreate(BaseModel):
-    """Create time adjustment request"""
+    """Cria solicitacao de ajuste de ponto"""
     data: datetime
     tipo: TipoPonto
     horario_original: Optional[datetime] = None
@@ -40,13 +40,13 @@ class AjustePontoCreate(BaseModel):
 
 
 class AjustePontoUpdate(BaseModel):
-    """Update adjustment status"""
+    """Atualiza status do ajuste"""
     status: StatusAjuste
     resposta: Optional[str] = None
 
 
 class AjustePontoResponse(BaseModel):
-    """Adjustment response"""
+    """Resposta de ajuste"""
     id: int
     user_id: int
     data: datetime

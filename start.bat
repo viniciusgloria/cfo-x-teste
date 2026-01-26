@@ -112,7 +112,7 @@ echo   API Docs:       http://localhost:8000/api/docs
 echo   Database:       localhost:5432
 echo.
 echo Credenciais padrao (dev):
-echo   Email:    admin@example.com
+echo   Email:    admin@cfohub.com
 echo   Senha:    admin123
 echo.
 echo Comandos uteis:

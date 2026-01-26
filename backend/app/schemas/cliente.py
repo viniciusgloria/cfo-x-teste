@@ -1,5 +1,5 @@
 """
-Cliente schemas
+Esquemas de cliente
 """
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -8,7 +8,7 @@ from ..models.cliente import StatusContrato
 
 
 class ClienteCreate(BaseModel):
-    """Create client"""
+    """Cria cliente"""
     nome: str
     cnpj: Optional[str] = None
     razao_social: Optional[str] = None
@@ -22,7 +22,7 @@ class ClienteCreate(BaseModel):
 
 
 class ClienteUpdate(BaseModel):
-    """Update client"""
+    """Atualiza cliente"""
     nome: Optional[str] = None
     cnpj: Optional[str] = None
     razao_social: Optional[str] = None
@@ -35,7 +35,7 @@ class ClienteUpdate(BaseModel):
 
 
 class ClienteResponse(BaseModel):
-    """Client response"""
+    """Resposta de cliente"""
     id: int
     nome: str
     cnpj: Optional[str] = None

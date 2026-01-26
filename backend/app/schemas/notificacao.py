@@ -1,5 +1,5 @@
 """
-Notificação schemas
+Esquemas de notificacao
 """
 from pydantic import BaseModel
 from datetime import datetime

@@ -1,5 +1,5 @@
 """
-Pydantic schemas for request/response validation
+Esquemas Pydantic para validacao de requisicoes e respostas
 """
 from .user import *
 from .auth import *

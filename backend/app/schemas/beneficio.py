@@ -1,5 +1,5 @@
 """
-Benefício schemas
+Esquemas de beneficio
 """
 from pydantic import BaseModel
 from datetime import datetime

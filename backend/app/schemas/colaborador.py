@@ -1,5 +1,5 @@
 """
-Colaborador schemas
+Esquemas de colaborador
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -7,7 +7,7 @@ from datetime import date, datetime
 
 
 class ColaboradorCreate(BaseModel):
-    """Create employee profile"""
+    """Cria perfil de colaborador"""
     user_id: int
     cpf: Optional[str] = None
     rg: Optional[str] = None
@@ -26,7 +26,7 @@ class ColaboradorCreate(BaseModel):
 
 
 class ColaboradorUpdate(BaseModel):
-    """Update employee profile"""
+    """Atualiza perfil de colaborador"""
     cpf: Optional[str] = None
     rg: Optional[str] = None
     data_nascimento: Optional[date] = None
@@ -37,7 +37,7 @@ class ColaboradorUpdate(BaseModel):
 
 
 class ColaboradorResponse(BaseModel):
-    """Employee response"""
+    """Resposta de colaborador"""
     id: int
     user_id: int
     cpf: Optional[str] = None

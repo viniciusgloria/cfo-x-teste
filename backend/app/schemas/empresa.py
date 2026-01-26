@@ -1,5 +1,5 @@
 """
-Empresa, Chat, Notificacao, etc schemas
+Esquemas de empresa, chat, notificacao, etc
 """
 from pydantic import BaseModel
 from typing import Optional
@@ -7,8 +7,33 @@ from datetime import datetime
 
 
 # Empresa
+class EmpresaUpsert(BaseModel):
+    """Cria ou atualiza configuracoes da empresa"""
+    nome: str
+    cnpj: Optional[str] = None
+    razao_social: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    site: Optional[str] = None
+    endereco: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    logo: Optional[str] = None
+    cor_primaria: Optional[str] = None
+    cor_secundaria: Optional[str] = None
+    jornada_horas: Optional[float] = None
+    jornada_dias: Optional[int] = None
+    tolerancia_minutos: Optional[int] = None
+    ponto_ativo: Optional[bool] = None
+    solicitacoes_ativo: Optional[bool] = None
+    okrs_ativo: Optional[bool] = None
+    mural_ativo: Optional[bool] = None
+    configuracoes: Optional[dict] = None
+
+
 class EmpresaUpdate(BaseModel):
-    """Update company settings"""
+    """Atualiza configuracoes da empresa"""
     nome: Optional[str] = None
     cnpj: Optional[str] = None
     logo: Optional[str] = None
@@ -18,7 +43,7 @@ class EmpresaUpdate(BaseModel):
 
 
 class EmpresaResponse(BaseModel):
-    """Company response"""
+    """Resposta da empresa"""
     id: int
     nome: str
     cnpj: Optional[str] = None
@@ -37,13 +62,13 @@ class EmpresaResponse(BaseModel):
 
 # Chat
 class ChatMessageCreate(BaseModel):
-    """Create chat message"""
+    """Cria mensagem de chat"""
     destinatario_id: int
     mensagem: str
 
 
 class ChatMessageResponse(BaseModel):
-    """Chat message response"""
+    """Resposta de mensagem de chat"""
     id: int
     remetente_id: int
     destinatario_id: int
@@ -57,7 +82,7 @@ class ChatMessageResponse(BaseModel):
 
 # Notificacao
 class NotificacaoResponse(BaseModel):
-    """Notification response"""
+    """Resposta de notificacao"""
     id: int
     user_id: int
     tipo: str
@@ -73,7 +98,7 @@ class NotificacaoResponse(BaseModel):
 
 # Documento
 class DocumentoCreate(BaseModel):
-    """Create document"""
+    """Cria documento"""
     tipo: str
     nome: str
     descricao: Optional[str] = None
@@ -83,7 +108,7 @@ class DocumentoCreate(BaseModel):
 
 
 class DocumentoResponse(BaseModel):
-    """Document response"""
+    """Resposta de documento"""
     id: int
     user_id: int
     tipo: str
@@ -98,7 +123,7 @@ class DocumentoResponse(BaseModel):
 
 # Beneficio
 class BeneficioResponse(BaseModel):
-    """Benefit response"""
+    """Resposta de beneficio"""
     id: int
     nome: str
     descricao: Optional[str] = None
@@ -112,7 +137,7 @@ class BeneficioResponse(BaseModel):
 
 # Avaliacao
 class AvaliacaoCreate(BaseModel):
-    """Create evaluation"""
+    """Cria avaliacao"""
     avaliado_id: int
     titulo: str
     periodo: Optional[str] = None
@@ -126,7 +151,7 @@ class AvaliacaoCreate(BaseModel):
 
 
 class AvaliacaoResponse(BaseModel):
-    """Evaluation response"""
+    """Resposta de avaliacao"""
     id: int
     avaliador_id: int
     avaliado_id: int
@@ -140,14 +165,14 @@ class AvaliacaoResponse(BaseModel):
 
 # Lembrete
 class LembreteCreate(BaseModel):
-    """Create reminder"""
+    """Cria lembrete"""
     titulo: str
     descricao: Optional[str] = None
     data_hora: datetime
 
 
 class LembreteResponse(BaseModel):
-    """Reminder response"""
+    """Resposta de lembrete"""
     id: int
     user_id: int
     titulo: str

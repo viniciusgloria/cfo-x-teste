@@ -1,5 +1,5 @@
 """
-Chat schemas
+Esquemas de chat
 """
 from pydantic import BaseModel
 from datetime import datetime

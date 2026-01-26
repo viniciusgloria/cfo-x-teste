@@ -1,5 +1,7 @@
 """
-Tarefa (Task) models
+Modelos de Tarefa.
+
+Gerencia tarefas com comentários e anexos.
 """
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import relationship
@@ -9,7 +11,7 @@ import enum
 
 
 class StatusTarefa(str, enum.Enum):
-    """Task status"""
+    """Status do fluxo de trabalho das tarefas."""
     BACKLOG = "backlog"
     TODO = "todo"
     EM_PROGRESSO = "em_progresso"
@@ -19,7 +21,7 @@ class StatusTarefa(str, enum.Enum):
 
 
 class PrioridadeTarefa(str, enum.Enum):
-    """Task priority"""
+    """Nível de prioridade para ordenação e alertas."""
     BAIXA = "baixa"
     MEDIA = "media"
     ALTA = "alta"
@@ -27,49 +29,49 @@ class PrioridadeTarefa(str, enum.Enum):
 
 
 class Tarefa(Base):
-    """Task/Project management"""
+    """Registro de tarefa com responsável, status e progresso."""
     __tablename__ = "tarefas"
     
     id = Column(Integer, primary_key=True, index=True)
     
-    # Basic info
+    # Campos básicos de descrição.
     titulo = Column(String(255), nullable=False)
     descricao = Column(Text)
     
-    # Assignment
+    # Criador e responsável atual.
     criador_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     responsavel_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
     
-    # Status and priority
+    # Estado do fluxo e prioridade.
     status = Column(SQLEnum(StatusTarefa), default=StatusTarefa.TODO, nullable=False)
     prioridade = Column(SQLEnum(PrioridadeTarefa), default=PrioridadeTarefa.MEDIA)
     
-    # Dates
+    # Campos de agendamento.
     data_inicio = Column(DateTime(timezone=True))
     data_fim = Column(DateTime(timezone=True))
     prazo = Column(DateTime(timezone=True))
     
-    # Project/Category
+    # Agrupamento por projeto e tags em JSON.
     projeto = Column(String(100))
-    tags = Column(Text)  # JSON array
+    tags = Column(Text)
     
-    # Progress
+    # Progresso e tempo (em minutos).
     progresso = Column(Integer, default=0)  # 0-100
-    tempo_estimado = Column(Integer)  # Minutes
-    tempo_gasto = Column(Integer, default=0)  # Minutes
+    tempo_estimado = Column(Integer)  # Minutos
+    tempo_gasto = Column(Integer, default=0)  # Minutos
     
-    # Checklist
-    checklist = Column(Text)  # JSON array of items
+    # Checklist em JSON.
+    checklist = Column(Text)
     
-    # Flags
+    # Estado de bloqueio com motivo.
     bloqueada = Column(Boolean, default=False)
     motivo_bloqueio = Column(Text)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Relationships
+    # Exclusão em cascata remove comentários/anexos junto com a tarefa.
     criador = relationship("User", foreign_keys=[criador_id])
     responsavel = relationship("User", foreign_keys=[responsavel_id], backref="tarefas_responsavel")
     comments = relationship("TarefaComment", back_populates="tarefa", cascade="all, delete-orphan")
@@ -77,41 +79,41 @@ class Tarefa(Base):
 
 
 class TarefaComment(Base):
-    """Comments on tasks"""
+    """Comentário feito em uma tarefa."""
     __tablename__ = "tarefa_comments"
     
     id = Column(Integer, primary_key=True, index=True)
     tarefa_id = Column(Integer, ForeignKey("tarefas.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
-    # Comment content
+    # Corpo do comentário.
     conteudo = Column(Text, nullable=False)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
-    # Relationships
+    # Referências à tarefa e ao autor.
     tarefa = relationship("Tarefa", back_populates="comments")
     user = relationship("User")
 
 
 class TarefaAttachment(Base):
-    """Attachments on tasks"""
+    """Arquivo anexado a uma tarefa."""
     __tablename__ = "tarefa_attachments"
     
     id = Column(Integer, primary_key=True, index=True)
     tarefa_id = Column(Integer, ForeignKey("tarefas.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
-    # File info
+    # Metadados do arquivo para download e visualização.
     nome = Column(String(255), nullable=False)
     url = Column(String(500), nullable=False)
-    tamanho = Column(Integer)  # Bytes
-    tipo = Column(String(100))  # MIME type
+    tamanho = Column(Integer)  # bytes
+    tipo = Column(String(100))  # Tipo MIME (formato do arquivo)
     
-    # Timestamps
+    # Carimbos de data/hora
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
-    # Relationships
+    # Referências à tarefa e ao autor do upload.
     tarefa = relationship("Tarefa", back_populates="attachments")
     user = relationship("User")

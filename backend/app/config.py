@@ -1,5 +1,5 @@
 """
-Application configuration
+Configuracao da aplicacao
 """
 from pydantic_settings import BaseSettings
 from typing import List
@@ -7,12 +7,12 @@ import os
 
 
 class Settings(BaseSettings):
-    """Application settings"""
+    """Configuracoes da aplicacao"""
     
-    # Environment
+    # Ambiente
     ENVIRONMENT: str = "development"
     
-    # Database
+    # Banco de dados
     DATABASE_URL: str
     
     # Redis
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # Application
+    # Aplicacao
     APP_NAME: str = "CFO X API"
     APP_VERSION: str = "0.0.0 Em Desenvolvimento"
     DEBUG: bool = False
@@ -32,10 +32,10 @@ class Settings(BaseSettings):
     # CORS
     FRONTEND_URL: str = "http://localhost:5173"
     
-    # Logging
+    # Logs
     LOG_LEVEL: str = "INFO"
     
-    # OMIE (for future use)
+    # OMIE (para uso futuro)
     OMIE_API_KEY: str = ""
     OMIE_API_SECRET: str = ""
     OMIE_APP_KEY: str = ""
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     
     @property
     def cors_origins(self) -> List[str]:
-        """Parse CORS origins - permite frontend URL e localhost em dev"""
+        """Interpreta origens CORS - permite URL do frontend e localhost em dev"""
         origins = [self.FRONTEND_URL]
         if self.ENVIRONMENT == "development":
             origins.extend([
@@ -58,12 +58,12 @@ class Settings(BaseSettings):
     
     @property
     def is_production(self) -> bool:
-        """Check if running in production"""
+        """Verifica se esta em producao"""
         return self.ENVIRONMENT == "production"
     
     @property
     def is_staging(self) -> bool:
-        """Check if running in staging"""
+        """Verifica se esta em staging"""
         return self.ENVIRONMENT == "staging"
 
 
