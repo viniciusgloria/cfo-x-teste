@@ -21,6 +21,7 @@ from .lembretes import router as lembretes_router
 from .cargos_setores import router as cargos_setores_router
 from .folha import router as folha_router
 from .integrations import router as integrations_router
+from .permissoes import router as permissoes_router
 
 __all__ = [
     "auth_router",
@@ -43,4 +44,5 @@ __all__ = [
     "cargos_setores_router",
     "folha_router",
     "integrations_router",
+    "permissoes_router",
 ]
