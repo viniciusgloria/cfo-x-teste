@@ -48,11 +48,12 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         """Interpreta origens CORS - permite URL do frontend e localhost em dev"""
         origins = [self.FRONTEND_URL]
-        if self.ENVIRONMENT == "development":
+        if self.ENVIRONMENT == "development" or self.DEBUG:
             origins.extend([
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "http://127.0.0.1:5173",
+                "http://172.18.0.6:5173",  # Docker network  # Permite todas as origens em desenvolvimento
             ])
         return origins
     
