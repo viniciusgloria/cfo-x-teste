@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.permissao import PermissaoRole
 from ..schemas.permissao import PermissaoRoleCreate, PermissaoRoleResponse, PermissaoRoleUpdate
-from ..auth import get_current_user
+from ..dependencies import get_current_user, get_current_admin
 from typing import Dict, List
 
 router = APIRouter(prefix="/api/permissoes", tags=["permissoes"])

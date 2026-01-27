@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, Plus, Pencil, Trash2, Search, History, Users, Clock, CreditCard, Palette, FileText, Zap, LayoutDashboard, UserCircle, Timer, FileText as FileTextIcon, Star, Target, CheckSquare, MessageSquare, MessageCircle, ThumbsUp, FileStack, Gift, BarChart3, UsersRound, DollarSign, FileSpreadsheet, LayoutGrid, List, Eye, AlertCircle, Building2, Info, ChevronDown, ChevronUp, Home, UserCog, Award, BarChart, FolderOpen, Receipt } from 'lucide-react';
+import { Settings, Plus, Pencil, Trash2, Search, History, Users, Clock, CreditCard, Palette, FileText, Target, CheckSquare, MessageSquare, MessageCircle, Gift, DollarSign, LayoutGrid, List, Eye, AlertCircle, Building2, Info, ChevronDown, ChevronUp, Home, UserCog, Award, BarChart, FolderOpen, Calendar, Activity, Bell, Receipt } from 'lucide-react';
 import { Cargo, Setor } from '../types';
 // Card removed: no longer needed after maintenance UI removal
 import PageBanner from '../components/ui/PageBanner';
@@ -204,39 +204,95 @@ export function Configuracoes() {
   });
 
   // Estados para permissões por role
-  const [permissoesGestor, setPermissoesGestor] = useState({
+  const [permissoesAdministrador, setPermissoesAdministrador] = useState({
     dashboard: true,
-    colaboradores: true,
+    notificacoes: true,
+    tarefas: true,
     ponto: true,
+    mural: true,
+    calendario: true,
+    clientes: true,
+    chat: true,
+    documentos: true,
+    feedbacks: true,
     solicitacoes: true,
+    configuracoes: true,
+    beneficios: true,
+    performance: true,
+    colaboradores: true,
+    folha_pagamento: true,
+    folha_clientes: true,
     avaliacoes: true,
     okrs: true,
+    relatorios: true,
+  });
+
+  const [permissoesGestor, setPermissoesGestor] = useState({
+    dashboard: true,
+    notificacoes: true,
     tarefas: true,
+    ponto: true,
     mural: true,
+    calendario: true,
+    clientes: true,
     chat: true,
+    documentos: true,
     feedbacks: true,
+    solicitacoes: true,
+    configuracoes: true,
+    beneficios: true,
+    performance: true,
+    colaboradores: true,
+    folha_pagamento: true,
+    folha_clientes: true,
+    avaliacoes: true,
+    okrs: true,
     relatorios: true,
   });
 
   const [permissoesColaborador, setPermissoesColaborador] = useState({
     dashboard: true,
-    ponto: true,
-    solicitacoes: true,
+    notificacoes: true,
     tarefas: true,
+    ponto: true,
     mural: true,
+    calendario: true,
+    clientes: false,
     chat: true,
     documentos: true,
-    beneficios: true,
     feedbacks: true,
+    solicitacoes: true,
+    configuracoes: false,
+    beneficios: true,
+    performance: false,
+    colaboradores: false,
+    folha_pagamento: false,
+    folha_clientes: false,
+    avaliacoes: false,
+    okrs: false,
+    relatorios: false,
   });
 
   const [permissoesCliente, setPermissoesCliente] = useState({
     dashboard: true,
+    notificacoes: false,
+    tarefas: false,
+    ponto: false,
+    mural: false,
+    calendario: false,
     clientes: true,
-    folha_clientes: true,
-    funcionarios_cliente: true,
     chat: true,
+    documentos: false,
     feedbacks: true,
+    solicitacoes: false,
+    configuracoes: false,
+    beneficios: false,
+    performance: false,
+    colaboradores: false,
+    folha_pagamento: false,
+    folha_clientes: true,
+    avaliacoes: false,
+    okrs: false,
     relatorios: true,
   });
 
@@ -813,6 +869,10 @@ export function Configuracoes() {
   };
 
   // Funções para gerenciar permissões
+  const handleTogglePermissaoAdministrador = (key: string) => {
+    setPermissoesAdministrador(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
+  };
+
   const handleTogglePermissaoGestor = (key: string) => {
     setPermissoesGestor(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
   };
@@ -825,50 +885,105 @@ export function Configuracoes() {
     setPermissoesCliente(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
   };
 
-  const handleSavePermissoes = () => {
+  const handleSavePermissoes = async () => {
     setIsSavingConfigs(true);
     
-    // Salvar permissões no localStorage
-    localStorage.setItem('permissoes_gestor', JSON.stringify(permissoesGestor));
-    localStorage.setItem('permissoes_colaborador', JSON.stringify(permissoesColaborador));
-    localStorage.setItem('permissoes_cliente', JSON.stringify(permissoesCliente));
-    localStorage.setItem('recursos_sistema', JSON.stringify(recursos));
-    
-    // Disparar evento customizado para atualizar sidebar
-    window.dispatchEvent(new Event('storage'));
-    
-    setTimeout(() => {
-      setIsSavingConfigs(false);
+    try {
+      // Salvar permissões via API para cada role
+      const rolesData = [
+        { role: 'admin', permissoes: permissoesAdministrador },
+        { role: 'gestor', permissoes: permissoesGestor },
+        { role: 'colaborador', permissoes: permissoesColaborador },
+        { role: 'cliente', permissoes: permissoesCliente },
+      ];
+
+      for (const { role, permissoes } of rolesData) {
+        const response = await fetch(`/api/permissoes/role/${role}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(permissoes),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erro ao salvar permissões de ${role}`);
+        }
+      }
+
+      // Disparar evento para atualizar sidebar
+      window.dispatchEvent(new Event('permissoes-updated'));
+
       toast.success('Permissões salvas com sucesso!');
-    }, 800);
+    } catch (error: any) {
+      console.error('Erro ao salvar permissões:', error);
+      toast.error('Erro ao salvar permissões');
+    } finally {
+      setIsSavingConfigs(false);
+    }
   };
 
-  const handleCancelarPermissoes = () => {
-    // Recarregar permissões do localStorage ou usar valores padrão
-    const gestorSaved = localStorage.getItem('permissoes_gestor');
-    const colaboradorSaved = localStorage.getItem('permissoes_colaborador');
-    const clienteSaved = localStorage.getItem('permissoes_cliente');
-    const recursosSaved = localStorage.getItem('recursos_sistema');
+  const handleCancelarPermissoes = async () => {
+    try {
+      // Recarregar permissões da API
+      const rolesData = [
+        { role: 'admin', setState: setPermissoesAdministrador },
+        { role: 'gestor', setState: setPermissoesGestor },
+        { role: 'colaborador', setState: setPermissoesColaborador },
+        { role: 'cliente', setState: setPermissoesCliente },
+      ];
 
-    if (gestorSaved) setPermissoesGestor(JSON.parse(gestorSaved));
-    if (colaboradorSaved) setPermissoesColaborador(JSON.parse(colaboradorSaved));
-    if (clienteSaved) setPermissoesCliente(JSON.parse(clienteSaved));
-    if (recursosSaved) setRecursos(JSON.parse(recursosSaved));
+      for (const { role, setState } of rolesData) {
+        const response = await fetch(`/api/permissoes/role/${role}`);
+        if (response.ok) {
+          const data = await response.json();
+          const permissoes: any = {};
+          Object.keys(data).forEach((key) => {
+            if (typeof data[key] === 'boolean') {
+              permissoes[key] = data[key];
+            }
+          });
+          setState(permissoes);
+        }
+      }
 
-    toast.success('Alterações descartadas');
+      toast.success('Alterações descartadas');
+    } catch (error: any) {
+      console.error('Erro ao recarregar permissões:', error);
+      toast.error('Erro ao recarregar permissões');
+    }
   };
 
   // Carregar permissões salvas ao montar o componente
   useEffect(() => {
-    const gestorSaved = localStorage.getItem('permissoes_gestor');
-    const colaboradorSaved = localStorage.getItem('permissoes_colaborador');
-    const clienteSaved = localStorage.getItem('permissoes_cliente');
-    const recursosSaved = localStorage.getItem('recursos_sistema');
+    const loadPermissoes = async () => {
+      try {
+        const rolesData = [
+          { role: 'admin', setState: setPermissoesAdministrador },
+          { role: 'gestor', setState: setPermissoesGestor },
+          { role: 'colaborador', setState: setPermissoesColaborador },
+          { role: 'cliente', setState: setPermissoesCliente },
+        ];
 
-    if (gestorSaved) setPermissoesGestor(JSON.parse(gestorSaved));
-    if (colaboradorSaved) setPermissoesColaborador(JSON.parse(colaboradorSaved));
-    if (clienteSaved) setPermissoesCliente(JSON.parse(clienteSaved));
-    if (recursosSaved) setRecursos(JSON.parse(recursosSaved));
+        for (const { role, setState } of rolesData) {
+          const response = await fetch(`/api/permissoes/role/${role}`);
+          if (response.ok) {
+            const data = await response.json();
+            const permissoes: any = {};
+            Object.keys(data).forEach((key) => {
+              if (typeof data[key] === 'boolean') {
+                permissoes[key] = data[key];
+              }
+            });
+            setState(permissoes);
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar permissões:', error);
+      }
+    };
+
+    loadPermissoes();
   }, []);
 
   return (
@@ -2115,8 +2230,67 @@ export function Configuracoes() {
                     </div>
                   </div>
                   {isAdministradorOpen && (
-                    <div className="bg-white dark:bg-slate-900 rounded-lg p-4">
-                      <p className="text-sm text-gray-600 dark:text-slate-300 mb-2 font-medium">O administrador tem acesso irrestrito a todos os módulos do sistema.</p>
+                    <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      <div className="mb-3 p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                        <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Opções Gerais do Sistema</p>
+                      </div>
+                      {[
+                        { key: 'dashboard', label: 'Dashboard', icon: Home },
+                        { key: 'notificacoes', label: 'Notificações', icon: Bell },
+                        { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                        { key: 'ponto', label: 'Ponto', icon: Clock },
+                        { key: 'mural', label: 'Mural', icon: MessageSquare },
+                        { key: 'calendario', label: 'Calendário', icon: Calendar },
+                        { key: 'clientes', label: 'Clientes', icon: Users },
+                        { key: 'chat', label: 'Chat', icon: MessageCircle },
+                        { key: 'documentos', label: 'Documentos', icon: FolderOpen },
+                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                        { key: 'solicitacoes', label: 'Solicitações', icon: FileText },
+                        { key: 'configuracoes', label: 'Configurações', icon: Settings },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-purple-600" 
+                              checked={permissoesAdministrador[item.key as keyof typeof permissoesAdministrador] || false}
+                              onChange={() => handleTogglePermissaoAdministrador(item.key)}
+                            />
+                            <Icon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                      <div className="my-3 border-t border-purple-200 dark:border-purple-700 pt-3">
+                        <div className="mb-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                          <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Opções Específicas do Sistema</p>
+                        </div>
+                      </div>
+                      {[
+                        { key: 'beneficios', label: 'Benefícios', icon: Gift },
+                        { key: 'performance', label: 'Performance', icon: Activity },
+                        { key: 'colaboradores', label: 'Colaboradores', icon: UserCog },
+                        { key: 'folha_pagamento', label: 'Folha de Pagamento', icon: DollarSign },
+                        { key: 'folha_clientes', label: 'Folha de Clientes', icon: Receipt },
+                        { key: 'avaliacoes', label: 'Avaliações', icon: Award },
+                        { key: 'okrs', label: 'Desenvolvimento', icon: Target },
+                        { key: 'relatorios', label: 'Relatórios', icon: BarChart },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-purple-600" 
+                              checked={permissoesAdministrador[item.key as keyof typeof permissoesAdministrador] || false}
+                              onChange={() => handleTogglePermissaoAdministrador(item.key)}
+                            />
+                            <Icon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -2136,17 +2310,50 @@ export function Configuracoes() {
                   </div>
                   {isGestorOpen && (
                     <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                        <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Opções Gerais do Sistema</p>
+                      </div>
                       {[
                         { key: 'dashboard', label: 'Dashboard', icon: Home },
-                        { key: 'colaboradores', label: 'Colaboradores', icon: UserCog },
+                        { key: 'notificacoes', label: 'Notificações', icon: Bell },
+                        { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
                         { key: 'ponto', label: 'Ponto', icon: Clock },
+                        { key: 'mural', label: 'Mural', icon: MessageSquare },
+                        { key: 'calendario', label: 'Calendário', icon: Calendar },
+                        { key: 'clientes', label: 'Clientes', icon: Users },
+                        { key: 'chat', label: 'Chat', icon: MessageCircle },
+                        { key: 'documentos', label: 'Documentos', icon: FolderOpen },
+                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
                         { key: 'solicitacoes', label: 'Solicitações', icon: FileText },
+                        { key: 'configuracoes', label: 'Configurações', icon: Settings },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-blue-600" 
+                              checked={permissoesGestor[item.key as keyof typeof permissoesGestor] || false}
+                              onChange={() => handleTogglePermissaoGestor(item.key)}
+                            />
+                            <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                      <div className="my-3 border-t border-blue-200 dark:border-blue-700 pt-3">
+                        <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                          <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Opções Específicas do Sistema</p>
+                        </div>
+                      </div>
+                      {[
+                        { key: 'beneficios', label: 'Benefícios', icon: Gift },
+                        { key: 'performance', label: 'Performance', icon: Activity },
+                        { key: 'colaboradores', label: 'Colaboradores', icon: UserCog },
+                        { key: 'folha_pagamento', label: 'Folha de Pagamento', icon: DollarSign },
+                        { key: 'folha_clientes', label: 'Folha de Clientes', icon: Receipt },
                         { key: 'avaliacoes', label: 'Avaliações', icon: Award },
                         { key: 'okrs', label: 'Desenvolvimento', icon: Target },
-                        { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
-                        { key: 'mural', label: 'Mural', icon: MessageSquare },
-                        { key: 'chat', label: 'Chat', icon: MessageCircle },
-                        { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
                         { key: 'relatorios', label: 'Relatórios', icon: BarChart },
                       ].map((item) => {
                         const Icon = item.icon;
@@ -2182,16 +2389,51 @@ export function Configuracoes() {
                   </div>
                   {isColaboradorOpen && (
                     <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      <div className="mb-3 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded">
+                        <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">Opções Gerais do Sistema</p>
+                      </div>
                       {[
                         { key: 'dashboard', label: 'Dashboard', icon: Home },
-                        { key: 'ponto', label: 'Ponto', icon: Clock },
-                        { key: 'solicitacoes', label: 'Solicitações', icon: FileText },
+                        { key: 'notificacoes', label: 'Notificações', icon: Bell },
                         { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                        { key: 'ponto', label: 'Ponto', icon: Clock },
                         { key: 'mural', label: 'Mural', icon: MessageSquare },
+                        { key: 'calendario', label: 'Calendário', icon: Calendar },
+                        { key: 'clientes', label: 'Clientes', icon: Users },
                         { key: 'chat', label: 'Chat', icon: MessageCircle },
                         { key: 'documentos', label: 'Documentos', icon: FolderOpen },
-                        { key: 'beneficios', label: 'Benefícios', icon: Gift },
                         { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                        { key: 'solicitacoes', label: 'Solicitações', icon: FileText },
+                        { key: 'configuracoes', label: 'Configurações', icon: Settings },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-emerald-600" 
+                              checked={permissoesColaborador[item.key as keyof typeof permissoesColaborador] || false}
+                              onChange={() => handleTogglePermissaoColaborador(item.key)}
+                            />
+                            <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                      <div className="my-3 border-t border-emerald-200 dark:border-emerald-700 pt-3">
+                        <div className="mb-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded">
+                          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">Opções Específicas do Sistema</p>
+                        </div>
+                      </div>
+                      {[
+                        { key: 'beneficios', label: 'Benefícios', icon: Gift },
+                        { key: 'performance', label: 'Performance', icon: Activity },
+                        { key: 'colaboradores', label: 'Colaboradores', icon: UserCog },
+                        { key: 'folha_pagamento', label: 'Folha de Pagamento', icon: DollarSign },
+                        { key: 'folha_clientes', label: 'Folha de Clientes', icon: Receipt },
+                        { key: 'avaliacoes', label: 'Avaliações', icon: Award },
+                        { key: 'okrs', label: 'Desenvolvimento', icon: Target },
+                        { key: 'relatorios', label: 'Relatórios', icon: BarChart },
                       ].map((item) => {
                         const Icon = item.icon;
                         return (
@@ -2226,13 +2468,50 @@ export function Configuracoes() {
                   </div>
                   {isClienteOpen && (
                     <div className="bg-white dark:bg-slate-900 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+                      <div className="mb-3 p-2 bg-orange-50 dark:bg-orange-900/20 rounded">
+                        <p className="text-xs text-orange-700 dark:text-orange-300 font-medium">Opções Gerais do Sistema</p>
+                      </div>
                       {[
                         { key: 'dashboard', label: 'Dashboard', icon: Home },
+                        { key: 'notificacoes', label: 'Notificações', icon: Bell },
+                        { key: 'tarefas', label: 'Tarefas', icon: CheckSquare },
+                        { key: 'ponto', label: 'Ponto', icon: Clock },
+                        { key: 'mural', label: 'Mural', icon: MessageSquare },
+                        { key: 'calendario', label: 'Calendário', icon: Calendar },
                         { key: 'clientes', label: 'Clientes', icon: Users },
-                        { key: 'folha_clientes', label: 'Folha de Pagamento', icon: DollarSign },
-                        { key: 'funcionarios_cliente', label: 'Colaboradores', icon: UserCircle },
                         { key: 'chat', label: 'Chat', icon: MessageCircle },
+                        { key: 'documentos', label: 'Documentos', icon: FolderOpen },
                         { key: 'feedbacks', label: 'Feedbacks', icon: MessageCircle },
+                        { key: 'solicitacoes', label: 'Solicitações', icon: FileText },
+                        { key: 'configuracoes', label: 'Configurações', icon: Settings },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <label key={item.key} className="flex items-center gap-3 p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded accent-orange-600" 
+                              checked={permissoesCliente[item.key as keyof typeof permissoesCliente] || false}
+                              onChange={() => handleTogglePermissaoCliente(item.key)}
+                            />
+                            <Icon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                      <div className="my-3 border-t border-orange-200 dark:border-orange-700 pt-3">
+                        <div className="mb-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded">
+                          <p className="text-xs text-orange-700 dark:text-orange-300 font-medium">Opções Específicas do Sistema</p>
+                        </div>
+                      </div>
+                      {[
+                        { key: 'beneficios', label: 'Benefícios', icon: Gift },
+                        { key: 'performance', label: 'Performance', icon: Activity },
+                        { key: 'colaboradores', label: 'Colaboradores', icon: UserCog },
+                        { key: 'folha_pagamento', label: 'Folha de Pagamento', icon: DollarSign },
+                        { key: 'folha_clientes', label: 'Folha de Clientes', icon: Receipt },
+                        { key: 'avaliacoes', label: 'Avaliações', icon: Award },
+                        { key: 'okrs', label: 'Desenvolvimento', icon: Target },
                         { key: 'relatorios', label: 'Relatórios', icon: BarChart },
                       ].map((item) => {
                         const Icon = item.icon;

@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from app.database import SessionLocal, engine, Base
 from app.models.user import User, UserRole, UserType
 from app.models.empresa import Empresa
+from app.models.permissao import PermissaoRole
 from app.auth import get_password_hash
 
 
@@ -93,6 +94,19 @@ def init_db():
             print("Company settings created")
         else:
             print("Company settings already exist")
+        
+        # Initialize permission roles
+        print("\nInitializing permission roles...")
+        roles_to_init = ["admin", "gestor", "colaborador", "cliente"]
+        
+        for role in roles_to_init:
+            perm_exists = db.query(PermissaoRole).filter(PermissaoRole.role == role).first()
+            if not perm_exists:
+                perm = PermissaoRole(role=role)
+                db.add(perm)
+                print(f"  Permission role created: {role}")
+            else:
+                print(f"  Permission role already exists: {role}")
         
         db.commit()
         print("\nDatabase initialized successfully!")
