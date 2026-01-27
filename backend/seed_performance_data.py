@@ -325,9 +325,9 @@ def seed_performance_data(cliente_id: int = 1):
         # Commit final
         db.commit()
         
-        print("\n" + "=" * 60)
+        print("\n")
         print("  ✅  SEED CONCLUÍDO COM SUCESSO!")
-        print("=" * 60)
+        print("-" * 60)
         print(f"\n Dados criados para cliente_id={cliente_id}")
         print("\n Resumo:")
         print(f"  • 4 canais de vendas")
@@ -359,9 +359,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    print("=" * 60)
     print(" ➔ SEED - Dados de Performance/CPA")
-    print("=" * 60)
+    print("-" * 60)
     
     seed_performance_data(cliente_id=args.cliente_id)
 

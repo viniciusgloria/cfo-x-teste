@@ -43,9 +43,9 @@ def clear_performance_data(cliente_id: int = None, force: bool = False):
         
         # Confirmação
         if not force:
-            print("\n" + "=" * 60)
+            print("\n" + "-" * 60)
             print("⚠️  ATENÇÃO: OPERAÇÃO DESTRUTIVA")
-            print("=" * 60)
+            print("-" * 60)
             
             if cliente_id:
                 print(f"\nEsta operação irá DELETAR TODOS os dados de Performance")
@@ -157,9 +157,9 @@ def clear_performance_data(cliente_id: int = None, force: bool = False):
         # Commit
         db.commit()
         
-        print("\n" + "=" * 60)
+        print("\n" + "-"* 60)
         print("✅  LIMPEZA CONCLUÍDA COM SUCESSO!")
-        print("=" * 60)
+        print("-" * 60)
         print(f"\n⚠️  Total de registros deletados: {total_deletado}")
         
         if admin_user:
@@ -197,8 +197,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    print("=" * 60)
+    print("-" * 60)
     print("⚠️  CLEAR - Dados de Performance/CPA")
-    print("=" * 60)
+    print("-" * 60)
     
     clear_performance_data(cliente_id=args.cliente_id, force=args.force)
