@@ -22,6 +22,14 @@ from .lembrete import Lembrete
 from .cargo_setor import Cargo, Setor
 from .folha_clientes import FolhaCliente
 from .folha_pagamento import FolhaPagamento
+from .performance import (
+    CpaChannelMetrics,
+    CpaDailyMetric,
+    CpaEvent,
+    CpaCostsConfig,
+    CpaIntegrationHealth,
+    CpaFunnelStep
+)
 
 # Lista explícita de reexportação para clareza.
 __all__ = [
@@ -50,4 +58,10 @@ __all__ = [
     "Setor",
     "FolhaCliente",
     "FolhaPagamento",
+    "CpaChannelMetrics",
+    "CpaDailyMetric",
+    "CpaEvent",
+    "CpaCostsConfig",
+    "CpaIntegrationHealth",
+    "CpaFunnelStep",
 ]

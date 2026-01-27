@@ -40,8 +40,9 @@ import { Button } from '../components/ui/Button';
 import { PageBanner } from '../components/ui/PageBanner';
 import { Tooltip } from '../components/ui/Tooltip';
 import { PerformanceChannelView } from '../components/PerformanceChannelView';
-import { CpaSnapshot, CpaChannelSnapshot } from '../types/performance';
+import { CpaSnapshot, CpaChannelSnapshot, CpaCostsConfig } from '../types/performance';
 import { useClientePerformance } from '../hooks/useClientePerformance';
+import { performanceService } from '../services/performanceService';
 
 type VisaoPrincipal = 'geral' | 'canais' | 'publicidade' | 'custos' | 'margens';
 type WindowRange = 'today' | 'yesterday' | '7d' | 'custom';
@@ -136,17 +137,6 @@ const getGradualColor = (type: 'positive' | 'negative' | 'equal', percentage: nu
   }
 };
 
-const fixedCostDaily = 2232;
-
-const fallbackSnapshot: CpaSnapshot = {
-  canais: [],
-  funil: [],
-  diarias: [],
-  eventos: [],
-  custos: { gateway: 2.5, transporte: 18, picking: 2, imposto: 12, checkout: 1.8 },
-  integracoes: []
-};
-
 const windowOptions: { id: WindowRange; label: string }[] = [
   { id: 'today', label: 'Hoje' },
   { id: 'yesterday', label: 'Ontem' },
@@ -162,31 +152,6 @@ const visaoOptions: { id: VisaoPrincipal; label: string; icon: React.ElementType
   { id: 'margens', label: 'Margens & Resultados', icon: TrendingUp, color: 'text-indigo-600' }
 ];
 
-const submenuConfig: Record<VisaoPrincipal, { id: string; label: string }[]> = {
-  geral: [],
-  canais: [
-    { id: 'geral', label: 'Visão Geral' },
-    { id: 'yampi', label: 'Yampi/Checkout' },
-    { id: 'mercado-livre', label: 'Mercado Livre' },
-    { id: 'tiktok-shop', label: 'TikTok Shop' },
-    { id: 'shopify', label: 'Shopify' }
-  ],
-  publicidade: [
-    { id: 'geral', label: 'Visão Geral' },
-    { id: 'google-ads', label: 'Google Ads' },
-    { id: 'meta-ads', label: 'Meta Ads' },
-    { id: 'tiktok-ads', label: 'TikTok Ads' }
-  ],
-  custos: [],
-  margens: [
-    { id: 'geral', label: 'Visão Geral' },
-    { id: 'yampi', label: 'Yampi/Checkout' },
-    { id: 'mercado-livre', label: 'Mercado Livre' },
-    { id: 'tiktok-shop', label: 'TikTok Shop' },
-    { id: 'shopify', label: 'Shopify' }
-  ]
-};
-
 const canalAliasMap: Record<string, string> = {
   mercadolivre: 'mercado-livre',
   'tiktok-shop': 'tiktok-shop',
@@ -194,7 +159,7 @@ const canalAliasMap: Record<string, string> = {
   shopify: 'shopify'
 };
 
-const aggregateDaily = (rows: CpaSnapshot['diarias'], costs = fallbackSnapshot.custos) => {
+const aggregateDaily = (rows: CpaSnapshot['diarias'], costs: CpaCostsConfig) => {
   const faturamento = rows.reduce((sum, r) => sum + r.faturamento, 0);
   const gastoAds = rows.reduce((sum, r) => sum + r.gastoAds, 0);
   const pedidos = rows.reduce((sum, r) => sum + r.pedidosPagos, 0);
@@ -209,15 +174,13 @@ const aggregateDaily = (rows: CpaSnapshot['diarias'], costs = fallbackSnapshot.c
   const margem1 = faturamento > 0
     ? ((faturamento - custoProdutos - custosVariaveis - gastoAds) / faturamento) * 100
     : 0;
-  const margem2 = faturamento > 0
-    ? ((faturamento - custoProdutos - custosVariaveis - gastoAds - fixedCostDaily * dias) / faturamento) * 100
-    : 0;
-  const lucro = faturamento - custoProdutos - custosVariaveis - gastoAds - fixedCostDaily * dias;
+  const margem2 = margem1; // margem2 = margem1 (custos fixos devem vir da configuração)
+  const lucro = faturamento - custoProdutos - custosVariaveis - gastoAds;
 
   return { faturamento, gastoAds, pedidos, ticket, roas, cpaMedio, margem1, margem2, lucro, dias };
 };
 
-const aggregateChannels = (rows: { faturamento: number; gastoAds: number; pedidos: number }[], costs = fallbackSnapshot.custos, dias = 7) => {
+const aggregateChannels = (rows: { faturamento: number; gastoAds: number; pedidos: number }[], costs: CpaCostsConfig, dias = 7) => {
   const faturamento = rows.reduce((sum, r) => sum + r.faturamento, 0);
   const gastoAds = rows.reduce((sum, r) => sum + r.gastoAds, 0);
   const pedidos = rows.reduce((sum, r) => sum + r.pedidos, 0);
@@ -231,171 +194,41 @@ const aggregateChannels = (rows: { faturamento: number; gastoAds: number; pedido
   const margem1 = faturamento > 0
     ? ((faturamento - custoProdutos - custosVariaveis - gastoAds) / faturamento) * 100
     : 0;
-  const margem2 = faturamento > 0
-    ? ((faturamento - custoProdutos - custosVariaveis - gastoAds - fixedCostDaily * dias) / faturamento) * 100
-    : 0;
-  const lucro = faturamento - custoProdutos - custosVariaveis - gastoAds - fixedCostDaily * dias;
+  const margem2 = margem1; // margem2 = margem1 (custos fixos devem vir da configuração)
+  const lucro = faturamento - custoProdutos - custosVariaveis - gastoAds;
 
   return { faturamento, gastoAds, pedidos, ticket, roas, cpaMedio, margem1, margem2, lucro, dias };
 };
 
-const canaisData = [
-  { name: 'Yampi', faturamento: 2393707.65, gastoAds: 63850, pedidos: 7898, ticket: 303.04, margem: 80.1, color: '#0ea5e9' },
-  { name: 'Mercado Livre', faturamento: 259923.53, gastoAds: 43270, pedidos: 945, ticket: 274.89, margem: 72.3, color: '#f59e0b' },
-  { name: 'TikTok Shop', faturamento: 0, gastoAds: 0, pedidos: 0, ticket: 0, margem: 0, color: '#ec4899' }
-];
-
-const adsData = [
-  { name: 'Meta Ads', value: 682782, pct: 25.73, color: '#3b82f6' },
-  { name: 'Google Ads', value: 203873, pct: 7.68, color: '#4f46e5' },
-  { name: 'Marketplace Ads', value: 75493, pct: 2.84, color: '#f59e0b' },
-  { name: 'TikTok Ads', value: 24066, pct: 0.91, color: '#ec4899' }
-];
-
-const custosData = [
-  { name: 'Produto', value: 382894, pct: 14.43, color: '#ef4444' },
-  { name: 'Logística', value: 110183, pct: 4.15, color: '#f97316' },
-  { name: 'Impostos', value: 192918, pct: 7.27, color: '#f59e0b' },
-  { name: 'Ads', value: 986215, pct: 37.16, color: '#a855f7' }
-];
-
-// Mock data para Custos & Operações
-const custosCards = [
-  { label: 'Custo Geral', valor: currency(2653600), icon: DollarSign, color: 'text-emerald-600' },
-  { label: 'Custo de Produto', valor: currency(382894), icon: ShoppingBag, color: 'text-blue-600' },
-  { label: 'Logística', valor: currency(110183), icon: Activity, color: 'text-orange-600' },
-  { label: 'Impostos', valor: currency(192918), icon: ShieldCheck, color: 'text-red-600' },
-  { label: 'Comissões', valor: currency(85640), icon: TrendingUp, color: 'text-purple-600' },
-  { label: 'Tarifas', valor: currency(45230), icon: Zap, color: 'text-amber-600' }
-];
-
-const custosPorCategoria = [
-  { categoria: 'Produtos', valor: 382894, color: '#ef4444' },
-  { categoria: 'Logística', valor: 110183, color: '#f97316' },
-  { categoria: 'Impostos', valor: 192918, color: '#f59e0b' },
-  { categoria: 'Comissões', valor: 85640, color: '#a855f7' },
-  { categoria: 'Tarifas', valor: 45230, color: '#06b6d4' },
-  { categoria: 'Outros', valor: 67890, color: '#10b981' }
-];
-
-const evolucaoCustos = [
-  { date: '26/12', produtos: 35000, logistica: 12000, impostos: 18000, comissoes: 8000, tarifas: 4000 },
-  { date: '27/12', produtos: 32000, logistica: 11500, impostos: 17500, comissoes: 7500, tarifas: 3800 },
-  { date: '28/12', produtos: 38000, logistica: 13000, impostos: 19000, comissoes: 8200, tarifas: 4200 },
-  { date: '29/12', produtos: 41000, logistica: 12500, impostos: 19500, comissoes: 8800, tarifas: 4500 },
-  { date: '30/12', produtos: 39500, logistica: 11800, impostos: 18500, comissoes: 8100, tarifas: 4100 },
-  { date: '31/12', produtos: 42500, logistica: 13500, impostos: 20000, comissoes: 9200, tarifas: 4700 },
-  { date: '01/01', produtos: 44000, logistica: 14000, impostos: 21000, comissoes: 9500, tarifas: 4800 }
-];
+const evolucaoCustos: Array<{ date: string; produtos: number; logistica: number; impostos: number; comissoes: number; tarifas: number }> = [];
 
 type ResumoItem = { label: string; value: number; type: 'positive' | 'negative' | 'equal'; percentage: number | null; trend?: number[] };
 
 // Mock data para Resumo Executivo por cenário
 const resumoExecutivoCenarios: Record<'real' | 'orcado', ResumoItem[]> = {
-  real: [
-    { label: 'VENDA TOTAL', value: 2653600, type: 'positive', percentage: null, trend: [380000, 410000, 395000, 420000, 430000, 440000, 455000] },
-    { label: 'IMPOSTO', value: -192918, type: 'negative', percentage: -7.27, trend: [-26000, -27000, -28000, -27500, -28500, -29000, -29500] },
-    { label: 'FATURAMENTO LÍQUIDO', value: 2460682, type: 'equal', percentage: 92.73, trend: [350000, 370000, 360000, 380000, 390000, 395000, 400000] },
-    { label: 'CMV', value: -382894, type: 'negative', percentage: -14.43, trend: [-52000, -54000, -53000, -55500, -56000, -56500, -57500] },
-    { label: 'LUCRO BRUTO', value: 2077788, type: 'equal', percentage: 78.3, trend: [300000, 320000, 310000, 330000, 340000, 345000, 350000] },
-    { label: 'CVD', value: -110183, type: 'negative', percentage: -4.15, trend: [-15000, -15500, -15200, -15800, -16000, -16100, -16200] },
-    { label: 'MARGEM CONTRIBUIÇÃO', value: 1967605, type: 'equal', percentage: 74.15, trend: [280000, 300000, 295000, 310000, 318000, 320000, 325000] },
-    { label: 'CVA', value: -986215, type: 'negative', percentage: -37.16, trend: [-130000, -132000, -135000, -138000, -140000, -142000, -145000] },
-    { label: 'MARGEM APÓS AQUISIÇÃO', value: 981390, type: 'equal', percentage: 36.99, trend: [140000, 152000, 148000, 160000, 165000, 168000, 172000] }
-  ],
-  orcado: [
-    { label: 'VENDA TOTAL', value: 2750000, type: 'positive', percentage: null, trend: [395000, 415000, 405000, 430000, 440000, 450000, 455000] },
-    { label: 'IMPOSTO', value: -198500, type: 'negative', percentage: -7.22, trend: [-27000, -27800, -28000, -28500, -28700, -28900, -28900] },
-    { label: 'FATURAMENTO LÍQUIDO', value: 2551500, type: 'equal', percentage: 92.78, trend: [360000, 380000, 370000, 390000, 400000, 405000, 410000] },
-    { label: 'CMV', value: -400000, type: 'negative', percentage: -14.55, trend: [-54000, -55000, -55500, -57000, -57500, -58000, -58500] },
-    { label: 'LUCRO BRUTO', value: 2151500, type: 'equal', percentage: 78.18, trend: [310000, 330000, 320000, 340000, 350000, 355000, 360000] },
-    { label: 'CVD', value: -120000, type: 'negative', percentage: -4.36, trend: [-15800, -16000, -16100, -16300, -16500, -16600, -16600] },
-    { label: 'MARGEM CONTRIBUIÇÃO', value: 2031500, type: 'equal', percentage: 73.88, trend: [290000, 310000, 305000, 320000, 328000, 330000, 335000] },
-    { label: 'CVA', value: -960000, type: 'negative', percentage: -34.91, trend: [-128000, -130000, -131000, -132000, -134000, -136000, -137000] },
-    { label: 'MARGEM APÓS AQUISIÇÃO', value: 1071500, type: 'equal', percentage: 38.96, trend: [150000, 162000, 158000, 170000, 175000, 178000, 182000] }
-  ]
+  real: [],
+  orcado: []
 };
 
 // Mock data para Fluxo Financeiro por cenário
-// Agora o Fluxo Financeiro replica as mesmas linhas do Resumo Executivo
-// e acrescenta três linhas ao final: Despesas Fixas, Despesas Variáveis e EBITDA.
 const fluxoFinanceiroCenarios: Record<'real' | 'orcado', ResumoItem[]> = {
-  real: [
-    ...resumoExecutivoCenarios.real,
-    { label: 'DESPESAS FIXAS', value: -110183, type: 'negative', percentage: -4.15, trend: [-15000, -15500, -15200, -15800, -16000, -16100, -16200] },
-    { label: 'DESPESAS VARIÁVEIS', value: -493077, type: 'negative', percentage: -18.58, trend: [-70000, -71000, -72000, -73500, -74000, -75000, -76000] },
-    { label: 'EBITDA', value: 2050340, type: 'equal', percentage: 77.27, trend: [290000, 305000, 300000, 315000, 320000, 325000, 330000] }
-  ],
-  orcado: [
-    ...resumoExecutivoCenarios.orcado,
-    { label: 'DESPESAS FIXAS', value: -120000, type: 'negative', percentage: -4.36, trend: [-16000, -16200, -16300, -16500, -16600, -16700, -16700] },
-    { label: 'DESPESAS VARIÁVEIS', value: -510000, type: 'negative', percentage: -18.55, trend: [-72000, -73000, -74000, -75500, -76000, -77000, -78000] },
-    { label: 'EBITDA', value: 2120000, type: 'equal', percentage: 77.09, trend: [298000, 312000, 308000, 322000, 328000, 333000, 338000] }
-  ]
+  real: [],
+  orcado: []
 };
 
 // Mocks de tendência para sparklines
-const resumoTrendMap: Record<string, number[]> = {
-  'VENDA TOTAL': [380000, 410000, 395000, 420000, 430000, 440000, 455000],
-  IMPOSTO: [-26000, -27000, -28000, -27500, -28500, -29000, -29500],
-  'FATURAMENTO LÍQUIDO': [350000, 370000, 360000, 380000, 390000, 395000, 400000],
-  CMV: [-52000, -54000, -53000, -55500, -56000, -56500, -57500],
-  'LUCRO BRUTO': [300000, 320000, 310000, 330000, 340000, 345000, 350000],
-  CVD: [-15000, -15500, -15200, -15800, -16000, -16100, -16200],
-  'MARGEM CONTRIBUIÇÃO': [280000, 300000, 295000, 310000, 318000, 320000, 325000],
-  CVA: [-130000, -132000, -135000, -138000, -140000, -142000, -145000],
-  'MARGEM APÓS AQUISIÇÃO': [140000, 152000, 148000, 160000, 165000, 168000, 172000]
-};
+const resumoTrendMap: Record<string, number[]> = {};
 
 // Detalhes rápidos para drill-down em linhas específicas
-const detalheLinhaMap: Record<string, string[]> = {
-  IMPOSTO: [
-    'ICMS: 3.8%',
-    'PIS: 1.65%',
-    'COFINS: 7.6%',
-    'ISS: 2%',
-    'Taxa de cartão: 1.1%'
-  ],
-  CMV: [
-    'Roupas: 8%',
-    'Calçados: 5%',
-    'Acessórios: 2.5%',
-    'Reserva técnica: 0.8%',
-    'Logística inbound: 1.2%'
-  ],
-  CVA: [
-    'Meta Ads: 25.73%',
-    'Google Ads: 7.68%',
-    'Marketplace Ads: 2.84%',
-    'TikTok Ads: 0.91%',
-    'Outros canais: 0%'
-  ],
-  CVD: [
-    'Gatilhos comerciais: 1.5%',
-    'Bônus equipe: 0.9%',
-    'Cashback: 0.8%',
-    'Comissões vendas: 0.6%',
-    'Logística outbound: 0.35%'
-  ]
-};
+const detalheLinhaMap: Record<string, string[]> = {};
 
 // Mocks de tendência para sparklines (Fluxo Financeiro)
-const fluxoTrendMap: Record<string, number[]> = {
-  'RECEITA BRUTA': [62194, 52177, 55770, 73135, 75557, 82456, 102408],
-  'IMPOSTOS': [-9329, -7826, -8365, -10971, -11333, -12369, -15361],
-  'RECEITA LÍQUIDA': [52865, 44351, 47405, 62164, 64224, 70087, 87047],
-  'CMV': [-52000, -54000, -53000, -55500, -56000, -56500, -57500],
-  'LUCRO OPERACIONAL': [865, -9649, -5595, 6664, 8224, 13587, 29547],
-  'DESPESAS OPERACIONAIS': [-15000, -15500, -15200, -15800, -16000, -16100, -16200],
-  'EBITDA': [-14135, -25149, -20795, -9136, -7776, -2513, 13347],
-  'DEPRECIAÇÃO': [-5000, -5000, -5000, -5000, -5000, -5000, -5000],
-  'LUCRO LÍQUIDO': [-19135, -30149, -25795, -14136, -12776, -7513, 8347]
-};
+const fluxoTrendMap: Record<string, number[]> = {};
 
 // Função para gerar distribuição de gastos baseada no snapshot
-const generateDistribuicaoGastos = (snapshot: CpaSnapshot): typeof distribuicaoGastos => {
+const generateDistribuicaoGastos = (snapshot: CpaSnapshot): Array<{ name: string; value: number; pct: number; color: string }> => {
   if (!snapshot || !snapshot.diarias.length) {
-    return distribuicaoGastos; // fallback para dados mock
+    return []; // sem dados no snapshot, retorna vazio
   }
 
   const aggregated = aggregateDaily(snapshot.diarias, snapshot.custos);
@@ -419,214 +252,35 @@ const generateDistribuicaoGastos = (snapshot: CpaSnapshot): typeof distribuicaoG
   ];
 };
 
-// Mock data para Distribuição Gastos (fallback)
-const distribuicaoGastos = [
-  { name: 'Produtos', value: 382894, pct: 14.43, color: '#ef4444' },
-  { name: 'Logística', value: 110183, pct: 4.15, color: '#f97316' },
-  { name: 'Impostos', value: 192918, pct: 7.27, color: '#f59e0b' },
-  { name: 'Ads', value: 986215, pct: 37.16, color: '#a855f7' },
-  { name: 'Outros', value: 67890, pct: 2.56, color: '#10b981' }
-];
 
 // Mock data para Custos vs Receita
-const custosVsReceita = [
-  { date: '26/12', custos: 79000, receita: 62194 },
-  { date: '27/12', custos: 74500, receita: 52177 },
-  { date: '28/12', custos: 82400, receita: 55770 },
-  { date: '29/12', custos: 85800, receita: 73135 },
-  { date: '30/12', custos: 83500, receita: 75557 },
-  { date: '31/12', custos: 92200, receita: 82456 },
-  { date: '01/01', custos: 95000, receita: 102408 }
-];
+const custosVsReceita: Array<{ date: string; custos: number; receita: number }> = [];
 
 // Mock data para Alertas de Custos
-const alertasCustos = [
-  { tipo: 'warning', texto: 'Custos de Logística aumentaram 15% vs. semana anterior', impacto: 'R$ 2.500' },
-  { tipo: 'danger', texto: 'Orçamento de Impostos excedido em 8%', impacto: 'R$ 1.200' },
-  { tipo: 'info', texto: 'Comissões abaixo da meta em 5%', impacto: 'R$ 800' }
-];
+const alertasCustos: Array<{ tipo: string; texto: string; impacto: string }> = [];
 
 // Helpers para waterfall e visualização
 
 // Mock data para eventos de tempo real (para dashboard futura)
-const eventosTempoReal = [
-  { tipo: 'pedido', valor: 1259.90, timestamp: '14:32', canal: 'Yampi' },
-  { tipo: 'ads', valor: 356.40, timestamp: '14:31', canal: 'Google Ads' },
-  { tipo: 'pedido', valor: 892.50, timestamp: '14:30', canal: 'Mercado Livre' },
-  { tipo: 'ads', valor: 125.80, timestamp: '14:29', canal: 'Meta Ads' },
-  { tipo: 'pedido', valor: 648.30, timestamp: '14:28', canal: 'TikTok Shop' },
-  { tipo: 'ads', valor: 89.20, timestamp: '14:27', canal: 'TikTok Ads' }
-];
+const eventosTempoReal: Array<{ tipo: string; valor: number; timestamp: string; canal: string }> = [];
 
-const tabelaDiariaPorCanal = [
-  { dia: 'Seg', canal: 'Yampi', pedidos: 124, faturamento: 52400, gastoAds: 8230, roas: 6.36, cpa: 66.37, margem: 38 },
-  { dia: 'Seg', canal: 'Mercado Livre', pedidos: 98, faturamento: 38200, gastoAds: 5420, roas: 7.05, cpa: 55.31, margem: 42 },
-  { dia: 'Ter', canal: 'Yampi', pedidos: 132, faturamento: 58900, gastoAds: 8950, roas: 6.58, cpa: 67.80, margem: 39 },
-  { dia: 'Ter', canal: 'Mercado Livre', pedidos: 105, faturamento: 41200, gastoAds: 5890, roas: 7.00, cpa: 56.10, margem: 41 },
-  { dia: 'Qua', canal: 'Yampi', pedidos: 138, faturamento: 61200, gastoAds: 9120, roas: 6.71, cpa: 66.09, margem: 40 },
-  { dia: 'Qua', canal: 'Mercado Livre', pedidos: 116, faturamento: 45800, gastoAds: 6340, roas: 7.22, cpa: 54.66, margem: 43 },
-  { dia: 'Qui', canal: 'Yampi', pedidos: 128, faturamento: 54600, gastoAds: 8560, roas: 6.38, cpa: 66.88, margem: 38 },
-  { dia: 'Qui', canal: 'Mercado Livre', pedidos: 102, faturamento: 39400, gastoAds: 5620, roas: 7.01, cpa: 55.10, margem: 42 }
-];
+const tabelaDiariaPorCanal: Array<{ dia: string; canal: string; pedidos: number; faturamento: number; gastoAds: number; roas: number; cpa: number; margem: number }> = [];
 
 // Mock data para telas segmentadas por canal
-const canalSegmentadoTrendData = {
-  yampi: [
-    { date: 'Seg', faturamento: 52400, pedidos: 124, roas: 6.36 },
-    { date: 'Ter', faturamento: 58900, pedidos: 132, roas: 6.58 },
-    { date: 'Qua', faturamento: 61200, pedidos: 138, roas: 6.71 },
-    { date: 'Qui', faturamento: 54600, pedidos: 128, roas: 6.38 },
-    { date: 'Sex', faturamento: 68900, pedidos: 156, roas: 6.89 },
-    { date: 'Sab', faturamento: 78200, pedidos: 178, roas: 7.12 },
-    { date: 'Dom', faturamento: 85400, pedidos: 195, roas: 7.45 }
-  ],
-  'mercado-livre': [
-    { date: 'Seg', faturamento: 38200, pedidos: 98, roas: 7.05 },
-    { date: 'Ter', faturamento: 41200, pedidos: 105, roas: 7.00 },
-    { date: 'Qua', faturamento: 45800, pedidos: 116, roas: 7.22 },
-    { date: 'Qui', faturamento: 39400, pedidos: 102, roas: 7.01 },
-    { date: 'Sex', faturamento: 52300, pedidos: 134, roas: 7.25 },
-    { date: 'Sab', faturamento: 61900, pedidos: 158, roas: 7.42 },
-    { date: 'Dom', faturamento: 68200, pedidos: 175, roas: 7.68 }
-  ],
-  'tiktok-shop': [
-    { date: 'Seg', faturamento: 18600, pedidos: 42, roas: 5.80 },
-    { date: 'Ter', faturamento: 22100, pedidos: 50, roas: 5.95 },
-    { date: 'Qua', faturamento: 25400, pedidos: 58, roas: 6.12 },
-    { date: 'Qui', faturamento: 19800, pedidos: 45, roas: 5.88 },
-    { date: 'Sex', faturamento: 31200, pedidos: 71, roas: 6.35 },
-    { date: 'Sab', faturamento: 42100, pedidos: 96, roas: 6.58 },
-    { date: 'Dom', faturamento: 48900, pedidos: 112, roas: 6.82 }
-  ]
-};
+const canalSegmentadoTrendData: Record<string, Array<{ date: string; faturamento: number; pedidos: number; roas: number }>> = {};
 
-const tabelaDiariaSegmentada = {
-  yampi: [
-    { dia: 'Seg', canal: 'Yampi', pedidos: 124, ticket: 422.58, cpa: 66.37, roas: 6.36, cmv: 18.5, cvd: 2.2, margem: 38 },
-    { dia: 'Seg', canal: 'Mercado Livre', pedidos: 98, ticket: 389.80, cpa: 55.31, roas: 7.05, cmv: 22.1, cvd: 3.5, margem: 42 },
-    { dia: 'Seg', canal: 'TikTok Shop', pedidos: 42, ticket: 442.86, cpa: 78.52, roas: 5.80, cmv: 25.3, cvd: 4.2, margem: 28 },
-    { dia: 'Ter', canal: 'Yampi', pedidos: 132, ticket: 445.45, cpa: 67.80, roas: 6.58, cmv: 18.2, cvd: 2.1, margem: 39 },
-    { dia: 'Ter', canal: 'Mercado Livre', pedidos: 105, ticket: 392.38, cpa: 56.10, roas: 7.00, cmv: 22.3, cvd: 3.6, margem: 41 },
-    { dia: 'Ter', canal: 'TikTok Shop', pedidos: 50, ticket: 442.00, cpa: 74.20, roas: 5.95, cmv: 25.1, cvd: 4.1, margem: 30 },
-    { dia: 'Qua', canal: 'Yampi', pedidos: 138, ticket: 443.48, cpa: 66.09, roas: 6.71, cmv: 18.3, cvd: 2.2, margem: 40 },
-    { dia: 'Qua', canal: 'Mercado Livre', pedidos: 116, ticket: 394.83, cpa: 54.66, roas: 7.22, cmv: 22.0, cvd: 3.5, margem: 43 },
-    { dia: 'Qua', canal: 'TikTok Shop', pedidos: 58, ticket: 437.93, cpa: 70.34, roas: 6.12, cmv: 25.0, cvd: 4.0, margem: 32 },
-    { dia: 'Qui', canal: 'Yampi', pedidos: 128, ticket: 426.56, cpa: 66.88, roas: 6.38, cmv: 18.6, cvd: 2.3, margem: 38 },
-    { dia: 'Qui', canal: 'Mercado Livre', pedidos: 102, ticket: 386.27, cpa: 55.10, roas: 7.01, cmv: 22.4, cvd: 3.7, margem: 40 },
-    { dia: 'Qui', canal: 'TikTok Shop', pedidos: 45, ticket: 440.00, cpa: 76.44, roas: 5.88, cmv: 25.2, cvd: 4.2, margem: 29 },
-    { dia: 'Sex', canal: 'Yampi', pedidos: 156, ticket: 441.67, cpa: 61.41, roas: 6.89, cmv: 18.1, cvd: 2.1, margem: 41 },
-    { dia: 'Sex', canal: 'Mercado Livre', pedidos: 134, ticket: 390.30, cpa: 50.45, roas: 7.25, cmv: 21.8, cvd: 3.4, margem: 43 },
-    { dia: 'Sex', canal: 'TikTok Shop', pedidos: 71, ticket: 439.44, cpa: 69.01, roas: 6.35, cmv: 24.9, cvd: 3.9, margem: 33 },
-    { dia: 'Sab', canal: 'Yampi', pedidos: 178, ticket: 439.33, cpa: 58.76, roas: 7.12, cmv: 17.9, cvd: 2.0, margem: 42 },
-    { dia: 'Sab', canal: 'Mercado Livre', pedidos: 158, ticket: 391.77, cpa: 48.62, roas: 7.42, cmv: 21.5, cvd: 3.3, margem: 44 },
-    { dia: 'Sab', canal: 'TikTok Shop', pedidos: 96, ticket: 438.54, cpa: 64.58, roas: 6.58, cmv: 24.8, cvd: 3.8, margem: 35 },
-    { dia: 'Dom', canal: 'Yampi', pedidos: 195, ticket: 437.95, cpa: 55.08, roas: 7.45, cmv: 17.7, cvd: 1.9, margem: 43 },
-    { dia: 'Dom', canal: 'Mercado Livre', pedidos: 175, ticket: 389.71, cpa: 45.60, roas: 7.68, cmv: 21.3, cvd: 3.2, margem: 45 },
-    { dia: 'Dom', canal: 'TikTok Shop', pedidos: 112, ticket: 436.61, cpa: 61.25, roas: 6.82, cmv: 24.7, cvd: 3.7, margem: 37 }
-  ],
-  'mercado-livre': [
-    { dia: 'Seg', canal: 'Yampi', pedidos: 124, ticket: 422.58, cpa: 66.37, roas: 6.36, cmv: 18.5, cvd: 2.2, margem: 38 },
-    { dia: 'Seg', canal: 'Mercado Livre', pedidos: 98, ticket: 389.80, cpa: 55.31, roas: 7.05, cmv: 22.1, cvd: 3.5, margem: 42 },
-    { dia: 'Seg', canal: 'TikTok Shop', pedidos: 42, ticket: 442.86, cpa: 78.52, roas: 5.80, cmv: 25.3, cvd: 4.2, margem: 28 },
-    { dia: 'Ter', canal: 'Yampi', pedidos: 132, ticket: 445.45, cpa: 67.80, roas: 6.58, cmv: 18.2, cvd: 2.1, margem: 39 },
-    { dia: 'Ter', canal: 'Mercado Livre', pedidos: 105, ticket: 392.38, cpa: 56.10, roas: 7.00, cmv: 22.3, cvd: 3.6, margem: 41 },
-    { dia: 'Ter', canal: 'TikTok Shop', pedidos: 50, ticket: 442.00, cpa: 74.20, roas: 5.95, cmv: 25.1, cvd: 4.1, margem: 30 },
-    { dia: 'Qua', canal: 'Yampi', pedidos: 138, ticket: 443.48, cpa: 66.09, roas: 6.71, cmv: 18.3, cvd: 2.2, margem: 40 },
-    { dia: 'Qua', canal: 'Mercado Livre', pedidos: 116, ticket: 394.83, cpa: 54.66, roas: 7.22, cmv: 22.0, cvd: 3.5, margem: 43 },
-    { dia: 'Qua', canal: 'TikTok Shop', pedidos: 58, ticket: 437.93, cpa: 70.34, roas: 6.12, cmv: 25.0, cvd: 4.0, margem: 32 },
-    { dia: 'Qui', canal: 'Yampi', pedidos: 128, ticket: 426.56, cpa: 66.88, roas: 6.38, cmv: 18.6, cvd: 2.3, margem: 38 },
-    { dia: 'Qui', canal: 'Mercado Livre', pedidos: 102, ticket: 386.27, cpa: 55.10, roas: 7.01, cmv: 22.4, cvd: 3.7, margem: 40 },
-    { dia: 'Qui', canal: 'TikTok Shop', pedidos: 45, ticket: 440.00, cpa: 76.44, roas: 5.88, cmv: 25.2, cvd: 4.2, margem: 29 },
-    { dia: 'Sex', canal: 'Yampi', pedidos: 156, ticket: 441.67, cpa: 61.41, roas: 6.89, cmv: 18.1, cvd: 2.1, margem: 41 },
-    { dia: 'Sex', canal: 'Mercado Livre', pedidos: 134, ticket: 390.30, cpa: 50.45, roas: 7.25, cmv: 21.8, cvd: 3.4, margem: 43 },
-    { dia: 'Sex', canal: 'TikTok Shop', pedidos: 71, ticket: 439.44, cpa: 69.01, roas: 6.35, cmv: 24.9, cvd: 3.9, margem: 33 },
-    { dia: 'Sab', canal: 'Yampi', pedidos: 178, ticket: 439.33, cpa: 58.76, roas: 7.12, cmv: 17.9, cvd: 2.0, margem: 42 },
-    { dia: 'Sab', canal: 'Mercado Livre', pedidos: 158, ticket: 391.77, cpa: 48.62, roas: 7.42, cmv: 21.5, cvd: 3.3, margem: 44 },
-    { dia: 'Sab', canal: 'TikTok Shop', pedidos: 96, ticket: 438.54, cpa: 64.58, roas: 6.58, cmv: 24.8, cvd: 3.8, margem: 35 },
-    { dia: 'Dom', canal: 'Yampi', pedidos: 195, ticket: 437.95, cpa: 55.08, roas: 7.45, cmv: 17.7, cvd: 1.9, margem: 43 },
-    { dia: 'Dom', canal: 'Mercado Livre', pedidos: 175, ticket: 389.71, cpa: 45.60, roas: 7.68, cmv: 21.3, cvd: 3.2, margem: 45 },
-    { dia: 'Dom', canal: 'TikTok Shop', pedidos: 112, ticket: 436.61, cpa: 61.25, roas: 6.82, cmv: 24.7, cvd: 3.7, margem: 37 }
-  ],
-  'tiktok-shop': [
-    { dia: 'Seg', canal: 'Yampi', pedidos: 124, ticket: 422.58, cpa: 66.37, roas: 6.36, cmv: 18.5, cvd: 2.2, margem: 38 },
-    { dia: 'Seg', canal: 'Mercado Livre', pedidos: 98, ticket: 389.80, cpa: 55.31, roas: 7.05, cmv: 22.1, cvd: 3.5, margem: 42 },
-    { dia: 'Seg', canal: 'TikTok Shop', pedidos: 42, ticket: 442.86, cpa: 78.52, roas: 5.80, cmv: 25.3, cvd: 4.2, margem: 28 },
-    { dia: 'Ter', canal: 'Yampi', pedidos: 132, ticket: 445.45, cpa: 67.80, roas: 6.58, cmv: 18.2, cvd: 2.1, margem: 39 },
-    { dia: 'Ter', canal: 'Mercado Livre', pedidos: 105, ticket: 392.38, cpa: 56.10, roas: 7.00, cmv: 22.3, cvd: 3.6, margem: 41 },
-    { dia: 'Ter', canal: 'TikTok Shop', pedidos: 50, ticket: 442.00, cpa: 74.20, roas: 5.95, cmv: 25.1, cvd: 4.1, margem: 30 },
-    { dia: 'Qua', canal: 'Yampi', pedidos: 138, ticket: 443.48, cpa: 66.09, roas: 6.71, cmv: 18.3, cvd: 2.2, margem: 40 },
-    { dia: 'Qua', canal: 'Mercado Livre', pedidos: 116, ticket: 394.83, cpa: 54.66, roas: 7.22, cmv: 22.0, cvd: 3.5, margem: 43 },
-    { dia: 'Qua', canal: 'TikTok Shop', pedidos: 58, ticket: 437.93, cpa: 70.34, roas: 6.12, cmv: 25.0, cvd: 4.0, margem: 32 },
-    { dia: 'Qui', canal: 'Yampi', pedidos: 128, ticket: 426.56, cpa: 66.88, roas: 6.38, cmv: 18.6, cvd: 2.3, margem: 38 },
-    { dia: 'Qui', canal: 'Mercado Livre', pedidos: 102, ticket: 386.27, cpa: 55.10, roas: 7.01, cmv: 22.4, cvd: 3.7, margem: 40 },
-    { dia: 'Qui', canal: 'TikTok Shop', pedidos: 45, ticket: 440.00, cpa: 76.44, roas: 5.88, cmv: 25.2, cvd: 4.2, margem: 29 },
-    { dia: 'Sex', canal: 'Yampi', pedidos: 156, ticket: 441.67, cpa: 61.41, roas: 6.89, cmv: 18.1, cvd: 2.1, margem: 41 },
-    { dia: 'Sex', canal: 'Mercado Livre', pedidos: 134, ticket: 390.30, cpa: 50.45, roas: 7.25, cmv: 21.8, cvd: 3.4, margem: 43 },
-    { dia: 'Sex', canal: 'TikTok Shop', pedidos: 71, ticket: 439.44, cpa: 69.01, roas: 6.35, cmv: 24.9, cvd: 3.9, margem: 33 },
-    { dia: 'Sab', canal: 'Yampi', pedidos: 178, ticket: 439.33, cpa: 58.76, roas: 7.12, cmv: 17.9, cvd: 2.0, margem: 42 },
-    { dia: 'Sab', canal: 'Mercado Livre', pedidos: 158, ticket: 391.77, cpa: 48.62, roas: 7.42, cmv: 21.5, cvd: 3.3, margem: 44 },
-    { dia: 'Sab', canal: 'TikTok Shop', pedidos: 96, ticket: 438.54, cpa: 64.58, roas: 6.58, cmv: 24.8, cvd: 3.8, margem: 35 },
-    { dia: 'Dom', canal: 'Yampi', pedidos: 195, ticket: 437.95, cpa: 55.08, roas: 7.45, cmv: 17.7, cvd: 1.9, margem: 43 },
-    { dia: 'Dom', canal: 'Mercado Livre', pedidos: 175, ticket: 389.71, cpa: 45.60, roas: 7.68, cmv: 21.3, cvd: 3.2, margem: 45 },
-    { dia: 'Dom', canal: 'TikTok Shop', pedidos: 112, ticket: 436.61, cpa: 61.25, roas: 6.82, cmv: 24.7, cvd: 3.7, margem: 37 }
-  ]
-};
+const tabelaDiariaSegmentada: Record<string, Array<{ dia: string; canal: string; pedidos: number; ticket: number; cpa: number; roas: number; cmv: number; cvd: number; margem: number }>> = {};
 
-const eventosCanalSegmentado = {
-  yampi: [
-    { tipo: 'pedido', valor: 329, timestamp: '14:32' },
-    { tipo: 'pedido', valor: 295, timestamp: '14:25' },
-    { tipo: 'pedido', valor: 412, timestamp: '14:18' },
-    { tipo: 'ads', valor: 125.50, timestamp: '14:30' },
-    { tipo: 'ads', valor: 89.20, timestamp: '14:22' },
-    { tipo: 'ads', valor: 156.80, timestamp: '14:15' }
-  ],
-  'mercado-livre': [
-    { tipo: 'pedido', valor: 199, timestamp: '14:28' },
-    { tipo: 'pedido', valor: 245, timestamp: '14:20' },
-    { tipo: 'pedido', valor: 178, timestamp: '14:12' },
-    { tipo: 'ads', valor: 98.40, timestamp: '14:26' },
-    { tipo: 'ads', valor: 112.60, timestamp: '14:18' },
-    { tipo: 'ads', valor: 75.30, timestamp: '14:10' }
-  ],
-  'tiktok-shop': [
-    { tipo: 'pedido', valor: 142, timestamp: '14:31' },
-    { tipo: 'pedido', valor: 167, timestamp: '14:23' },
-    { tipo: 'pedido', valor: 189, timestamp: '14:14' },
-    { tipo: 'ads', valor: 45.80, timestamp: '14:29' },
-    { tipo: 'ads', valor: 52.10, timestamp: '14:21' },
-    { tipo: 'ads', valor: 38.90, timestamp: '14:13' }
-  ]
-};
+const eventosCanalSegmentado: Record<string, Array<{ tipo: string; valor: number; timestamp: string }>> = {};
 
 // Mock data para Publicidade - Geral
-const publicidadeTrendData = [
-  { date: 'Seg', metaAds: 8230, googleAds: 5420, tiktokAds: 3210 },
-  { date: 'Ter', metaAds: 8950, googleAds: 5890, tiktokAds: 3480 },
-  { date: 'Qua', metaAds: 9120, googleAds: 6340, tiktokAds: 3650 },
-  { date: 'Qui', metaAds: 8560, googleAds: 5620, tiktokAds: 3290 },
-  { date: 'Sex', metaAds: 9580, googleAds: 6120, tiktokAds: 3890 },
-  { date: 'Sab', metaAds: 10240, googleAds: 6580, tiktokAds: 4180 },
-  { date: 'Dom', metaAds: 11120, googleAds: 7280, tiktokAds: 4620 }
-];
+const publicidadeTrendData: Array<{ date: string; metaAds: number; googleAds: number; tiktokAds: number }> = [];
 
-const publicidadeDistribuicao = [
-  { name: 'Meta Ads', value: 65800, color: '#3b82f6' },
-  { name: 'Google Ads', value: 43250, color: '#f59e0b' },
-  { name: 'TikTok Ads', value: 26320, color: '#ec4899' }
-];
+const publicidadeDistribuicao: Array<{ name: string; value: number; color: string }> = [];
 
-const publicidadeDetalhes = [
-  { plataforma: 'Meta Ads', gasto: 65800, cliques: 12480, ctr: 3.2, conversoes: 892, cpa: 73.77, roas: 6.85 },
-  { plataforma: 'Google Ads', gasto: 43250, cliques: 8920, ctr: 4.1, conversoes: 642, cpa: 67.35, roas: 7.12 },
-  { plataforma: 'TikTok Ads', gasto: 26320, cliques: 5240, ctr: 2.8, conversoes: 348, cpa: 75.63, roas: 6.42 }
-];
+const publicidadeDetalhes: Array<{ plataforma: string; gasto: number; cliques: number; ctr: number; conversoes: number; cpa: number; roas: number }> = [];
 
-const publicidadeFunil = [
-  { plataforma: 'Meta Ads', impressoes: 245890, cliques: 7845, ctr: 3.2, conversoes: 892, taxaConv: 11.4, cpa: 73.77 },
-  { plataforma: 'Google Ads', impressoes: 189320, cliques: 7762, ctr: 4.1, conversoes: 642, taxaConv: 8.3, cpa: 67.35 },
-  { plataforma: 'TikTok Ads', impressoes: 156780, cliques: 4390, ctr: 2.8, conversoes: 348, taxaConv: 7.9, cpa: 75.63 }
-];
+const publicidadeFunil: Array<{ plataforma: string; impressoes: number; cliques: number; ctr: number; conversoes: number; taxaConv: number; cpa: number }> = [];
 
 const publicidadeSegmentada: Record<string, {
   nome: string;
@@ -635,98 +289,26 @@ const publicidadeSegmentada: Record<string, {
   funil: { impressoes: number; cliques: number; ctr: number; conversoes: number; taxaConv: number; cpa: number };
   campanhas: { campanha: string; status: 'Ativa' | 'Pausada'; gasto: number; cliques: number; ctr: number; conversoes: number; cpa: number; roas: number }[];
   cpcCpaTrend: { date: string; cpc: number; cpa: number }[];
-}> = {
-  'google-ads': {
-    nome: 'Google Ads',
-    resumo: { gasto: 43250, cpa: 67.35, roas: 7.12 },
-    trend: [
-      { date: 'Seg', gasto: 5420, conversoes: 92, cpc: 1.62, cpa: 58.9 },
-      { date: 'Ter', gasto: 5890, conversoes: 96, cpc: 1.68, cpa: 61.3 },
-      { date: 'Qua', gasto: 6340, conversoes: 98, cpc: 1.70, cpa: 64.7 },
-      { date: 'Qui', gasto: 5620, conversoes: 88, cpc: 1.64, cpa: 63.9 },
-      { date: 'Sex', gasto: 6120, conversoes: 102, cpc: 1.66, cpa: 60.0 },
-      { date: 'Sab', gasto: 6580, conversoes: 94, cpc: 1.75, cpa: 70.0 },
-      { date: 'Dom', gasto: 7280, conversoes: 72, cpc: 1.84, cpa: 101.1 }
-    ],
-    funil: { impressoes: 189320, cliques: 7762, ctr: 4.1, conversoes: 642, taxaConv: 8.3, cpa: 67.35 },
-    campanhas: [
-      { campanha: 'Search Brand', status: 'Ativa', gasto: 6200, cliques: 2100, ctr: 4.8, conversoes: 320, cpa: 19.38, roas: 9.2 },
-      { campanha: 'Performance Max', status: 'Ativa', gasto: 9800, cliques: 2650, ctr: 3.2, conversoes: 205, cpa: 47.80, roas: 6.8 },
-      { campanha: 'Shopping', status: 'Ativa', gasto: 11200, cliques: 2380, ctr: 3.9, conversoes: 178, cpa: 62.92, roas: 5.9 },
-      { campanha: 'Retargeting', status: 'Pausada', gasto: 5400, cliques: 790, ctr: 2.7, conversoes: 62, cpa: 87.10, roas: 4.1 }
-    ],
-    cpcCpaTrend: [
-      { date: 'Seg', cpc: 1.62, cpa: 58.9 },
-      { date: 'Ter', cpc: 1.68, cpa: 61.3 },
-      { date: 'Qua', cpc: 1.70, cpa: 64.7 },
-      { date: 'Qui', cpc: 1.64, cpa: 63.9 },
-      { date: 'Sex', cpc: 1.66, cpa: 60.0 },
-      { date: 'Sab', cpc: 1.75, cpa: 70.0 },
-      { date: 'Dom', cpc: 1.84, cpa: 101.1 }
-    ]
-  },
-  'meta-ads': {
-    nome: 'Meta Ads',
-    resumo: { gasto: 65800, cpa: 73.77, roas: 6.85 },
-    trend: [
-      { date: 'Seg', gasto: 8230, conversoes: 134, cpc: 1.74, cpa: 61.5 },
-      { date: 'Ter', gasto: 8950, conversoes: 128, cpc: 1.79, cpa: 69.9 },
-      { date: 'Qua', gasto: 9120, conversoes: 126, cpc: 1.82, cpa: 72.4 },
-      { date: 'Qui', gasto: 8560, conversoes: 118, cpc: 1.78, cpa: 72.5 },
-      { date: 'Sex', gasto: 9580, conversoes: 132, cpc: 1.85, cpa: 72.6 },
-      { date: 'Sab', gasto: 10240, conversoes: 124, cpc: 1.92, cpa: 82.6 },
-      { date: 'Dom', gasto: 11120, conversoes: 130, cpc: 2.05, cpa: 85.5 }
-    ],
-    funil: { impressoes: 245890, cliques: 7845, ctr: 3.2, conversoes: 892, taxaConv: 11.4, cpa: 73.77 },
-    campanhas: [
-      { campanha: 'Broad Advantage', status: 'Ativa', gasto: 14800, cliques: 3820, ctr: 2.9, conversoes: 268, cpa: 55.22, roas: 7.6 },
-      { campanha: 'Retargeting 30d', status: 'Ativa', gasto: 9600, cliques: 2410, ctr: 3.1, conversoes: 186, cpa: 51.61, roas: 8.4 },
-      { campanha: 'CAT Lookalike', status: 'Ativa', gasto: 12500, cliques: 1980, ctr: 2.4, conversoes: 132, cpa: 94.70, roas: 5.3 },
-      { campanha: 'Promo Remarketing', status: 'Pausada', gasto: 6400, cliques: 1100, ctr: 2.1, conversoes: 68, cpa: 94.12, roas: 3.9 }
-    ],
-    cpcCpaTrend: [
-      { date: 'Seg', cpc: 1.74, cpa: 61.5 },
-      { date: 'Ter', cpc: 1.79, cpa: 69.9 },
-      { date: 'Qua', cpc: 1.82, cpa: 72.4 },
-      { date: 'Qui', cpc: 1.78, cpa: 72.5 },
-      { date: 'Sex', cpc: 1.85, cpa: 72.6 },
-      { date: 'Sab', cpc: 1.92, cpa: 82.6 },
-      { date: 'Dom', cpc: 2.05, cpa: 85.5 }
-    ]
-  },
-  'tiktok-ads': {
-    nome: 'TikTok Ads',
-    resumo: { gasto: 26320, cpa: 75.63, roas: 6.42 },
-    trend: [
-      { date: 'Seg', gasto: 3210, conversoes: 46, cpc: 1.35, cpa: 69.8 },
-      { date: 'Ter', gasto: 3480, conversoes: 50, cpc: 1.40, cpa: 69.6 },
-      { date: 'Qua', gasto: 3650, conversoes: 48, cpc: 1.44, cpa: 76.0 },
-      { date: 'Qui', gasto: 3290, conversoes: 44, cpc: 1.38, cpa: 74.8 },
-      { date: 'Sex', gasto: 3890, conversoes: 52, cpc: 1.47, cpa: 74.8 },
-      { date: 'Sab', gasto: 4180, conversoes: 53, cpc: 1.52, cpa: 78.9 },
-      { date: 'Dom', gasto: 4620, conversoes: 55, cpc: 1.60, cpa: 84.0 }
-    ],
-    funil: { impressoes: 156780, cliques: 4390, ctr: 2.8, conversoes: 348, taxaConv: 7.9, cpa: 75.63 },
-    campanhas: [
-      { campanha: 'Spark Ads', status: 'Ativa', gasto: 7200, cliques: 1820, ctr: 2.5, conversoes: 118, cpa: 61.02, roas: 7.1 },
-      { campanha: 'CAT Lead', status: 'Ativa', gasto: 5400, cliques: 1320, ctr: 2.4, conversoes: 86, cpa: 62.79, roas: 6.8 },
-      { campanha: 'Retargeting View', status: 'Pausada', gasto: 4300, cliques: 720, ctr: 1.8, conversoes: 34, cpa: 126.47, roas: 3.5 },
-      { campanha: 'Always On', status: 'Ativa', gasto: 6100, cliques: 980, ctr: 2.1, conversoes: 52, cpa: 117.31, roas: 4.2 }
-    ],
-    cpcCpaTrend: [
-      { date: 'Seg', cpc: 1.35, cpa: 69.8 },
-      { date: 'Ter', cpc: 1.40, cpa: 69.6 },
-      { date: 'Qua', cpc: 1.44, cpa: 76.0 },
-      { date: 'Qui', cpc: 1.38, cpa: 74.8 },
-      { date: 'Sex', cpc: 1.47, cpa: 74.8 },
-      { date: 'Sab', cpc: 1.52, cpa: 78.9 },
-      { date: 'Dom', cpc: 1.60, cpa: 84.0 }
-    ]
-  }
-};
+}> = {};
 
 export default function CPA() {
   const { } = useToast();
+  
+  // Snapshot vazio default
+  const emptySnapshot: CpaSnapshot = {
+    canais: [],
+    funil: [],
+    diarias: [],
+    eventos: [],
+    custos: {
+      gateway: 0,
+      transporte: 0,
+      picking: 0,
+      imposto: 0,
+      checkout: 0
+    },
+    integracoes: []
+  };
   
   // Hook para gerenciar seleção de cliente e integrações disponíveis
   const {
@@ -738,14 +320,13 @@ export default function CPA() {
     mostrarSelectCliente
   } = useClientePerformance();
   
-  const [snapshot, setSnapshot] = useState<CpaSnapshot>(fallbackSnapshot);
+  const [snapshot, setSnapshot] = useState<CpaSnapshot>(emptySnapshot);
   const [visaoPrincipal, setVisaoPrincipal] = useState<VisaoPrincipal>('geral');
   const [subVisao, setSubVisao] = useState<string>('geral');
   const [windowRange, setWindowRange] = useState<WindowRange>('today');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [refreshJanela, setRefreshJanela] = useState('5m');
-  const [custos] = useState(fallbackSnapshot.custos);
   const [loading, setLoading] = useState(true);
   const [trendOffset, setTrendOffset] = useState(0); // 0 = últimos 7 dias, 1 = 7 dias anteriores, etc.
   const [expandedLinhaIndex, setExpandedLinhaIndex] = useState<number | null>(null);
@@ -756,13 +337,23 @@ export default function CPA() {
   // Hook para distribuição de gastos dinâmica baseada no snapshot
   const distribuicaoGastosData = useMemo(() => generateDistribuicaoGastos(snapshot), [snapshot]);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     setLoading(true);
     
-    // Nota: performanceService será implementado. Por enquanto usando fallbackSnapshot
-    setSnapshot(fallbackSnapshot);
-    setLoading(false);
-    setLastUpdate(new Date());
+    try {
+      console.log('🔄 Buscando dados de performance...');
+      // Buscar dados reais da API
+      const data = await performanceService.getCpaSnapshot();
+      console.log('✅ Dados recebidos:', data);
+      setSnapshot(data);
+    } catch (error) {
+      console.error('❌ Erro ao buscar dados de performance:', error);
+      // Em caso de erro, mantém snapshot vazio
+      setSnapshot(emptySnapshot);
+    } finally {
+      setLoading(false);
+      setLastUpdate(new Date());
+    }
   };
 
   const handleReload = () => {
@@ -878,8 +469,8 @@ export default function CPA() {
 
   const totaisAnteriores = useMemo(() => {
     if (!janelaAnterior.length) return null;
-    return aggregateDaily(janelaAnterior, custos);
-  }, [custos, janelaAnterior]);
+    return aggregateDaily(janelaAnterior, snapshot.custos);
+  }, [snapshot.custos, janelaAnterior]);
 
   const formatDelta = (current: number, previous: number | null | undefined, type: 'currency' | 'number' | 'percent' | 'pp') => {
     if (previous === null || previous === undefined) return 'Sem comparativo disponível';
@@ -911,15 +502,15 @@ export default function CPA() {
     if (canaisFonte.length) {
       return aggregateChannels(
         canaisFonte.map((c) => ({ faturamento: c.faturamento, gastoAds: c.gastoAds, pedidos: c.pedidos })),
-        custos
+        snapshot.custos
       );
     }
-    return aggregateDaily(janelaDiarias, custos);
-  }, [canaisSegmentados, canaisVisiveis, custos, janelaDiarias, subVisao]);
+    return aggregateDaily(janelaDiarias, snapshot.custos);
+  }, [canaisSegmentados, canaisVisiveis, snapshot.custos, janelaDiarias, subVisao]);
 
   // Submenus filtrados dinamicamente baseado nas integrações do cliente
   const submenuItems = useMemo(() => {
-    const baseSubmenus = submenuConfig[visaoPrincipal] || [];
+    const baseSubmenus: { id: string; label: string }[] = [];
     
     // Sempre mostrar "Visão Geral"
     const visaoGeral = baseSubmenus.filter(item => item.id === 'geral');
@@ -1097,7 +688,8 @@ export default function CPA() {
   }, [snapshot]);
 
   const resumoData = useMemo(() => generateResumoFromSnapshot, [generateResumoFromSnapshot]);
-  const fluxoData = useMemo(() => fluxoFinanceiroCenarios['real'], []);
+  // fluxoData não está mais mockado - deve vir da API no futuro
+  const fluxoData: ResumoItem[] = [];
 
   const cardsResumo = [
     {
@@ -1154,20 +746,11 @@ export default function CPA() {
     .flatMap((c) => c.alertas.map((a) => ({ canal: c.nome, texto: a })))
     .slice(0, 6);
 
-  const alertasMock = [
-    'ROAS abaixo do alvo na ultima janela',
-    'Vendas 3h abaixo da mediana 30d',
-    'Gasto de ads subiu 8% na hora sem aumento de conversao',
-    'Taxa de aprovacao de pagamento caiu 3pp'
-  ];
-
-  const alertasParaExibir = alertasPrioritarios.length
-    ? alertasPrioritarios
-    : alertasMock.map((texto) => ({ canal: 'CPA', texto }));
+  const alertasParaExibir = alertasPrioritarios;
 
     // Top 3 canais por faturamento
     const topCanais = useMemo(() => {
-      if (!canaisSegmentados.length) return canaisData.slice(0, 3);
+      if (!canaisSegmentados.length) return [];
       return [...canaisSegmentados]
         .sort((a, b) => b.faturamento - a.faturamento)
         .slice(0, 3)
@@ -1181,8 +764,8 @@ export default function CPA() {
         }));
     }, [canaisSegmentados]);
 
-    const gastosAdsPie = topCanais.map((c, idx) => ({ name: c.name, value: c.gastoAds, color: adsData[idx % adsData.length]?.color || '#0ea5e9' }));
-    const vendasPie = topCanais.map((c, idx) => ({ name: c.name, value: c.faturamento, color: custosData[idx % custosData.length]?.color || '#10b981' }));
+    const gastosAdsPie = topCanais.map((c, idx) => ({ name: c.name, value: c.gastoAds, color: ['#0ea5e9', '#f59e0b', '#10b981'][idx] || '#0ea5e9' }));
+    const vendasPie = topCanais.map((c, idx) => ({ name: c.name, value: c.faturamento, color: ['#10b981', '#3b82f6', '#f59e0b'][idx] || '#10b981' }));
 
     const trendLines = useMemo(() => {
       const windowSize = 7;

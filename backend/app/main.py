@@ -33,6 +33,7 @@ from .routes import (
     folha_router,
     integrations_router,
     permissoes_router,
+    performance_router,
 )
 
 # As tabelas do banco sao criadas pelo init_db.py no Docker
@@ -121,6 +122,7 @@ app.include_router(cargos_setores_router, prefix="/api")
 app.include_router(folha_router, prefix="/api")
 app.include_router(integrations_router, prefix="/api")
 app.include_router(permissoes_router, prefix="/api")
+app.include_router(performance_router)
 
 
 if __name__ == "__main__":
