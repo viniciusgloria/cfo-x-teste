@@ -9,7 +9,7 @@ from ..schemas.permissao import PermissaoRoleCreate, PermissaoRoleResponse, Perm
 from ..dependencies import get_current_user, get_current_admin
 from typing import Dict, List
 
-router = APIRouter(prefix="/api/permissoes", tags=["permissoes"])
+router = APIRouter(prefix="/permissoes", tags=["permissoes"])
 
 # Roles válidos no sistema
 ROLES_VALIDOS = ["admin", "gestor", "colaborador", "cliente"]
