@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, createElement } from 'react';
-import { Bell, Menu, X, CheckCircle, MessageSquare, Clock, User, Settings, LogOut, Search, Moon, Sun, Camera } from 'lucide-react';
+import { Bell, Menu, X, CheckCircle, MessageSquare, Clock, User, Settings, LogOut, Search, Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Button } from '../ui/Button';
@@ -281,13 +281,7 @@ export function Header({ title, onMenuClick }: HeaderProps) {
                   <User size={18} className="text-gray-600 dark:text-gray-400" />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Meu Perfil</span>
                 </button>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-3"
-                >
-                  <Camera size={18} className="text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Editar Foto</span>
-                </button>
+                {/* Opção 'Editar Foto' removida conforme solicitação do projeto */}
                 <button
                   onClick={() => {
                     navigate('/configuracoes');

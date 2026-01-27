@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Settings, Plus, Pencil, Trash2, Search, History, Users, Clock, CreditCard, Palette, FileText, Target, CheckSquare, MessageSquare, MessageCircle, Gift, DollarSign, LayoutGrid, List, Eye, AlertCircle, Building2, Info, ChevronDown, ChevronUp, Home, UserCog, Award, BarChart, FolderOpen, Calendar, Activity, Bell, Receipt } from 'lucide-react';
 import { Cargo, Setor } from '../types';
 // Card removed: no longer needed after maintenance UI removal
@@ -17,6 +18,7 @@ import { useEmpresaStore } from '../store/empresaStore';
 import { useAuthStore } from '../store/authStore';
 import { useSystemStore } from '../store/systemStore';
 import { useCargosSetoresStore } from '../store/cargosSetoresStore';
+import { useColaboradoresStore } from '../store/colaboradoresStore';
 import { CargoModalAdvanced } from '../components/CargoModalAdvanced';
 import { HierarquiaSetor } from '../components/HierarquiaSetor';
 import { OrganogramaModal } from '../components/OrganogramaModal';
@@ -33,6 +35,7 @@ import {
 } from '../components/ConfiguracoesEmpresa';
 
 export function Configuracoes() {
+  const navigate = useNavigate();
   const [active, setActive] = useState('empresa');
   const [users, setUsers] = useState<Array<{
     id: string;
@@ -42,6 +45,7 @@ export function Configuracoes() {
     grupoId?: string;
     grupoNome?: string;
     empresa?: string;
+    isActive?: boolean;
   }>>([
   ]);
   const [isSavingEmpresa, setIsSavingEmpresa] = useState(false);
@@ -53,10 +57,11 @@ export function Configuracoes() {
   const [editForm, setEditForm] = useState<{ 
     name: string; 
     email: string; 
+    password: string;
     role: string; 
     empresa?: string;
     grupoId?: string;
-  }>({ name: '', email: '', role: 'colaborador' });
+  }>({ name: '', email: '', password: '', role: 'colaborador' });
 
   // Estado para criação de usuário
   const [createUserForm, setCreateUserForm] = useState<{
@@ -325,6 +330,7 @@ export function Configuracoes() {
         empresa: u.empresa,
         grupoId: u.grupoId,
         grupoNome: u.grupoNome,
+        isActive: u.isActive !== false, // Assume ativo por padrão se não especificado
       }));
       setUsers(formattedUsers);
     } catch (error: any) {
@@ -354,10 +360,33 @@ export function Configuracoes() {
   const handleConfirmRemove = async (_reason?: string) => {
     if (!toRemoveUser) return;
     
+    const userToRemove = users.find(u => u.id === toRemoveUser);
+    const isColaboradorOrGestor = userToRemove && (userToRemove.role === 'colaborador' || userToRemove.role === 'gestor');
+    
     try {
       await api.delete(`/api/users/${toRemoveUser}`);
       
-      setUsers((prev) => prev.filter((u) => u.id !== toRemoveUser));
+      if (isColaboradorOrGestor) {
+        // Para colaboradores/gestores, marcar como inativo em vez de remover
+        const { atualizarColaborador } = useColaboradoresStore.getState();
+        // Encontrar o colaborador pelo email
+        const colaboradores = useColaboradoresStore.getState().colaboradores;
+        const colaborador = colaboradores.find(c => c.email === userToRemove.email);
+        if (colaborador) {
+          atualizarColaborador(colaborador.id, { status: 'inativo' });
+        }
+        
+        // Manter o usuário na lista mas marcar como inativo
+        setUsers((prev) => prev.map((u) => 
+          u.id === toRemoveUser 
+            ? { ...u, isActive: false } 
+            : u
+        ));
+      } else {
+        // Para outros tipos, remover completamente
+        setUsers((prev) => prev.filter((u) => u.id !== toRemoveUser));
+      }
+      
       toast.success('Usuário removido com sucesso');
     } catch (error: any) {
       console.error('Erro ao remover usuário:', error);
@@ -365,21 +394,36 @@ export function Configuracoes() {
     } finally {
       setToRemoveUser(null);
       setConfirmOpen(false);
+      setEditModalOpen(false);
+      setConfirmRemoveInModal(false);
     }
   };
 
   const openEditUser = (id: string) => {
+    if (editModalOpen) return; // Previne abertura duplicada
     const u = users.find((x) => x.id === id);
     if (!u) return;
     setEditUserId(id);
     setEditForm({ 
       name: u.name, 
       email: u.email, 
+      password: '',
       role: u.role,
       empresa: u.empresa,
       grupoId: u.grupoId
     });
     setEditModalOpen(true);
+  };
+
+  const redirectToCadastro = (userId: string) => {
+    const u = users.find((x) => x.id === userId);
+    if (!u) return;
+    
+    if (u.role === 'colaborador' || u.role === 'gestor') {
+      navigate(`/colaboradores/cadastro?id=${userId}`);
+    } else if (u.role === 'cliente') {
+      navigate(`/cadastro-cliente?id=${userId}`);
+    }
   };
 
   const saveEditUser = async () => {
@@ -401,14 +445,17 @@ export function Configuracoes() {
     }
 
     try {
-      await api.put(`/api/users/${editUserId}`, {
+      const updateData: any = {
         nome: editForm.name,
         role: editForm.role,
+        ...(editForm.password && { senha: editForm.password }),
         ...(editForm.role === 'cliente' && {
           empresa: editForm.empresa,
           ...(editForm.grupoId && { grupoId: editForm.grupoId })
         })
-      });
+      };
+
+      await api.put(`/api/users/${editUserId}`, updateData);
 
       // Atualizar estado local
       const grupoNome = editForm.grupoId 
@@ -511,6 +558,20 @@ export function Configuracoes() {
       console.log(`📧 ${subject}\n\nPara: ${createUserForm.email}\n\n${body}`);
 
       toast.success('Usuário criado com sucesso');
+      
+      // Se for colaborador ou gestor, criar automaticamente na página Colaboradores
+      if (createUserForm.role === 'colaborador' || createUserForm.role === 'gestor') {
+        const { adicionarColaborador } = useColaboradoresStore.getState();
+        adicionarColaborador({
+          nome: createUserForm.nome,
+          cargo: createUserForm.role === 'gestor' ? 'Gestor' : 'Colaborador',
+          departamento: '', // Será definido quando o setor for selecionado no cadastro
+          email: createUserForm.email,
+          status: 'ativo',
+          metaHorasMensais: 176,
+        });
+      }
+      
       setCreateUserForm({ nome: '', email: '', role: 'colaborador' });
       setGrupoSelecionadoId('');
       setNovoGrupo({ nome: '' });
@@ -1152,12 +1213,12 @@ export function Configuracoes() {
               {user?.role === 'admin' && (
                 <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100 mb-4">
-                    Criar Novo Usuário
+                    Cadastro de Usuários do Sistema:
                   </h3>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Nome do Usuário
+                        Nome do Usuário:
                       </label>
                       <Input
                         value={createUserForm.nome}
@@ -1167,7 +1228,7 @@ export function Configuracoes() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        E-mail de Acesso
+                        E-mail de Acesso:
                       </label>
                       <Input
                         type="email"
@@ -1178,7 +1239,7 @@ export function Configuracoes() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Tipo de Acesso
+                        Tipo de Acesso:
                       </label>
                       <select
                         value={createUserForm.role}
@@ -1195,7 +1256,7 @@ export function Configuracoes() {
                       <>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Empresa/Cliente
+                            Empresa/Cliente:
                           </label>
                           <Input
                             value={createUserForm.empresa || ''}
@@ -1219,7 +1280,7 @@ export function Configuracoes() {
                               }}
                               className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                             />
-                            Vincular cliente a um grupo
+                            Vincular cliente a um grupo:
                           </label>
                         </div>
 
@@ -1228,7 +1289,7 @@ export function Configuracoes() {
                             {(config.omieConfig.grupos.length > 0 || criandoGrupoCliente) && (
                               <div className="md:col-span-2 space-y-2">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
-                                  Grupo do cliente
+                                  Grupo:
                                 </label>
                                 <div className="grid gap-2 md:grid-cols-[2fr,1fr]">
                                   <select
@@ -1313,12 +1374,19 @@ export function Configuracoes() {
                   {/* Mobile: cards */}
                   <div className="space-y-3 md:hidden">
                 {users.map((u) => (
-                  <div key={u.id} className="p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg">
+                  <div key={u.id} className={`p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg ${!u.isActive ? 'opacity-60' : ''}`}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="text-sm text-gray-500 dark:text-slate-400">{u.role}</div>
-                        <div className="font-medium text-gray-800 dark:text-gray-200">{u.name}</div>
-                        <div className="text-sm text-gray-600 dark:text-slate-300">{u.email}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-gray-500 dark:text-slate-400">{u.role}</div>
+                          {!u.isActive && (
+                            <span className="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">
+                              Inativo
+                            </span>
+                          )}
+                        </div>
+                        <div className={`font-medium ${!u.isActive ? 'line-through text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>{u.name}</div>
+                        <div className={`text-sm ${!u.isActive ? 'text-gray-400' : 'text-gray-600 dark:text-slate-300'}`}>{u.email}</div>
                         {u.empresa && (
                           <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Empresa: {u.empresa}</div>
                         )}
@@ -1327,7 +1395,8 @@ export function Configuracoes() {
                         )}
                       </div>
                       <div className="flex flex-col gap-2 ml-4">
-                        <Button variant="ghost" aria-label={`Editar usuário ${u.name}`} onClick={() => openEditUser(u.id)}>Editar</Button>
+                        <Button variant="ghost" aria-label={`Editar acesso de ${u.name}`} onClick={() => openEditUser(u.id)}>Acesso</Button>
+                        <Button variant="outline" aria-label={`Editar cadastro de ${u.name}`} onClick={() => redirectToCadastro(u.id)}>Cadastro</Button>
                         <Button variant="outline" onClick={() => { setToRemoveUser(u.id); setConfirmOpen(true); }} aria-label={`Remover usuário ${u.name}`}>Remover</Button>
                       </div>
                     </div>
@@ -1350,15 +1419,25 @@ export function Configuracoes() {
                       </thead>
                       <tbody>
                         {users.map((u) => (
-                          <tr key={u.id} className="border-t dark:border-slate-700">
-                            <td className="p-2">{u.name}</td>
-                            <td className="p-2">{u.email}</td>
-                            <td className="p-2">{u.role}</td>
-                            <td className="p-2 text-sm">{u.empresa || '—'}</td>
-                            <td className="p-2 text-sm">{u.grupoNome || '—'}</td>
+                          <tr key={u.id} className={`border-t dark:border-slate-700 ${!u.isActive ? 'opacity-60' : ''}`}>
+                            <td className="p-2">
+                              <div className="flex items-center gap-2">
+                                <span className={!u.isActive ? 'line-through text-gray-500' : ''}>{u.name}</span>
+                                {!u.isActive && (
+                                  <span className="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">
+                                    Inativo
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className={`p-2 ${!u.isActive ? 'text-gray-400' : ''}`}>{u.email}</td>
+                            <td className={`p-2 ${!u.isActive ? 'text-gray-400' : ''}`}>{u.role}</td>
+                            <td className={`p-2 text-sm ${!u.isActive ? 'text-gray-400' : ''}`}>{u.empresa || '—'}</td>
+                            <td className={`p-2 text-sm ${!u.isActive ? 'text-gray-400' : ''}`}>{u.grupoNome || '—'}</td>
                             <td className="p-2">
                               <div className="flex gap-2">
-                                <Button variant="ghost" aria-label={`Editar usuário ${u.name}`} onClick={() => openEditUser(u.id)}>Editar</Button>
+                                <Button variant="ghost" aria-label={`Editar acesso de ${u.name}`} onClick={() => openEditUser(u.id)}>Acesso</Button>
+                                <Button variant="outline" aria-label={`Editar cadastro de ${u.name}`} onClick={() => redirectToCadastro(u.id)}>Cadastro</Button>
                                 <Button variant="outline" onClick={() => { setToRemoveUser(u.id); setConfirmOpen(true); }} aria-label={`Remover usuário ${u.name}`}>Remover</Button>
                               </div>
                             </td>
@@ -1463,7 +1542,7 @@ export function Configuracoes() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-gray-300 mb-1">
-                    Host SMTP *
+                    Host SMTP:
                   </label>
                   <Input
                     type="text"
@@ -1479,7 +1558,7 @@ export function Configuracoes() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-gray-300 mb-1">
-                    Porta SMTP *
+                    Porta SMTP:
                   </label>
                   <Input
                     type="number"
@@ -1495,7 +1574,7 @@ export function Configuracoes() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-gray-300 mb-1">
-                    Usuário SMTP
+                    Usuário SMTP:
                   </label>
                   <Input
                     type="text"
@@ -1507,7 +1586,7 @@ export function Configuracoes() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-gray-300 mb-1">
-                    Senha SMTP
+                    Senha SMTP:
                   </label>
                   <Input
                     type="password"
@@ -1519,7 +1598,7 @@ export function Configuracoes() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-gray-300 mb-1">
-                    E-mail do Remetente *
+                    E-mail do Remetente:
                   </label>
                   <Input
                     type="email"
@@ -1535,7 +1614,7 @@ export function Configuracoes() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-gray-300 mb-1">
-                    Nome do Remetente *
+                    Nome do Remetente:
                   </label>
                   <Input
                     type="text"
@@ -1551,7 +1630,7 @@ export function Configuracoes() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-gray-300 mb-1">
-                    E-mail para Notificações do Sistema
+                    E-mail para Notificações do Sistema:
                   </label>
                   <Input
                     type="email"
@@ -1563,7 +1642,7 @@ export function Configuracoes() {
               </div>
 
               <div className="space-y-3">
-                <h4 className="font-semibold text-gray-800 dark:text-white">Configurações de Segurança</h4>
+                <h4 className="font-semibold text-gray-800 dark:text-white">Configurações de Segurança:</h4>
                 <div className="flex gap-4">
                   <label className="flex items-center">
                     <input
@@ -2549,11 +2628,11 @@ export function Configuracoes() {
       {/* Manutenção de dados removida */}
 
       {/* Modal de Edição de Usuário */}
-      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Usuário">
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Editar Usuário" size="large">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nome do Usuário
+              Nome
             </label>
             <Input
               value={editForm.name}
@@ -2563,7 +2642,7 @@ export function Configuracoes() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              E-mail de Acesso
+              Email
             </label>
             <Input
               type="email"
@@ -2574,7 +2653,18 @@ export function Configuracoes() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Tipo de Acesso
+              Senha
+            </label>
+            <Input
+              type="password"
+              value={editForm.password}
+              onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+              placeholder="Deixe em branco para manter a atual"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Tipo
             </label>
             <select
               value={editForm.role}
@@ -2669,38 +2759,6 @@ export function Configuracoes() {
         onConfirm={handleDeleteSetor}
         title="Remover Setor"
       />
-
-      {/* Modal Editar Usuário */}
-      <Modal isOpen={!!editUserId} onClose={() => setEditUserId(null)} title="Editar Usuário">
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm text-gray-600 dark:text-slate-300 dark:text-gray-300">Nome</label>
-            <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 dark:text-slate-300 dark:text-gray-300">E-mail</label>
-            <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 dark:text-slate-300 dark:text-gray-300">Nível de Acesso</label>
-            <select
-              value={editForm.role}
-              onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981] dark:bg-gray-700 dark:text-white"
-            >
-              <option value="admin">Administrador</option>
-              <option value="gestor">Gestor</option>
-              <option value="colaborador">Colaborador</option>
-              <option value="cliente">Cliente</option>
-
-            </select>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={() => setEditUserId(null)} fullWidth>Cancelar</Button>
-            <Button onClick={saveEditUser} fullWidth>Salvar</Button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Modais de Atribuição em Massa */}
       <BulkAssignModal

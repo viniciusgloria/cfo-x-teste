@@ -446,9 +446,12 @@ export function Solicitacoes() {
                   <Card key={colaborador.id} className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-semibold text-lg">
-                          {colaborador.nome.charAt(0)}
-                        </div>
+                        <Avatar 
+                          src={colaborador.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${colaborador.nome.split(' ')[0]}`}
+                          alt={colaborador.nome}
+                          size="lg"
+                          className="bg-gray-100 dark:bg-gray-700"
+                        />
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

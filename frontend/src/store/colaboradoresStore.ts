@@ -11,7 +11,7 @@ export interface Colaborador {
   email: string;
   telefone?: string;
   avatar?: string;
-  status: 'ativo' | 'afastado' | 'ferias' | 'em_contratacao';
+  status: 'ativo' | 'afastado' | 'ferias' | 'em_contratacao' | 'inativo';
   metaHorasMensais?: number; // Meta de horas por mês (padrão 176h)
   dispensaDocumentacao?: boolean; // Permite ativar sem documentos (casos atípicos)
   

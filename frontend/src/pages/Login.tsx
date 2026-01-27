@@ -25,7 +25,7 @@ const FALLBACK_BRAND_MARK = `data:image/svg+xml;utf8,${encodeURIComponent(`
 `)}
 `;
 
-const SIGNATURE_ASSET = '/centerflow-mark.svg';
+const SIGNATURE_ASSET = '/images/logo_x_40x40.svg';
 
 export function Login() {
   const { logo, nomeEmpresa } = useEmpresaStore();
@@ -98,18 +98,18 @@ export function Login() {
   const featureCards = [
     {
       icon: ShieldCheck,
-      title: 'Acesso seguro',
-      description: 'SSO e MFA prontos para ativação, com auditoria de sessão.',
+      title: 'Visão em tempo real:',
+      description: 'Visualize todos os KPIs do seu negócio em um painel integrado e otimize sua performance.',
     },
     {
       icon: LineChart,
-      title: 'Indicadores ao vivo',
-      description: 'Monitoramento do financeiro, folha e indicadores de RH.',
+      title: 'Ações que geram lucro:',
+      description: 'Alertas e recomendações práticas para reduzir custos e melhorar margem.',
     },
     {
       icon: Clock3,
-      title: 'Operação contínua',
-      description: 'Status 24/7 com failover e alertas em tempo real.',
+      title: 'Dados confiáveis, decisões seguras:',
+      description: 'Integrações automáticas com gateways e marketplaces, nada de planilha manual.',
     },
   ];
 
@@ -121,40 +121,22 @@ export function Login() {
       <div className="relative flex min-h-screen flex-col">
         <div className="flex-1 grid gap-10 px-6 py-10 lg:grid-cols-5 lg:px-16 lg:py-12">
           <section className="flex flex-col justify-center gap-6 lg:col-span-3">
-          <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
-            <div className="h-24 w-24 rounded-2xl border-2 border-white/30 bg-white dark:bg-slate-900 p-3.5 shadow-xl">
-              <img
-                src={brandMark}
-                alt="Logotipo"
-                className="h-full w-full rounded-xl object-cover"
-                onError={(e) => {
-                  if (e.currentTarget.src !== FALLBACK_BRAND_MARK) {
-                    e.currentTarget.src = FALLBACK_BRAND_MARK;
-                  }
-                }}
-              />
-            </div>
-            <div className="min-w-[240px]">
-              <p className="flex items-center gap-2 text-sm font-bold text-emerald-300">
-                <Sparkles className="h-4 w-4" /> Acesso exclusivo
-              </p>
-              <h1 className="text-4xl font-bold leading-tight text-white">{companyName}</h1>
-              <p className="text-sm font-medium text-slate-200">Sistema de Gestão Interna com identidade configurada pelo admin.</p>
-            </div>
-            <div className="ml-auto flex items-center gap-3 rounded-full border border-emerald-400/40 bg-emerald-500/20 px-5 py-2.5 text-sm font-semibold text-emerald-50 shadow-lg">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-300 shadow-lg shadow-emerald-500/50" />
-              Disponibilidade monitorada em tempo real
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <img
+              src="/images/banner_login_1000x120.svg"
+              alt="Logo CFO Company"
+              className="w-full h-auto object-contain"
+            />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
             {featureCards.map(({ icon: Icon, title, description }) => (
-              <Card key={title} className="border-white/20 bg-white/10 p-5 text-slate-50 shadow-xl backdrop-blur-md">
-                <div className="mb-3 flex items-center gap-2.5 text-emerald-300">
+              <Card key={title} className="border-white/20 bg-white/10 p-5 text-slate-50">
+                <div className="mb-3 flex items-center gap-2.5 text-emerald-600">
                   <Icon className="h-5 w-5" />
                   <span className="text-sm font-bold">{title}</span>
                 </div>
-                <p className="text-sm font-medium leading-relaxed text-slate-200">{description}</p>
+                <p className="text-sm font-medium leading-relaxed text-slate-900">{description}</p>
               </Card>
             ))}
           </div>
@@ -164,7 +146,7 @@ export function Login() {
             <div className="flex flex-wrap items-center gap-6">
               <div className="h-28 w-28 rounded-3xl border-2 border-white/20 bg-white dark:bg-slate-900 p-4 shadow-xl">
                 <img
-                  src={brandMark}
+                  src="/images/logo_x_80x80.svg"
                   alt="Marca destaque"
                   className="h-full w-full rounded-2xl object-cover"
                   onError={(e) => {
@@ -175,13 +157,13 @@ export function Login() {
                 />
               </div>
               <div className="flex-1 min-w-[220px]">
-                <p className="text-xs font-bold uppercase tracking-[0.24em] text-emerald-300">Portal seguro</p>
-                <h2 className="text-xl font-bold text-white">Autenticação protegida e personalizável</h2>
-                <p className="mt-1.5 text-sm font-medium leading-relaxed text-slate-200">Experiência alinhada à identidade da sua empresa, com dispositivos lembrados e avisos rápidos.</p>
+                <p className="text-xl font-bold uppercase text-emerald-300">Portal CFO X</p>
+                <p className="mt-1.5 text-sm font-medium leading-relaxed text-slate-200">Dashboards em tempo real, relatórios financeiros e controle eficiente de tarefas para decisões estratégicas.</p>
               </div>
               <div className="flex flex-col gap-2.5 text-sm font-medium text-slate-100">
-                <div className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50" />Monitoração ativa</div>
-                <div className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-lg shadow-cyan-500/50" />Logs cifrados</div>
+                <div className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50" />Alertas Inteligentes</div>
+                <div className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-lg shadow-cyan-500/50" />Dados Criptografados</div>
+                <div className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-full bg-red-400 shadow-lg shadow-cyan-500/50" />Monitoramento 24/7</div>
               </div>
             </div>
           </div>
@@ -190,8 +172,8 @@ export function Login() {
           <section className="flex items-center lg:col-span-2">
           <Card className="w-full border-white/20 bg-white/95 p-8 text-slate-900 shadow-2xl backdrop-blur-sm">
             <div className="mb-6">
-              <p className="text-sm font-semibold text-emerald-600">Bem-vindo de volta</p>
-              <h2 className="text-2xl font-bold text-gray-900">Entre para continuar</h2>
+              <p className="text-sm font-semibold text-emerald-600">Bem-vindo!</p>
+              <h2 className="text-2xl font-bold text-gray-900">Acesse para continuar:</h2>
               <p className="text-sm text-gray-600 dark:text-slate-300">Use suas credenciais ou conecte com o Google.</p>
             </div>
 
@@ -256,6 +238,7 @@ export function Login() {
             <Button
               variant="outline"
               fullWidth
+              disabled
               className="flex items-center justify-center gap-2 border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 dark:bg-slate-900/50"
               onClick={handleGoogleLogin}
               loading={loadingGoogle}
@@ -270,12 +253,6 @@ export function Login() {
               )}
               Continuar com Google
             </Button>
-
-            <div className="mt-6 flex flex-wrap gap-2.5 text-xs font-medium text-gray-600 dark:text-slate-300">
-              <span className="rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 px-3 py-1.5">Suporte 24/7</span>
-              <span className="rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 px-3 py-1.5">Logs criptografados</span>
-              <span className="rounded-full border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 px-3 py-1.5">Último login salvo</span>
-            </div>
           </Card>
           </section>
         </div>
@@ -283,15 +260,15 @@ export function Login() {
         <div className="flex items-center justify-center gap-3 bg-white/95 px-4 py-4 shadow-lg backdrop-blur">
           <img
             src={SIGNATURE_ASSET}
-            alt="Center Flow"
-            className="h-10 w-10 rounded-full border-2 border-emerald-500/30 bg-white dark:bg-slate-900 object-cover shadow-sm"
+            alt="Logo CFO X"
+            className="h-10 w-10 object-cover"
             onError={(e) => {
               if (e.currentTarget.src !== FALLBACK_BRAND_MARK) {
                 e.currentTarget.src = FALLBACK_BRAND_MARK;
               }
             }}
           />
-          <span className="text-sm font-semibold text-slate-800">Desenvolvido por Center Flow - 2025</span>
+          <span className="text-sm font-semibold text-slate-800">© 2026 CFO X. Todos os direitos reservados.</span>
         </div>
       </div>
     </div>

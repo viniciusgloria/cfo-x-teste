@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Save, User as UserIcon, Mail, Phone, Briefcase, Building2, Shield, Clock, Loader } from 'lucide-react';
+import { ArrowLeft, Save, User as UserIcon, Mail, Phone, Briefcase, Building2, Shield, Clock, Loader, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -9,6 +9,9 @@ import { useDocumentosStore } from '../store/documentosStore';
 import { useColaboradoresStore } from '../store/colaboradoresStore';
 import { useAuthStore } from '../store/authStore';
 import { useCargosSetoresStore } from '../store/cargosSetoresStore';
+import { useBeneficiosStore } from '../store/beneficiosStore';
+import { useFolhaPagamentoStore } from '../store/folhaPagamentoStore';
+import api from '../services/api';
 import { validateEmail, validatePhone, formatPhone, formatCPF, isValidCPF, formatCNPJ, isValidCNPJ, formatCEP, fetchAddressByCEP } from '../utils/validation';
 import { getBankByCode, fetchCNPJ } from '../utils/brasilapi';
 import { UserRole } from '../types';
@@ -17,6 +20,7 @@ interface FormData {
   nome: string;
   nomeCompleto?: string;
   email: string;
+  senha?: string;
   telefone: string;
   cpf?: string;
   rg?: string;
@@ -35,7 +39,7 @@ interface FormData {
   contrato?: 'CLT' | 'PJ';
   role: UserRole;
   metaHorasMensais: string;
-  status: 'ativo' | 'afastado' | 'ferias' | 'em_contratacao';
+  status: 'ativo' | 'afastado' | 'ferias' | 'em_contratacao' | 'inativo';
   dispensaDocumentacao?: boolean;
 
   // Bancários / PJ
@@ -59,6 +63,14 @@ interface FormData {
   cepEmpresa?: string;
   
   obs?: string;
+  
+  // Benefícios
+  beneficiosSelecionados: string[];
+  
+  // Folha de Pagamento
+  salarioBase: string;
+  dataAdmissao: string;
+  descontos?: string[];
 }
 
 export function CadastroUsuario() {
@@ -72,6 +84,8 @@ export function CadastroUsuario() {
   const { cargos, setores } = useCargosSetoresStore();
   const documentosStore = useDocumentosStore();
   const adicionarDocumentoStore = useDocumentosStore((s) => s.adicionarDocumento);
+  const { beneficios, carregarBeneficios } = useBeneficiosStore();
+  const { adicionarFolha } = useFolhaPagamentoStore();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [cepLoading, setCepLoading] = useState(false);
@@ -79,9 +93,17 @@ export function CadastroUsuario() {
   const [cnpjValido, setCnpjValido] = useState<boolean | null>(null);
   const [cepValido, setCepValido] = useState<boolean | null>(null);
   const [cepEmpresaValido, setCepEmpresaValido] = useState<boolean | null>(null);
+  const toastShownRef = useRef(false);
+  const [userData, setUserData] = useState<{
+    id?: string;
+    email: string;
+    senha: string;
+    role: string;
+  } | null>(null);
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     email: '',
+    senha: '',
     telefone: '',
     cargoId: '',
     setorId: '',
@@ -89,10 +111,56 @@ export function CadastroUsuario() {
     metaHorasMensais: '176',
     status: 'em_contratacao',
     dispensaDocumentacao: false,
+    beneficiosSelecionados: [],
+    salarioBase: '',
+    dataAdmissao: '',
   });
 
   // Verificar permissão
   const podeGerenciarUsuarios = user?.role === 'admin' || user?.role === 'gestor' || user?.role === 'rh';
+
+  const loadUserData = async (identifier: string | null) => {
+    if (!identifier) {
+      console.log('Identificador inválido, será criado novo usuário');
+      return null;
+    }
+
+    try {
+      // Tentar buscar por ID primeiro (se for numérico)
+      if (!isNaN(Number(identifier))) {
+        const response = await api.get(`/api/users/${identifier}`);
+        if (response) {
+          const user = response;
+          setUserData({
+            id: user.id.toString(),
+            email: user.email,
+            senha: '', // Não carregamos a senha por segurança
+            role: user.role,
+          });
+          return user;
+        }
+      }
+      
+      // Se não for numérico ou não encontrou por ID, tentar por email
+      const response = await api.get('/api/users/', { params: { email: identifier } });
+      if (response && response.length > 0) {
+        // Validar que o email retornado corresponde ao solicitado
+        const user = response.find((u: any) => u.email === identifier);
+        if (user) {
+          setUserData({
+            id: user.id.toString(),
+            email: user.email,
+            senha: '', // Não carregamos a senha por segurança
+            role: user.role,
+          });
+          return user;
+        }
+      }
+    } catch (error) {
+      console.log('Usuário não encontrado na API, será criado novo');
+    }
+    return null;
+  };
 
   useEffect(() => {
     if (!podeGerenciarUsuarios) {
@@ -102,56 +170,147 @@ export function CadastroUsuario() {
     }
 
     if (isEdit) {
-      const colab = colaboradores.find((c) => c.id === parseInt(editId));
-      if (!colab) {
-        toast.error('Colaborador não encontrado');
-        navigate('/colaboradores');
-        return;
+      // Primeiro, tentar encontrar pelo ID numérico
+      let colab = colaboradores.find((c) => c.id === parseInt(editId));
+      
+      // Se não encontrou por ID numérico, tentar por email
+      if (!colab && editId.includes('@')) {
+        colab = colaboradores.find((c) => c.email === editId);
       }
-      setFormData({
-        nome: colab.nome,
-        email: colab.email,
-        telefone: colab.telefone || '',
-        nomeCompleto: colab.nomeCompleto || colab.nome,
-        cpf: colab.cpf || '',
-        rg: colab.rg || '',
-        dataNascimento: colab.dataNascimento || undefined,
-        endereco: colab.endereco || '',
-        numero: colab.numero || '',
-        complemento: colab.complemento || '',
-        bairro: colab.bairro || '',
-        cidade: colab.cidade || '',
-        cep: colab.cep || '',
-        cargoId: '', // TODO: migrar dados antigos se necessário
-        setorId: '', // TODO: migrar dados antigos se necessário
-        funcao: colab.funcao || '',
-        empresa: colab.empresa || '',
-        regime: colab.regime || undefined,
-        contrato: colab.contrato || undefined,
-        role: 'colaborador',
-        metaHorasMensais: String(colab.metaHorasMensais || 176),
-        status: colab.status,
-        dispensaDocumentacao: !!colab.dispensaDocumentacao,
-        chavePix: colab.chavePix || '',
-        banco: colab.banco || '',
-        codigoBanco: colab.codigoBanco || '',
-        agencia: colab.agencia || '',
-        conta: colab.conta || '',
-        operacao: colab.operacao || '',
-        tipoConta: colab.tipoConta || undefined,
-        cnpj: colab.cnpj || '',
-        razaoSocial: colab.razaoSocial || '',
-        tipo: colab.tipo || '',
-        enderecoEmpresa: colab.enderecoEmpresa || '',
-        numeroEmpresa: colab.numeroEmpresa || '',
-        complementoEmpresa: colab.complementoEmpresa || '',
-        bairroEmpresa: colab.bairroEmpresa || '',
-        cidadeEmpresa: colab.cidadeEmpresa || '',
-        cepEmpresa: colab.cepEmpresa || '',
-        obs: colab.obs || '',
-      });
+      
+      if (colab) {
+        // Colaborador encontrado, carregar dados normalmente
+        setFormData({
+          nome: colab.nome,
+          email: colab.email,
+          telefone: colab.telefone || '',
+          nomeCompleto: colab.nomeCompleto || colab.nome,
+          cpf: colab.cpf || '',
+          rg: colab.rg || '',
+          dataNascimento: colab.dataNascimento || undefined,
+          endereco: colab.endereco || '',
+          numero: colab.numero || '',
+          complemento: colab.complemento || '',
+          bairro: colab.bairro || '',
+          cidade: colab.cidade || '',
+          cep: colab.cep || '',
+          cargoId: '', // TODO: migrar dados antigos se necessário
+          setorId: '', // TODO: migrar dados antigos se necessário
+          funcao: colab.funcao || '',
+          empresa: colab.empresa || '',
+          regime: colab.regime || undefined,
+          contrato: colab.contrato || undefined,
+          role: 'colaborador',
+          metaHorasMensais: String(colab.metaHorasMensais || 176),
+          status: colab.status,
+          dispensaDocumentacao: !!colab.dispensaDocumentacao,
+          chavePix: colab.chavePix || '',
+          banco: colab.banco || '',
+          codigoBanco: colab.codigoBanco || '',
+          agencia: colab.agencia || '',
+          conta: colab.conta || '',
+          operacao: colab.operacao || '',
+          tipoConta: colab.tipoConta || undefined,
+          cnpj: colab.cnpj || '',
+          razaoSocial: colab.razaoSocial || '',
+          tipo: colab.tipo || '',
+          enderecoEmpresa: colab.enderecoEmpresa || '',
+          numeroEmpresa: colab.numeroEmpresa || '',
+          complementoEmpresa: colab.complementoEmpresa || '',
+          bairroEmpresa: colab.bairroEmpresa || '',
+          cidadeEmpresa: colab.cidadeEmpresa || '',
+          cepEmpresa: colab.cepEmpresa || '',
+          obs: colab.obs || '',
+          beneficiosSelecionados: [], // TODO: carregar benefícios vinculados
+          salarioBase: '', // TODO: carregar salário
+          dataAdmissao: '', // TODO: carregar data admissão
+        });
+
+        // Tentar carregar dados do usuário correspondente
+        loadUserData(colab.email);
+      } else {
+        // Colaborador não encontrado, tentar carregar dados do usuário
+        const loadUserForEdit = async () => {
+          try {
+            const user = await loadUserData(editId); // Usar editId como possível email
+            
+            if (user) {
+              // Usuário encontrado, criar registro básico de colaborador
+              setFormData({
+                nome: user.nome || '',
+                email: user.email || '',
+                telefone: '',
+                nomeCompleto: user.nome || '',
+                cpf: '',
+                rg: '',
+                dataNascimento: undefined,
+                endereco: '',
+                numero: '',
+                complemento: '',
+                bairro: '',
+                cidade: '',
+                cep: '',
+                cargoId: '',
+                setorId: '',
+                funcao: '',
+                empresa: '',
+                regime: undefined,
+                contrato: undefined,
+                role: user.role || 'colaborador',
+                metaHorasMensais: '176',
+                status: 'ativo',
+                dispensaDocumentacao: false,
+                chavePix: '',
+                banco: '',
+                codigoBanco: '',
+                agencia: '',
+                conta: '',
+                operacao: '',
+                tipoConta: undefined,
+                cnpj: '',
+                razaoSocial: '',
+                tipo: '',
+                enderecoEmpresa: '',
+                numeroEmpresa: '',
+                complementoEmpresa: '',
+                bairroEmpresa: '',
+                cidadeEmpresa: '',
+                cepEmpresa: '',
+                obs: '',
+                beneficiosSelecionados: [],
+                salarioBase: '',
+                dataAdmissao: '',
+              });
+              
+              // Mostrar aviso que alguns dados podem estar incompletos
+              if (!toastShownRef.current) {
+                toast('Colaborador encontrado, mas alguns dados podem estar incompletos. Complete as informações necessárias.', {
+                  icon: '⚠️',
+                  duration: 5000,
+                });
+                toastShownRef.current = true;
+              }
+            } else {
+              // Nem colaborador nem usuário encontrado
+              toast.error('Colaborador não encontrado');
+              navigate('/colaboradores');
+            }
+          } catch (error) {
+            console.error('Erro ao carregar dados do usuário:', error);
+            toast.error('Erro ao carregar dados do colaborador');
+            navigate('/colaboradores');
+          }
+        };
+        
+        loadUserForEdit();
+      }
     }
-  }, [editId, isEdit, colaboradores, navigate, podeGerenciarUsuarios]);
+  }, [editId, isEdit, navigate, podeGerenciarUsuarios]);
+
+  // Carregar benefícios disponíveis
+  useEffect(() => {
+    carregarBeneficios();
+  }, [carregarBeneficios]);
 
   // Auto-preencher Nome do Banco a partir do Código (BrasilAPI)
   useEffect(() => {
@@ -184,6 +343,13 @@ export function CadastroUsuario() {
     })();
     return () => { active = false; };
   }, [formData.cnpj, (formData as any).contrato]);
+
+  // Sincronizar senha do userData com formData
+  useEffect(() => {
+    if (userData?.senha !== undefined) {
+      setFormData(prev => ({ ...prev, senha: userData.senha }));
+    }
+  }, [userData?.senha]);
 
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => {
@@ -276,10 +442,11 @@ export function CadastroUsuario() {
       newErrors.nome = 'Nome é obrigatório';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'E-mail é obrigatório';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'E-mail inválido';
+    // Email obrigatório apenas quando preenchido (para criação de usuário)
+    if (formData.email.trim()) {
+      if (!validateEmail(formData.email)) {
+        newErrors.email = 'E-mail inválido';
+      }
     }
 
     if (formData.telefone && !validatePhone(formData.telefone)) {
@@ -317,6 +484,14 @@ export function CadastroUsuario() {
       newErrors.setorId = 'Setor é obrigatório';
     }
 
+    if (!formData.salarioBase || parseFloat(formData.salarioBase) <= 0) {
+      newErrors.salarioBase = 'Salário base é obrigatório e deve ser maior que zero';
+    }
+
+    if (!formData.dataAdmissao) {
+      newErrors.dataAdmissao = 'Data de admissão é obrigatória';
+    }
+
     const meta = parseInt(formData.metaHorasMensais, 10);
     if (formData.contrato !== 'PJ' && (isNaN(meta) || meta <= 0)) {
       newErrors.metaHorasMensais = 'Meta de horas inválida';
@@ -326,7 +501,7 @@ export function CadastroUsuario() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -334,139 +509,198 @@ export function CadastroUsuario() {
       return;
     }
 
-    if (isEdit) {
-      // Atualizar colaborador existente
-      const cargo = cargos.find(c => c.id === formData.cargoId)?.nome || '';
-      const departamento = setores.find(s => s.id === formData.setorId)?.nome || '';
-      atualizarColaborador(parseInt(editId), {
-        nome: formData.nome,
-        nomeCompleto: formData.nomeCompleto,
-        email: formData.email,
-        telefone: formData.telefone,
-        cpf: formData.cpf,
-        rg: formData.rg,
-        dataNascimento: formData.dataNascimento,
-        endereco: formData.endereco,
-        numero: formData.numero,
-        complemento: formData.complemento,
-        bairro: formData.bairro,
-        cidade: formData.cidade,
-        cep: formData.cep,
-        cargo,
-        departamento,
-        funcao: formData.funcao,
-        empresa: formData.empresa,
-        regime: formData.regime,
-        contrato: formData.contrato,
-        status: formData.status,
-        metaHorasMensais: parseInt(formData.metaHorasMensais, 10),
-        dispensaDocumentacao: !!formData.dispensaDocumentacao,
-        chavePix: formData.chavePix,
-        banco: formData.banco,
-        codigoBanco: formData.codigoBanco,
-        agencia: formData.agencia,
-        conta: formData.conta,
-        operacao: formData.operacao,
-        tipoConta: formData.tipoConta,
-        cnpj: formData.cnpj,
-        razaoSocial: formData.razaoSocial,
-        tipo: formData.tipo,
-        enderecoEmpresa: formData.enderecoEmpresa,
-        numeroEmpresa: formData.numeroEmpresa,
-        complementoEmpresa: formData.complementoEmpresa,
-        bairroEmpresa: formData.bairroEmpresa,
-        cidadeEmpresa: formData.cidadeEmpresa,
-        cepEmpresa: formData.cepEmpresa,
-        obs: formData.obs
-      });
-      toast.success('Colaborador atualizado com sucesso!');
-    } else {
-      // Criar novo colaborador
-      const cargo = cargos.find(c => c.id === formData.cargoId)?.nome || '';
-      const departamento = setores.find(s => s.id === formData.setorId)?.nome || '';
+    try {
+      // Salvar usuário apenas se email estiver preenchido
+      const shouldCreateUser = !!formData.email.trim();
 
-      // Calcular próximo id previsto (o store usa max id + 1)
-      const nextId = colaboradores.length ? Math.max(...colaboradores.map(c => c.id)) + 1 : 1;
-
-      adicionarColaborador({
-        nome: formData.nome,
-        nomeCompleto: formData.nomeCompleto || formData.nome,
-        email: formData.email,
-        telefone: formData.telefone,
-        cpf: formData.cpf,
-        rg: formData.rg,
-        dataNascimento: formData.dataNascimento,
-        endereco: formData.endereco,
-        numero: formData.numero,
-        complemento: formData.complemento,
-        bairro: formData.bairro,
-        cidade: formData.cidade,
-        cep: formData.cep,
-        cargo,
-        departamento,
-        funcao: formData.funcao,
-        empresa: formData.empresa,
-        regime: formData.regime,
-        contrato: formData.contrato,
-        status: formData.status,
-        metaHorasMensais: parseInt(formData.metaHorasMensais, 10),
-        dispensaDocumentacao: !!formData.dispensaDocumentacao,
-        chavePix: formData.chavePix,
-        banco: formData.banco,
-        codigoBanco: formData.codigoBanco,
-        agencia: formData.agencia,
-        conta: formData.conta,
-        operacao: formData.operacao,
-        tipoConta: formData.tipoConta,
-        cnpj: formData.cnpj,
-        razaoSocial: formData.razaoSocial,
-        tipo: formData.tipo,
-        enderecoEmpresa: formData.enderecoEmpresa,
-        numeroEmpresa: formData.numeroEmpresa,
-        complementoEmpresa: formData.complementoEmpresa,
-        bairroEmpresa: formData.bairroEmpresa,
-        cidadeEmpresa: formData.cidadeEmpresa,
-        cepEmpresa: formData.cepEmpresa,
-        obs: formData.obs,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.nome.split(' ')[0]}`,
-      });
-
-      // Criar pastas padrão e adicionar documentos enviados (se houver)
-      try {
-        documentosStore.criarPastasDeTemplate(nextId, cargo || 'default', String(user?.id || 'system'), user?.email || 'Sistema');
-        const pastas = documentosStore.getPastasByColaborador(nextId);
-        const targetPastaId = pastas && pastas.length ? pastas[0].id : undefined;
-
-        if (uploadedFiles.length > 0) {
-          uploadedFiles.forEach((file) => {
-            const url = URL.createObjectURL(file);
-            adicionarDocumentoStore({
-              nome: file.name,
-              tipo: 'Outro',
-              tamanho: file.size,
-              uploadPor: String(user?.id || 'system'),
-              uploadPorNome: user?.email || 'Sistema',
-              colaboradorId: nextId,
-              colaboradorNome: formData.nome,
-              pastaId: targetPastaId,
-              url,
-              mimetype: file.type,
-              status: 'pendente'
-            });
+      if (shouldCreateUser) {
+        if (userData?.id) {
+          // Atualizar usuário existente
+          const userUpdateData: any = {
+            nome: formData.nome,
+            role: formData.role,
+          };
+          if (formData.senha && formData.senha.trim()) {
+            userUpdateData.senha = formData.senha;
+          }
+          await api.put(`/api/users/${userData.id}`, userUpdateData);
+        } else {
+          // Criar novo usuário
+          const userCreateData = {
+            nome: formData.nome,
+            email: formData.email,
+            senha: formData.senha || 'Cfo123@@', // Senha padrão se não informada
+            role: formData.role,
+          };
+          const newUser = await api.post('/api/users', userCreateData);
+          setUserData({
+            id: newUser.id.toString(),
+            email: newUser.email,
+            senha: '',
+            role: newUser.role,
           });
         }
-      } catch (err) {
-        console.error('Erro ao criar pastas/adicionar documentos', err);
       }
 
-      toast.success('Colaborador cadastrado com sucesso!');
-    }
+      if (isEdit) {
+        // Atualizar colaborador existente
+        const cargo = cargos.find(c => c.id === formData.cargoId)?.nome || '';
+        const departamento = setores.find(s => s.id === formData.setorId)?.nome || '';
+        atualizarColaborador(parseInt(editId), {
+          nome: formData.nome,
+          nomeCompleto: formData.nomeCompleto,
+          email: formData.email,
+          telefone: formData.telefone,
+          cpf: formData.cpf,
+          rg: formData.rg,
+          dataNascimento: formData.dataNascimento,
+          endereco: formData.endereco,
+          numero: formData.numero,
+          complemento: formData.complemento,
+          bairro: formData.bairro,
+          cidade: formData.cidade,
+          cep: formData.cep,
+          cargo,
+          departamento,
+          funcao: formData.funcao,
+          empresa: formData.empresa,
+          regime: formData.regime,
+          contrato: formData.contrato,
+          status: formData.status,
+          metaHorasMensais: parseInt(formData.metaHorasMensais, 10),
+          dispensaDocumentacao: !!formData.dispensaDocumentacao,
+          chavePix: formData.chavePix,
+          banco: formData.banco,
+          codigoBanco: formData.codigoBanco,
+          agencia: formData.agencia,
+          conta: formData.conta,
+          operacao: formData.operacao,
+          tipoConta: formData.tipoConta,
+          cnpj: formData.cnpj,
+          razaoSocial: formData.razaoSocial,
+          tipo: formData.tipo,
+          enderecoEmpresa: formData.enderecoEmpresa,
+          numeroEmpresa: formData.numeroEmpresa,
+          complementoEmpresa: formData.complementoEmpresa,
+          bairroEmpresa: formData.bairroEmpresa,
+          cidadeEmpresa: formData.cidadeEmpresa,
+          cepEmpresa: formData.cepEmpresa,
+          obs: formData.obs
+        });
+        toast.success(shouldCreateUser ? 'Colaborador e usuário atualizados com sucesso!' : 'Colaborador atualizado com sucesso!');
+      } else {
+        // Criar novo colaborador
+        const cargo = cargos.find(c => c.id === formData.cargoId)?.nome || '';
+        const departamento = setores.find(s => s.id === formData.setorId)?.nome || '';
 
-    navigate('/colaboradores');
+        // Calcular próximo id previsto (o store usa max id + 1)
+        const nextId = colaboradores.length ? Math.max(...colaboradores.map(c => c.id)) + 1 : 1;
+
+        adicionarColaborador({
+          nome: formData.nome,
+          nomeCompleto: formData.nomeCompleto || formData.nome,
+          email: formData.email,
+          telefone: formData.telefone,
+          cpf: formData.cpf,
+          rg: formData.rg,
+          dataNascimento: formData.dataNascimento,
+          endereco: formData.endereco,
+          numero: formData.numero,
+          complemento: formData.complemento,
+          bairro: formData.bairro,
+          cidade: formData.cidade,
+          cep: formData.cep,
+          cargo,
+          departamento,
+          funcao: formData.funcao,
+          empresa: formData.empresa,
+          regime: formData.regime,
+          contrato: formData.contrato,
+          status: formData.status,
+          metaHorasMensais: parseInt(formData.metaHorasMensais, 10),
+          dispensaDocumentacao: !!formData.dispensaDocumentacao,
+          chavePix: formData.chavePix,
+          banco: formData.banco,
+          codigoBanco: formData.codigoBanco,
+          agencia: formData.agencia,
+          conta: formData.conta,
+          operacao: formData.operacao,
+          tipoConta: formData.tipoConta,
+          cnpj: formData.cnpj,
+          razaoSocial: formData.razaoSocial,
+          tipo: formData.tipo,
+          enderecoEmpresa: formData.enderecoEmpresa,
+          numeroEmpresa: formData.numeroEmpresa,
+          complementoEmpresa: formData.complementoEmpresa,
+          bairroEmpresa: formData.bairroEmpresa,
+          cidadeEmpresa: formData.cidadeEmpresa,
+          cepEmpresa: formData.cepEmpresa,
+          obs: formData.obs,
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.nome.split(' ')[0]}`,
+        });
+
+        // Criar pastas padrão e adicionar documentos enviados (se houver)
+        try {
+          documentosStore.criarPastasDeTemplate(nextId, cargo || 'default', String(user?.id || 'system'), user?.email || 'Sistema');
+          const pastas = documentosStore.getPastasByColaborador(nextId);
+          const targetPastaId = pastas && pastas.length ? pastas[0].id : undefined;
+
+          if (uploadedFiles.length > 0) {
+            uploadedFiles.forEach((file) => {
+              const url = URL.createObjectURL(file);
+              adicionarDocumentoStore({
+                nome: file.name,
+                tipo: 'Outro',
+                tamanho: file.size,
+                uploadPor: String(user?.id || 'system'),
+                uploadPorNome: user?.email || 'Sistema',
+                colaboradorId: nextId,
+                colaboradorNome: formData.nome,
+                pastaId: targetPastaId,
+                url,
+                mimetype: file.type,
+                status: 'pendente'
+              });
+            });
+          }
+        } catch (err) {
+          console.error('Erro ao criar pastas/adicionar documentos', err);
+        }
+
+        // TODO: Integrar Benefícios - Vincular benefícios selecionados ao colaborador
+        // formData.beneficiosSelecionados.forEach(beneficioId => {
+        //   useBeneficiosStore.getState().vincularBeneficioColaborador({
+        //     beneficioId,
+        //     colaboradorId: nextId,
+        //     valorPersonalizado: undefined, // ou calcular baseado no benefício
+        //   });
+        // });
+
+        // TODO: Integrar Folha de Pagamento - Criar entrada inicial na folha
+        // const periodoAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
+        // adicionarFolha({
+        //   periodo: periodoAtual,
+        //   colaboradorId: nextId,
+        //   colaboradorNome: formData.nome,
+        //   empresa: formData.empresa || 'Empresa',
+        //   contrato: formData.contrato || 'CLT',
+        //   valor: parseFloat(formData.salarioBase),
+        //   status: 'rascunho',
+        //   // outros campos...
+        // });
+
+        toast.success(shouldCreateUser ? 'Colaborador e usuário criados com sucesso!' : 'Colaborador criado com sucesso!');
+      }
+
+      navigate('/colaboradores');
+    } catch (error: any) {
+      console.error('Erro ao salvar:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao salvar colaborador e usuário');
+    }
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" onClick={() => navigate('/colaboradores')}>
           <ArrowLeft size={20} />
@@ -494,7 +728,7 @@ export function CadastroUsuario() {
                 {/* Address fields moved to dedicated Endereço section below */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Nome Completo *
+                    Nome Completo: *
                   </label>
                   <input
                     type="text"
@@ -508,24 +742,7 @@ export function CadastroUsuario() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    E-mail *
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleChange('email', e.target.value)}
-                      placeholder="joao@empresa.com"
-                      className={`w-full pl-10 px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent`}
-                    />
-                  </div>
-                  {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Telefone
+                    Telefone:
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
@@ -542,7 +759,7 @@ export function CadastroUsuario() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">CPF *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">CPF: *</label>
                   <input
                     type="text"
                     value={formData.cpf ? formatCPF(formData.cpf) : ''}
@@ -561,7 +778,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">RG</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">RG:</label>
                   <input
                     type="text"
                     value={formData.rg || ''}
@@ -572,7 +789,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Data de Nascimento</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Data de Nascimento:</label>
                   <input
                     type="date"
                     value={formData.dataNascimento || ''}
@@ -592,7 +809,7 @@ export function CadastroUsuario() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    CEP
+                    CEP: *
                   </label>
                   <div className="relative">
                     <input
@@ -615,7 +832,7 @@ export function CadastroUsuario() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Rua, Av, etc
+                    Rua, Av, etc:
                   </label>
                   <input
                     type="text"
@@ -628,7 +845,7 @@ export function CadastroUsuario() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Número
+                    Número:
                   </label>
                   <input
                     type="text"
@@ -641,7 +858,7 @@ export function CadastroUsuario() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Complemento
+                    Complemento:
                   </label>
                   <input
                     type="text"
@@ -654,7 +871,7 @@ export function CadastroUsuario() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Bairro
+                    Bairro:
                   </label>
                   <input
                     type="text"
@@ -667,7 +884,7 @@ export function CadastroUsuario() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Cidade
+                    Cidade:
                   </label>
                   <input
                     type="text"
@@ -689,7 +906,7 @@ export function CadastroUsuario() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Cargo *
+                    Cargo:
                   </label>
                   <select
                     value={formData.cargoId}
@@ -710,21 +927,22 @@ export function CadastroUsuario() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Status
+                    Status:
                   </label>
                   <select
                     value={formData.status}
-                    onChange={(e) => handleChange('status', e.target.value as 'ativo' | 'afastado' | 'ferias' | 'em_contratacao')}
+                    onChange={(e) => handleChange('status', e.target.value as 'ativo' | 'afastado' | 'ferias' | 'em_contratacao' | 'inativo')}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
                   >
                     <option value="ativo">Ativo</option>
                     <option value="ferias">Férias</option>
                     <option value="em_contratacao">Em Contratação</option>
                     <option value="afastado">Afastado</option>
+                    <option value="inativo">Inativo</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Função</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Função:</label>
                   <input
                     type="text"
                     value={(formData as any).funcao || ''}
@@ -734,7 +952,7 @@ export function CadastroUsuario() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Empresa</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Empresa:</label>
                   <input
                     type="text"
                     value={(formData as any).empresa || ''}
@@ -745,7 +963,7 @@ export function CadastroUsuario() {
                 </div>
                 {/* Regime field removed as requested */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Tipo de Contrato</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Tipo de Contrato: *</label>
                   <select
                     value={(formData as any).contrato || ''}
                     onChange={(e) => handleChange('contrato', e.target.value as 'CLT' | 'PJ')}
@@ -758,7 +976,7 @@ export function CadastroUsuario() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Setor *
+                    Setor:
                   </label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
@@ -785,7 +1003,7 @@ export function CadastroUsuario() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Meta de Horas Mensais {(formData as any).contrato !== 'PJ' ? '*' : ''}
+                    Meta de Horas Mensais:
                   </label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
@@ -808,12 +1026,12 @@ export function CadastroUsuario() {
             <div className="pt-6 border-t border-gray-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <Shield size={20} className="text-[#8B5CF6]" />
-                Dados Bancários / PJ
+                Dados Bancários
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Chave PIX</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Chave PIX:</label>
                   <input
                     type="text"
                     value={formData.chavePix || ''}
@@ -824,7 +1042,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Banco</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Banco:</label>
                   <input
                     type="text"
                     value={formData.banco || ''}
@@ -835,7 +1053,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Código do Banco</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Código do Banco:</label>
                   <input
                     type="text"
                     value={formData.codigoBanco || ''}
@@ -846,7 +1064,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Agência</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Agência:</label>
                   <input
                     type="text"
                     value={formData.agencia || ''}
@@ -857,7 +1075,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Conta</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Conta:</label>
                   <input
                     type="text"
                     value={formData.conta || ''}
@@ -868,7 +1086,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Operação</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Operação:</label>
                   <input
                     type="text"
                     value={formData.operacao || ''}
@@ -879,7 +1097,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Tipo de Conta</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Tipo de Conta:</label>
                   <select
                     value={formData.tipoConta || ''}
                     onChange={(e) => handleChange('tipoConta', e.target.value as 'corrente' | 'poupanca')}
@@ -892,7 +1110,37 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">CNPJ (se PJ)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                    Salário Base: *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">R$</span>
+                    <input
+                      type="text"
+                      value={formData.salarioBase}
+                      onChange={(e) => handleChange('salarioBase', e.target.value.replace(/[^\d.,]/g, '').replace(',', '.'))}
+                      placeholder="0.00"
+                      className={`w-full pl-8 px-4 py-2 border ${errors.salarioBase ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent`}
+                    />
+                  </div>
+                  {errors.salarioBase && <p className="text-sm text-red-600 mt-1">{errors.salarioBase}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                    Data de Admissão: *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dataAdmissao}
+                    onChange={(e) => handleChange('dataAdmissao', e.target.value)}
+                    className={`w-full px-4 py-2 border ${errors.dataAdmissao ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent`}
+                  />
+                  {errors.dataAdmissao && <p className="text-sm text-red-600 mt-1">{errors.dataAdmissao}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">CNPJ (se PJ):</label>
                   <input
                     type="text"
                     value={formData.cnpj ? formatCNPJ(formData.cnpj) : ''}
@@ -909,7 +1157,7 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Razão Social (se PJ)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Razão Social (se PJ):</label>
                   <input
                     type="text"
                     value={formData.razaoSocial || ''}
@@ -920,14 +1168,26 @@ export function CadastroUsuario() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Tipo (se PJ)</label>
-                  <input
-                    type="text"
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Tipo (se PJ):</label>
+                  <select
                     value={formData.tipo || ''}
                     onChange={(e) => handleChange('tipo', e.target.value)}
-                    placeholder="MEI, LTDA, EIRELI..."
                     className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
-                  />
+                  >
+                    <option value="">Selecione o tipo</option>
+                    <option value="Associação">Associação</option>
+                    <option value="Cooperativa">Cooperativa</option>
+                    <option value="EI">EI - Empresário Individual</option>
+                    <option value="EIRELI">EIRELI - Empresa Individual de Responsabilidade Limitada</option>
+                    <option value="EPP">EPP - Empresa de Pequeno Porte</option>
+                    <option value="Fundação">Fundação</option>
+                    <option value="LTDA">LTDA - Sociedade Limitada</option>
+                    <option value="MEI">MEI - Microempreendedor Individual</option>
+                    <option value="OS">OS - Organização Social</option>
+                    <option value="OSCIP">OSCIP - Organização da Sociedade Civil de Interesse Público</option>
+                    <option value="S.A.">S.A. - Sociedade Anônima</option>
+                    <option value="S.S.">S.S. - Sociedade Simples</option>
+                  </select>
                 </div>
               </div>
 
@@ -940,7 +1200,7 @@ export function CadastroUsuario() {
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">CEP Empresa</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">CEP Empresa:</label>
                       <input
                         type="text"
                         value={formData.cepEmpresa ? formatCEP(formData.cepEmpresa) : ''}
@@ -955,7 +1215,7 @@ export function CadastroUsuario() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Endereço Empresa</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Endereço Empresa:</label>
                       <input
                         type="text"
                         value={formData.enderecoEmpresa || ''}
@@ -966,7 +1226,7 @@ export function CadastroUsuario() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Número Empresa</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Número Empresa:</label>
                       <input
                         type="text"
                         value={formData.numeroEmpresa || ''}
@@ -977,7 +1237,7 @@ export function CadastroUsuario() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Complemento Empresa</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Complemento Empresa:</label>
                       <input
                         type="text"
                         value={formData.complementoEmpresa || ''}
@@ -988,7 +1248,7 @@ export function CadastroUsuario() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Bairro Empresa</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Bairro Empresa:</label>
                       <input
                         type="text"
                         value={formData.bairroEmpresa || ''}
@@ -999,7 +1259,7 @@ export function CadastroUsuario() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Cidade Empresa</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Cidade Empresa:</label>
                       <input
                         type="text"
                         value={formData.cidadeEmpresa || ''}
@@ -1014,7 +1274,7 @@ export function CadastroUsuario() {
 
               <div className="grid grid-cols-1 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Observações</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Observações:</label>
                   <textarea
                     value={formData.obs || ''}
                     onChange={(e) => handleChange('obs', e.target.value)}
@@ -1022,6 +1282,50 @@ export function CadastroUsuario() {
                     rows={3}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Benefícios */}
+            <div className="pt-6 border-t border-gray-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Gift size={20} className="text-[#F59E0B]" />
+                Benefícios
+              </h3>
+
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  Selecione os benefícios que este colaborador terá acesso:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {beneficios.filter(b => b.ativo).map((beneficio) => (
+                    <div key={beneficio.id} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-700 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id={`beneficio-${beneficio.id}`}
+                        checked={formData.beneficiosSelecionados.includes(beneficio.id)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setFormData(prev => ({
+                            ...prev,
+                            beneficiosSelecionados: checked
+                              ? [...prev.beneficiosSelecionados, beneficio.id]
+                              : prev.beneficiosSelecionados.filter(id => id !== beneficio.id)
+                          }));
+                        }}
+                        className="w-4 h-4 text-emerald-600 border-gray-300 dark:border-slate-700 rounded focus:ring-2 focus:ring-emerald-400"
+                      />
+                      <label htmlFor={`beneficio-${beneficio.id}`} className="flex-1 cursor-pointer">
+                        <div className="font-medium text-sm">{beneficio.nome}</div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400">{beneficio.descricao}</div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                {beneficios.filter(b => b.ativo).length === 0 && (
+                  <p className="text-sm text-gray-500 dark:text-slate-400 italic">
+                    Nenhum benefício ativo disponível. Configure benefícios na página de Benefícios.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1078,10 +1382,49 @@ export function CadastroUsuario() {
                 <Shield size={20} className="text-[#8B5CF6]" />
                 Permissões e Acesso
               </h3>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                    Nível de Acesso
+                    E-mail de Acesso:
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={18} />
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      placeholder="usuario@empresa.com"
+                      className={`w-full pl-10 px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent`}
+                    />
+                  </div>
+                  {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                    E-mail usado para login no sistema.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                    Senha: {isEdit ? '' : ''}
+                  </label>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    value={formData.senha || ''}
+                    onChange={(e) => handleChange('senha', e.target.value)}
+                    placeholder={isEdit ? 'Nova senha (opcional)' : 'Digite a senha'}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
+                  />
+                  {!isEdit && !formData.senha && (
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                      Se não informar, será usada a senha padrão do sistema.
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                    Tipo de Acesso:
                   </label>
                   <select
                     value={formData.role}
@@ -1089,27 +1432,16 @@ export function CadastroUsuario() {
                     className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
                     disabled={user?.role !== 'admin'}
                   >
-                    <option value="colaborador">Colaborador - Acesso Padrão</option>
-                    <option value="gestor">Gestor - Gerenciamento de Equipe</option>
-                    <option value="cliente">Cliente - Acesso aos Dados BPO</option>
-                    <option value="admin">Administrador - Acesso Total</option>
+                    <option value="admin">Administrador</option>
+                    <option value="cliente">Cliente</option>
+                    <option value="colaborador">Colaborador</option>
+                    <option value="gestor">Gestor</option>
                   </select>
                   {user?.role !== 'admin' && (
                     <p className="text-xs text-amber-600 mt-1">
-                      Apenas administradores podem alterar o nível de acesso
+                      Apenas administradores podem alterar o tipo de acesso
                     </p>
                   )}
-                  <div className="mt-3 p-3 bg-gray-50 dark:bg-slate-900/50 rounded-lg">
-                    <p className="text-xs text-gray-600 dark:text-slate-300">
-                      <strong>Administrador:</strong> Acesso total ao sistema, configurações e gerenciamento.
-                      <br />
-                      <strong>Gestor:</strong> Aprovar solicitações, visualizar relatórios da equipe, gerenciar avaliações.
-                      <br />
-                      <strong>Colaborador:</strong> Registrar ponto, solicitar férias, visualizar informações próprias.
-                      <br />
-                      <strong>Cliente:</strong> Acesso aos dados do próprio cliente (folha, funcionários, relatórios).
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>

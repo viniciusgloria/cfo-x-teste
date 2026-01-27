@@ -2,7 +2,8 @@
  * API Service - Configuração centralizada para chamadas HTTP
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use relative paths so Vite proxy can intercept and route to backend
+const API_URL = '';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number>;

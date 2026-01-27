@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, UserPlus, Users } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
+import { Avatar } from './Avatar';
 import { Pasta, useDocumentosStore } from '../store/documentosStore';
 import { useColaboradoresStore } from '../store/colaboradoresStore';
 import toast from 'react-hot-toast';
@@ -87,9 +88,12 @@ export function CompartilharPastaModal({ isOpen, onClose, pasta }: CompartilharP
                   className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                      {colab.nome.charAt(0)}
-                    </div>
+                    <Avatar 
+                      src={colab.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${colab.nome.split(' ')[0]}`}
+                      alt={colab.nome}
+                      size="sm"
+                      className="bg-gray-100 dark:bg-gray-700"
+                    />
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {colab.nome}
@@ -131,9 +135,12 @@ export function CompartilharPastaModal({ isOpen, onClose, pasta }: CompartilharP
                     onChange={() => toggleColaborador(colab.id)}
                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-semibold">
-                    {colab.nome.charAt(0)}
-                  </div>
+                  <Avatar 
+                    src={colab.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${colab.nome.split(' ')[0]}`}
+                    alt={colab.nome}
+                    size="sm"
+                    className="bg-gray-100 dark:bg-gray-700"
+                  />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {colab.nome}
