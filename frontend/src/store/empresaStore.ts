@@ -15,8 +15,8 @@ interface EmpresaState {
   reset: () => void;
 }
 
-const defaultLogo = '';
-const defaultMiniLogo = '';
+const defaultLogo = '/images/LOGO_246X55.png';
+const defaultMiniLogo = '/images/LOGO_40X40.png';
 const defaultFavicon = '';
 const defaultNome = 'CFO Hub';
 const defaultAplicarInversao = false;
