@@ -2,7 +2,7 @@
 export default function handler(req, res) {
   const { slug = [] } = req.query;
   const method = req.method;
-  const parts = Array.isArray(slug) ? slug : [slug];
+  const parts = (Array.isArray(slug) ? slug : [slug]).filter(Boolean);
   const first = parts[0] || '';
   const rest = parts.slice(1);
 
@@ -78,7 +78,7 @@ export default function handler(req, res) {
 
   if (first === 'clientes') {
     const id = rest[0];
-    if (!id && method === 'GET') return res.status(200).json({ items: mockClientes, total: mockClientes.length });
+    if (!id && method === 'GET') return res.status(200).json(mockClientes);
     if (!id && method === 'POST') return res.status(201).json({ id: Math.floor(Math.random() * 10000), ...(req.body || {}) });
     if (id && method === 'GET') return res.status(200).json(mockClientes.find(c => String(c.id) === id) || mockClientes[0]);
     if (id && method === 'PUT') return res.status(200).json({ id: Number(id), ...(req.body || {}) });
