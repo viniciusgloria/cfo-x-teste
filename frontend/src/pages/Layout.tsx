@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Header } from '../components/layout/Header';
 import { useAuthStore } from '../store/authStore';
+import { useClientesStore } from '../store/clientesStore';
 
 // Título fixo, não precisa mais do mapeamento de páginas
 
@@ -10,7 +11,17 @@ export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile drawer
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop collapsed
   const isAuth = useAuthStore((state) => state.isAuth);
-  // Removido useLocation pois não é mais necessário
+  
+  // ✅ CARREGA DADOS CRÍTICOS QUANDO LOGA
+  useEffect(() => {
+    if (isAuth) {
+      // Carregar clientes da API (é o que está falhando)
+      const clientesStore = useClientesStore.getState();
+      if (clientesStore.fetchClientes) {
+        clientesStore.fetchClientes().catch(e => console.error('Erro ao carregar clientes:', e));
+      }
+    }
+  }, [isAuth]);
 
   if (!isAuth) {
     return <Navigate to="/" replace />;

@@ -1,5 +1,6 @@
 /**
  * DEFINITIVE MOCK API - ALL PAGES FULLY POPULATED
+ * Returns data in exact format that stores and components expect
  */
 
 export default function handler(req, res) {
@@ -27,17 +28,15 @@ export default function handler(req, res) {
       telefone: '11999999999'
     }));
 
-    // 15 mock clientes
+    // 15 mock clientes - FORMATO ESPERADO POR apiToCliente
     const mockClientes = Array.from({ length: 15 }, (_, i) => ({
       id: i + 1,
       nome: `Cliente ${i + 1}`,
-      nomeFantasia: `Fantasia ${i + 1}`,
-      status: i % 3 === 0 ? 'pendente' : 'ativo',
       cnpj: `${String(i + 1).padStart(14, '0')}`,
-      razao_social: `Razão Social ${i + 1}`,
       email: `contato${i + 1}@cliente${i + 1}.com.br`,
       telefone: `1199${String(i + 1000).padStart(6, '0')}`,
       endereco: `Rua ${i + 1}, ${100 + i}`,
+      status: i % 3 === 0 ? 'pendente' : 'ativo',
       mrr: 1000 + i * 500,
       omie_sync: i % 2 === 0,
       data_inicio: '2024-01-15',
@@ -257,37 +256,80 @@ export default function handler(req, res) {
       if (second === 'change-password' && method === 'POST') return res.status(200).json({ detail: 'OK' });
     }
 
+    // DEBUG ENDPOINT
+    if (first === 'debug') {
+      return res.status(200).json({
+        time: new Date().toISOString(),
+        routes: ['users', 'clientes', 'colaboradores', 'tarefas', 'solicitacoes', 'performance/snapshot'],
+        mockUsers: mockUsers.length,
+        mockClientes: mockClientes.length
+      });
+    }
+
     // USERS
     if (first === 'users') {
-      if (method === 'GET') return res.status(200).json(mockUsers);
+      if (method === 'GET') {
+        // Garantir que sempre retorna array
+        const response = mockUsers;
+        return res.status(200).json(response);
+      }
       if (method === 'POST') return res.status(201).json(mockUsers[0]);
-      if (second) return res.status(200).json(mockUsers[parseInt(second) - 1] || mockUsers[0]);
+      if (second) {
+        const id = parseInt(second);
+        const user = mockUsers.find(u => u.id === id) || mockUsers[0];
+        return res.status(200).json(user);
+      }
     }
 
     // CLIENTES
     if (first === 'clientes') {
-      if (method === 'GET') return res.status(200).json(mockClientes);
+      if (method === 'GET') {
+        // Garantir que sempre retorna array bem formado
+        const response = mockClientes.map(c => ({
+          ...c,
+          status: String(c.status).toLowerCase()
+        }));
+        return res.status(200).json(response);
+      }
       if (method === 'POST') return res.status(201).json(mockClientes[0]);
-      if (second) return res.status(200).json(mockClientes[parseInt(second) - 1] || mockClientes[0]);
+      if (second) {
+        const id = parseInt(second);
+        const cliente = mockClientes.find(c => c.id === id) || mockClientes[0];
+        return res.status(200).json(cliente);
+      }
     }
 
     // COLABORADORES
     if (first === 'colaboradores') {
       if (method === 'GET') return res.status(200).json(mockColaboradores);
       if (method === 'POST') return res.status(201).json(mockColaboradores[0]);
-      if (second) return res.status(200).json(mockColaboradores[parseInt(second) - 1] || mockColaboradores[0]);
+      if (second) {
+        const id = parseInt(second);
+        const colab = mockColaboradores.find(c => c.id === id) || mockColaboradores[0];
+        return res.status(200).json(colab);
+      }
     }
 
     // TAREFAS
     if (first === 'tarefas') {
       if (method === 'GET') return res.status(200).json(mockTarefas);
       if (method === 'POST') return res.status(201).json(mockTarefas[0]);
+      if (second) {
+        const id = parseInt(second);
+        const tarefa = mockTarefas.find(t => t.id === id) || mockTarefas[0];
+        return res.status(200).json(tarefa);
+      }
     }
 
     // SOLICITAÇÕES
     if (first === 'solicitacoes') {
       if (method === 'GET') return res.status(200).json(mockSolicitacoes);
       if (method === 'POST') return res.status(201).json(mockSolicitacoes[0]);
+      if (second) {
+        const id = parseInt(second);
+        const sol = mockSolicitacoes.find(s => s.id === id) || mockSolicitacoes[0];
+        return res.status(200).json(sol);
+      }
     }
 
     // NOTIFICAÇÕES
@@ -297,24 +339,44 @@ export default function handler(req, res) {
     if (first === 'documentos') {
       if (method === 'GET') return res.status(200).json(mockDocumentos);
       if (method === 'POST') return res.status(201).json(mockDocumentos[0]);
+      if (second) {
+        const id = parseInt(second);
+        const doc = mockDocumentos.find(d => d.id === id) || mockDocumentos[0];
+        return res.status(200).json(doc);
+      }
     }
 
     // OKRs
     if (first === 'okrs') {
       if (method === 'GET') return res.status(200).json(mockOKRs);
       if (method === 'POST') return res.status(201).json(mockOKRs[0]);
+      if (second) {
+        const id = parseInt(second);
+        const okr = mockOKRs.find(o => o.id === id) || mockOKRs[0];
+        return res.status(200).json(okr);
+      }
     }
 
     // AVALIAÇÕES
     if (first === 'avaliacoes') {
       if (method === 'GET') return res.status(200).json(mockAvaliacoes);
       if (method === 'POST') return res.status(201).json(mockAvaliacoes[0]);
+      if (second) {
+        const id = parseInt(second);
+        const avaliacao = mockAvaliacoes.find(a => a.id === id) || mockAvaliacoes[0];
+        return res.status(200).json(avaliacao);
+      }
     }
 
     // BENEFÍCIOS
     if (first === 'beneficios') {
       if (method === 'GET') return res.status(200).json(mockBeneficios);
       if (method === 'POST') return res.status(201).json(mockBeneficios[0]);
+      if (second) {
+        const id = parseInt(second);
+        const beneficio = mockBeneficios.find(b => b.id === id) || mockBeneficios[0];
+        return res.status(200).json(beneficio);
+      }
     }
 
     // FOLHA

@@ -285,13 +285,25 @@ export const useClientesStore = create<ClientesState>()(
 
       // Buscar clientes da API
       fetchClientes: async () => {
+        console.log('🔄 fetchClientes INICIADO');
         set({ isLoading: true, error: null });
         try {
+          console.log('📡 Chamando clientesService.list()...');
           const apiClientes = await clientesService.list();
+          console.log('✅ Resposta da API:', apiClientes, 'tipo:', typeof apiClientes, 'isArray:', Array.isArray(apiClientes));
+          
+          if (!Array.isArray(apiClientes)) {
+            console.error('❌ ERRO: API não retornou array! Recebeu:', apiClientes);
+            throw new Error('API retornou resposta inválida (não é array)');
+          }
+          
           const clientes = apiClientes.map(apiToCliente);
+          console.log('✅ Clientes transformados:', clientes.length);
           set({ clientes, isLoading: false });
+          console.log('✅ Store atualizado com', clientes.length, 'clientes');
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : 'Erro ao carregar clientes';
+          console.error('❌ fetchClientes ERRO:', error, 'mensagem:', errorMsg);
           set({ error: errorMsg, isLoading: false });
           toast.error(errorMsg);
         }
