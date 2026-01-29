@@ -1,15 +1,19 @@
-// Ultra-comprehensive mock API - All pages fully functional
+/**
+ * MOCK API HANDLER - COMPREHENSIVE
+ * All endpoints return complete mock data for event presentation
+ */
+
 export default function handler(req, res) {
   try {
     const { slug = [] } = req.query;
     const method = req.method;
     const parts = (Array.isArray(slug) ? slug : [slug]).filter(Boolean);
     const first = parts[0] || '';
-    const rest = parts.slice(1);
+    const second = parts[1] || '';
 
-    // ============= MOCK DATA GENERATORS =============
-    
-    const generateMockUser = (id) => ({
+    // ==================== MOCK DATA BUILDERS ====================
+
+    const user = (id) => ({
       id: String(id),
       nome: `Usuário ${id}`,
       email: `user${id}@empresa.com`,
@@ -23,33 +27,27 @@ export default function handler(req, res) {
       telefone: '11999999999'
     });
 
-    const generateMockCliente = (id) => ({
+    const cliente = (id) => ({
       id,
       nome: `Cliente ${id}`,
+      nomeFantasia: `Fantasia ${id}`,
+      status: id % 3 === 0 ? 'pendente' : 'ativo',
       dadosGerais: {
         nome: `Cliente ${id}`,
-        nomeFantasia: `Fantasia ${id}`,
         cnpj: `${String(id).padStart(14, '0')}`,
         endereco: `Rua ${id}`,
         numero: String(100 + id),
         cidade: 'São Paulo',
-        uf: 'SP',
-        segmentoAtuacao: 'Varejo',
-        site: `https://cliente${id}.com.br`
+        uf: 'SP'
       },
       contatosPrincipais: {
         nomeSocio: `Sócio ${id}`,
-        cpfSocio: `${String(id).padStart(11, '0')}`,
         emailPrincipal: `contato${id}@cliente${id}.com.br`,
-        emailFinanceiro: `financeiro${id}@cliente${id}.com.br`,
-        telefone: `11${9999 + id}9999`,
-        whatsapp: `11${9999 + id}9999`
-      },
-      status: id % 3 === 0 ? 'pendente' : 'ativo',
-      dataRegistro: new Date(2026, 0, 29 - id).toISOString()
+        telefone: `11999${String(id).padStart(5, '0')}`
+      }
     });
 
-    const generateMockColaborador = (id) => ({
+    const colaborador = (id) => ({
       id: String(id),
       nome: `Colaborador ${id}`,
       email: `colab${id}@empresa.com`,
@@ -59,13 +57,10 @@ export default function handler(req, res) {
       ativo: true,
       dataAdmissao: '2024-01-15',
       cpf: `${String(id).padStart(11, '0')}`,
-      rg: `${String(id).padStart(9, '0')}`,
-      salario: 3000 + id * 500,
-      funcao: 'Analista Sênior',
-      gerente: `Gerente ${Math.ceil(id / 3)}`
+      salario: 3000 + id * 500
     });
 
-    const generateMockTarefa = (id) => ({
+    const tarefa = (id) => ({
       id: String(id),
       titulo: `Tarefa ${id}`,
       descricao: `Descrição da tarefa ${id}`,
@@ -73,53 +68,38 @@ export default function handler(req, res) {
       prioridade: ['baixa', 'media', 'alta'][id % 3],
       dataVencimento: new Date(2026, 1, 1 + id).toISOString(),
       responsavel: `Colaborador ${id}`,
-      responsavelId: String(id),
-      projeto: `Projeto ${Math.ceil(id / 2)}`,
-      dataCriacao: new Date(2026, 0, 20).toISOString(),
-      dataAtualizacao: new Date(2026, 0, 25).toISOString(),
-      estimativaHoras: 8 + id,
-      horasGastas: 4 + (id % 5)
+      projeto: `Projeto ${Math.ceil(id / 2)}`
     });
 
-    const generateMockSolicitacao = (id) => ({
+    const solicitacao = (id) => ({
       id: String(id),
       tipo: ['folga', 'adiantamento', 'licenca'][id % 3],
       status: ['pendente', 'aprovada', 'rejeitada'][id % 3],
       dataSolicitacao: new Date(2026, 0, 29 - id).toISOString(),
-      dataDecisao: id % 2 === 0 ? new Date(2026, 0, 28 - id).toISOString() : null,
-      colaborador: generateMockColaborador(id),
-      motivo: `Motivo da solicitação ${id}`,
-      dataInicio: new Date(2026, 1, id + 1).toISOString(),
-      dataFim: new Date(2026, 1, id + 3).toISOString(),
-      diasSolicitados: 2 + (id % 3),
-      aprovadoPor: `Gestor ${id}`
+      colaborador: colaborador(id),
+      motivo: `Motivo da solicitação ${id}`
     });
 
-    const generateMockNotificacao = (id) => ({
+    const notificacao = (id) => ({
       id: String(id),
-      tipo: ['info', 'aviso', 'erro'][id % 3],
       titulo: `Notificação ${id}`,
-      mensagem: `Mensagem da notificação ${id}`,
+      mensagem: `Mensagem ${id}`,
+      tipo: ['info', 'aviso', 'erro'][id % 3],
       lida: id % 2 === 0,
-      dataCriacao: new Date(2026, 0, 29 - (id % 5)).toISOString(),
-      referencia: { tipo: 'tarefa', id: String(id) },
-      prioridade: ['baixa', 'normal', 'alta'][id % 3]
+      dataCriacao: new Date(2026, 0, 29 - (id % 5)).toISOString()
     });
 
-    const generateMockDocumento = (id) => ({
+    const documento = (id) => ({
       id: String(id),
       nome: `Documento ${id}.pdf`,
-      tipo: ['contrato', 'nota', 'comprovante', 'planilha'][id % 4],
+      tipo: 'pdf',
       tamanho: 1024 * (100 + id),
       dataUpload: new Date(2026, 0, 29 - id).toISOString(),
       uploadPor: `Usuário ${id}`,
-      uploadPorId: String(id),
-      url: `https://example.com/docs/${id}.pdf`,
-      categoria: ['financeiro', 'rh', 'operacional'][id % 3],
-      descricao: `Descrição do documento ${id}`
+      url: `https://example.com/docs/${id}.pdf`
     });
 
-    const generateMockOKR = (id) => ({
+    const okr = (id) => ({
       id: String(id),
       objetivo: `Objetivo ${id}`,
       descricao: `Descrição do objetivo ${id}`,
@@ -127,463 +107,346 @@ export default function handler(req, res) {
       status: ['planejamento', 'em_progresso', 'concluido'][id % 3],
       progresso: (id * 15) % 100,
       responsavel: `Colaborador ${id}`,
-      responsavelId: String(id),
       keyResults: [
-        { id: '1', descricao: `KR 1.${id}`, progresso: (id * 20) % 100, meta: 100 },
-        { id: '2', descricao: `KR 2.${id}`, progresso: (id * 25) % 100, meta: 100 }
-      ],
-      dataCriacao: new Date(2026, 0, 1).toISOString(),
-      dataFinalizacao: new Date(2026, 3, 1).toISOString()
+        { id: '1', descricao: `KR 1.${id}`, progresso: (id * 20) % 100 },
+        { id: '2', descricao: `KR 2.${id}`, progresso: (id * 25) % 100 }
+      ]
     });
 
-    const generateMockAvaliacao = (id) => ({
+    const avaliacao = (id) => ({
       id: String(id),
-      colaborador: generateMockColaborador(id),
-      colaboradorId: String(id),
+      colaborador: colaborador(id),
       periodo: '2025 Q4',
-      status: ['rascunho', 'finalizada', 'fechada'][id % 3],
+      status: ['rascunho', 'finalizada'][id % 2],
       nota: 7 + (id % 3),
       dataAvaliacao: new Date(2026, 0, 29 - id).toISOString(),
-      avaliador: `Gestor ${id}`,
-      avaliadorId: String(id),
-      competencias: [
-        { nome: 'Comunicação', nota: 8 },
-        { nome: 'Liderança', nota: 7 },
-        { nome: 'Técnica', nota: 8 }
-      ],
-      comentarios: `Avaliação do colaborador ${id}`
+      avaliador: `Gestor ${id}`
     });
 
-    const generateMockBeneficio = (id) => ({
+    const beneficio = (id) => ({
       id: String(id),
       nome: `Benefício ${id}`,
       descricao: `Descrição do benefício ${id}`,
-      tipo: ['saude', 'alimentacao', 'transporte', 'conveniencia'][id % 4],
+      tipo: ['saude', 'alimentacao', 'transporte'][id % 3],
       valor: 100 * (id + 1),
-      ativo: true,
-      dataVigencia: new Date(2026, 0, 1).toISOString(),
-      fornecedor: `Fornecedor ${id}`,
-      contatoFornecedor: `contato${id}@fornecedor.com.br`,
-      beneficiarios: 10 + id
+      ativo: true
     });
 
-    const generateMockFolhaPagamento = (id) => ({
+    const folhaPagamento = (id) => ({
       id: String(id),
       mes: `2026-${String(id).padStart(2, '0')}`,
       total: 15000 * id,
       colaboradores: 10 + id,
-      status: ['rascunho', 'processada', 'paga', 'auditada'][id % 4],
-      dataProcessamento: new Date(2026, 0, 28).toISOString(),
-      dataPagamento: new Date(2026, 0, 28).toISOString(),
-      descontos: 1500 * id,
-      encargos: 3000 * id,
-      liquido: 10500 * id
+      status: ['rascunho', 'processada', 'paga'][id % 3],
+      dataProcessamento: new Date(2026, 0, 28).toISOString()
     });
 
-    const generateMockFolhaClientes = (id) => ({
+    const folhaClientes = (id) => ({
       id: String(id),
-      cliente: generateMockCliente(id),
-      clienteId: id,
+      cliente: cliente(id),
       mes: `2026-${String(id).padStart(2, '0')}`,
       valor: 5000 + id * 1000,
-      status: ['pendente', 'processada', 'paga'][id % 3],
-      servicosPrestados: [`Serviço ${id}-1`, `Serviço ${id}-2`],
-      dataPagamento: new Date(2026, 0, 28).toISOString()
+      status: ['pendente', 'processada', 'paga'][id % 3]
     });
 
-    const generateMockChat = (id) => ({
+    const chat = (id) => ({
       id: String(id),
       participantes: [`Usuário ${id}`, `Colaborador ${id + 1}`],
-      participantesIds: [String(id), String(id + 1)],
       ultimaMensagem: `Última mensagem do chat ${id}`,
       dataUltimaMensagem: new Date(2026, 0, 29 - (id % 3)).toISOString(),
-      naoLidas: id % 2 === 0 ? id : 0,
-      tipo: 'privado'
+      naoLidas: id % 2 === 0 ? id : 0
     });
 
-    const generateMockMuralPost = (id) => ({
+    const muralPost = (id) => ({
       id: String(id),
       autor: `Usuário ${id}`,
-      autorId: String(id),
-      conteudo: `Post do mural número ${id}. Confira as novidades da empresa!`,
+      conteudo: `Post do mural número ${id}`,
       dataCriacao: new Date(2026, 0, 29 - (id % 5)).toISOString(),
-      dataEdicao: new Date(2026, 0, 28 - (id % 5)).toISOString(),
       curtidas: id * 2,
       comentarios: id,
-      tipo: ['comunicado', 'dica', 'celebracao', 'feedback'][id % 4],
-      ativo: true,
-      visibilidade: 'publico'
+      tipo: ['comunicado', 'dica', 'celebracao'][id % 3]
     });
 
-    const generateMockFeedback = (id) => ({
+    const feedback = (id) => ({
       id: String(id),
       de: `Usuário ${id}`,
-      deId: String(id),
       para: `Colaborador ${id + 1}`,
-      paraId: String(id + 1),
       conteudo: `Feedback construtivo número ${id}`,
       dataFeedback: new Date(2026, 0, 29 - id).toISOString(),
-      categoria: ['desempenho', 'comportamento', 'desenvolvimento', 'lideranca'][id % 4],
-      publicado: id % 2 === 0,
-      tipo: 'positivo'
+      categoria: ['desempenho', 'comportamento', 'desenvolvimento'][id % 3],
+      publicado: id % 2 === 0
     });
 
-    const generateMockLembrete = (id) => ({
+    const lembrete = (id) => ({
       id: String(id),
       titulo: `Lembrete ${id}`,
       descricao: `Descrição do lembrete ${id}`,
       dataVencimento: new Date(2026, 1, 1 + id).toISOString(),
       prioridade: ['baixa', 'media', 'alta'][id % 3],
       concluido: id % 3 === 0,
-      criador: `Usuário ${id}`,
-      criadorId: String(id),
-      categoria: 'geral',
-      dataCriacao: new Date(2026, 0, 29 - id).toISOString()
+      criador: `Usuário ${id}`
     });
 
-    const generateMockPonto = (id) => ({
+    const ponto = (id) => ({
       id: String(id),
       colaborador: `Colaborador ${id}`,
-      colaboradorId: String(id),
       data: new Date(2026, 0, 29 - (id % 5)).toISOString(),
       horaEntrada: `0${8 + (id % 2)}:00`,
       horaSaida: `1${7 + (id % 2)}:00`,
       horasTrabalho: 8 + (id % 2),
-      tipo: ['presencial', 'remoto', 'hibrido'][id % 3],
-      justificativa: id % 2 === 0 ? `Justificativa ${id}` : null,
-      aprovado: id % 2 === 0
+      tipo: ['presencial', 'remoto', 'hibrido'][id % 3]
     });
 
-    const generateMockCalendarioEvento = (id) => ({
+    const evento = (id) => ({
       id: String(id),
       titulo: `Evento ${id}`,
       descricao: `Descrição do evento ${id}`,
       dataInicio: new Date(2026, 1, 1 + id).toISOString(),
       dataFim: new Date(2026, 1, 2 + id).toISOString(),
-      horaInicio: `${9 + (id % 8)}:00`,
-      horaFim: `${11 + (id % 8)}:00`,
       local: `Sala ${id}`,
-      participantes: ['Participante 1', `Participante ${id + 1}`],
-      participantesIds: [String(id), String(id + 1)],
-      tipo: ['reuniao', 'treinamento', 'confraternizacao', 'apresentacao'][id % 4],
-      organizador: `Organizador ${id}`,
-      status: ['confirmado', 'pendente', 'cancelado'][id % 3]
+      participantes: id + 1,
+      tipo: ['reuniao', 'treinamento', 'confraternizacao'][id % 3]
     });
 
-    const generateMockAutomacao = (id) => ({
+    const automacao = (id) => ({
       id: String(id),
       nome: `Automação ${id}`,
       descricao: `Descrição da automação ${id}`,
       ativa: id % 2 === 0,
-      tipo: ['email', 'sms', 'webhook', 'workflow'][id % 4],
-      trigger: `trigger_${id}`,
-      acao: `acao_${id}`,
-      dataCriacao: new Date(2026, 0, 20).toISOString(),
-      dataUltimaExecucao: new Date(2026, 0, 29 - (id % 3)).toISOString(),
-      totalExecucoes: 100 + id * 10,
-      taxa_sucesso: 90 + (id % 10)
+      tipo: ['email', 'sms', 'webhook'][id % 3],
+      dataCriacao: new Date(2026, 0, 20).toISOString()
     });
 
-    const generateMockRelatorio = (id) => ({
+    const relatorio = (id) => ({
       id: String(id),
       nome: `Relatório ${id}`,
-      descricao: `Descrição do relatório ${id}`,
-      tipo: ['vendas', 'financeiro', 'rh', 'operacional'][id % 4],
+      tipo: ['vendas', 'financeiro', 'rh'][id % 3],
       dataCriacao: new Date(2026, 0, 29 - id).toISOString(),
-      dataUltimaatualizacao: new Date(2026, 0, 29 - (id % 3)).toISOString(),
-      criador: `Usuário ${id}`,
-      criadorId: String(id),
-      periodoInicio: new Date(2026, 0, 1).toISOString(),
-      periodoFim: new Date(2026, 0, 29).toISOString(),
-      formato: ['pdf', 'excel', 'csv'][id % 3],
       status: 'disponivel'
     });
 
-    // ============= ROUTE HANDLERS =============
+    // ==================== ROUTE HANDLERS ====================
 
-    // Auth routes
+    // AUTH
     if (first === 'auth') {
-      const sub = rest[0] || '';
-      if (sub === 'login' && method === 'POST') {
+      if (second === 'login' && method === 'POST') {
         const { email, senha } = req.body || {};
         if (email === 'admin@cfohub.com' && senha === 'admin123') {
-          return res.status(200).json({ access_token: 'mock-jwt-token-12345', token_type: 'bearer' });
+          return res.status(200).json({ access_token: 'mock-token-xyz', token_type: 'bearer' });
         }
         return res.status(401).json({ detail: 'Invalid credentials' });
       }
-      if (sub === 'me' && method === 'GET') {
-        return res.status(200).json(generateMockUser(1));
+      if (second === 'me') {
+        return res.status(200).json(user(1));
       }
-      if (sub === 'logout' && method === 'POST') {
+      if (second === 'logout' && method === 'POST') {
         return res.status(204).send('');
       }
-      if (sub === 'change-password' && method === 'POST') {
+      if (second === 'change-password' && method === 'POST') {
         return res.status(200).json({ detail: 'Password changed' });
       }
     }
 
-    // Users
+    // USERS
     if (first === 'users') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 20 }, (_, i) => generateMockUser(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 20 }, (_, i) => user(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockUser(1));
+        return res.status(201).json(user(1));
       }
-      if (rest[0] && method === 'GET') {
-        const id = parseInt(rest[0]) || 1;
-        return res.status(200).json(generateMockUser(id));
+      if (second && method === 'GET') {
+        return res.status(200).json(user(parseInt(second) || 1));
       }
     }
 
-    // Clientes
+    // CLIENTES
     if (first === 'clientes') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 15 }, (_, i) => generateMockCliente(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 15 }, (_, i) => cliente(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockCliente(1));
+        return res.status(201).json(cliente(1));
       }
-      if (rest[0] && method === 'GET') {
-        const id = parseInt(rest[0]) || 1;
-        return res.status(200).json(generateMockCliente(id));
+      if (second && method === 'GET') {
+        return res.status(200).json(cliente(parseInt(second) || 1));
       }
     }
 
-    // Colaboradores
+    // COLABORADORES
     if (first === 'colaboradores') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 20 }, (_, i) => generateMockColaborador(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 20 }, (_, i) => colaborador(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockColaborador(1));
+        return res.status(201).json(colaborador(1));
       }
-      if (rest[0] && method === 'GET') {
-        const id = parseInt(rest[0]) || 1;
-        return res.status(200).json(generateMockColaborador(id));
+      if (second && method === 'GET') {
+        return res.status(200).json(colaborador(parseInt(second) || 1));
       }
     }
 
-    // Tarefas
+    // TAREFAS
     if (first === 'tarefas') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 20 }, (_, i) => generateMockTarefa(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 20 }, (_, i) => tarefa(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockTarefa(1));
-      }
-      if (rest[0] && method === 'GET') {
-        const id = parseInt(rest[0]) || 1;
-        return res.status(200).json(generateMockTarefa(id));
+        return res.status(201).json(tarefa(1));
       }
     }
 
-    // Solicitações
+    // SOLICITAÇÕES
     if (first === 'solicitacoes') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 15 }, (_, i) => generateMockSolicitacao(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 15 }, (_, i) => solicitacao(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockSolicitacao(1));
+        return res.status(201).json(solicitacao(1));
       }
     }
 
-    // Notificações
+    // NOTIFICAÇÕES
     if (first === 'notificacoes') {
-      if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 15 }, (_, i) => generateMockNotificacao(i + 1))
-        );
-      }
+      return res.status(200).json(Array.from({ length: 15 }, (_, i) => notificacao(i + 1)));
     }
 
-    // Documentos
+    // DOCUMENTOS
     if (first === 'documentos') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 12 }, (_, i) => generateMockDocumento(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 12 }, (_, i) => documento(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockDocumento(1));
+        return res.status(201).json(documento(1));
       }
     }
 
     // OKRs
     if (first === 'okrs') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 8 }, (_, i) => generateMockOKR(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 8 }, (_, i) => okr(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockOKR(1));
+        return res.status(201).json(okr(1));
       }
     }
 
-    // Avaliações
+    // AVALIAÇÕES
     if (first === 'avaliacoes') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 12 }, (_, i) => generateMockAvaliacao(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 12 }, (_, i) => avaliacao(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockAvaliacao(1));
+        return res.status(201).json(avaliacao(1));
       }
     }
 
-    // Benefícios
+    // BENEFÍCIOS
     if (first === 'beneficios') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 8 }, (_, i) => generateMockBeneficio(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 8 }, (_, i) => beneficio(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockBeneficio(1));
+        return res.status(201).json(beneficio(1));
       }
     }
 
-    // Folha de Pagamento
+    // FOLHA DE PAGAMENTO
     if (first === 'folha' || first === 'folha-pagamento') {
-      if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 12 }, (_, i) => generateMockFolhaPagamento(i + 1))
-        );
-      }
+      return res.status(200).json(Array.from({ length: 12 }, (_, i) => folhaPagamento(i + 1)));
     }
 
-    // Folha Clientes
+    // FOLHA CLIENTES
     if (first === 'folha-clientes') {
-      if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 10 }, (_, i) => generateMockFolhaClientes(i + 1))
-        );
-      }
+      return res.status(200).json(Array.from({ length: 10 }, (_, i) => folhaClientes(i + 1)));
     }
 
-    // Chat
+    // CHAT
     if (first === 'chat') {
-      if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 8 }, (_, i) => generateMockChat(i + 1))
-        );
-      }
+      return res.status(200).json(Array.from({ length: 8 }, (_, i) => chat(i + 1)));
     }
 
-    // Mural
+    // MURAL
     if (first === 'mural') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 15 }, (_, i) => generateMockMuralPost(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 15 }, (_, i) => muralPost(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockMuralPost(1));
+        return res.status(201).json(muralPost(1));
       }
     }
 
-    // Feedbacks
+    // FEEDBACKS
     if (first === 'feedbacks') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 12 }, (_, i) => generateMockFeedback(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 12 }, (_, i) => feedback(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockFeedback(1));
+        return res.status(201).json(feedback(1));
       }
     }
 
-    // Lembretes
+    // LEMBRETES
     if (first === 'lembretes') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 10 }, (_, i) => generateMockLembrete(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 10 }, (_, i) => lembrete(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockLembrete(1));
+        return res.status(201).json(lembrete(1));
       }
     }
 
-    // Ponto
+    // PONTO
     if (first === 'ponto') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 25 }, (_, i) => generateMockPonto(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 25 }, (_, i) => ponto(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockPonto(1));
+        return res.status(201).json(ponto(1));
       }
     }
 
-    // Calendário
+    // CALENDÁRIO
     if (first === 'calendario' || first === 'calendar') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 15 }, (_, i) => generateMockCalendarioEvento(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 15 }, (_, i) => evento(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockCalendarioEvento(1));
+        return res.status(201).json(evento(1));
       }
     }
 
-    // Automações
+    // AUTOMAÇÕES
     if (first === 'automacoes') {
       if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 10 }, (_, i) => generateMockAutomacao(i + 1))
-        );
+        return res.status(200).json(Array.from({ length: 10 }, (_, i) => automacao(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(generateMockAutomacao(1));
+        return res.status(201).json(automacao(1));
       }
     }
 
-    // Relatórios
+    // RELATÓRIOS
     if (first === 'relatorios') {
-      if (method === 'GET') {
-        return res.status(200).json(
-          Array.from({ length: 8 }, (_, i) => generateMockRelatorio(i + 1))
-        );
-      }
+      return res.status(200).json(Array.from({ length: 8 }, (_, i) => relatorio(i + 1)));
     }
 
-    // Empresa
+    // EMPRESA
     if (first === 'empresa') {
       return res.status(200).json({
         id: '1',
         nome: 'CFO X Consultoria',
-        logo: null,
-        descricao: 'Plataforma de gestão empresarial integrada',
-        website: 'https://cfohub.com',
-        funcionarios: 50,
-        fundacao: '2020-01-01',
-        segmento: 'Consultoria'
+        descricao: 'Plataforma de gestão empresarial',
+        website: 'https://cfohub.com'
       });
     }
 
-    // Permissões
+    // PERMISSÕES
     if (first === 'permissoes') {
-      if (rest[0] === 'role') {
-        const role = rest[1] || 'colaborador';
+      if (second === 'role') {
         return res.status(200).json({
-          role,
-          permissoes: ['read:dashboard', 'read:tarefas', 'read:clientes', 'read:colaboradores', 'write:tarefas']
+          role: parts[2] || 'colaborador',
+          permissoes: ['read:dashboard', 'read:tarefas', 'read:clientes']
         });
       }
       return res.status(200).json([
@@ -593,28 +456,45 @@ export default function handler(req, res) {
       ]);
     }
 
-    // Cargos e Setores
+    // CARGOS E SETORES
     if (first === 'cargos-setores' || first === 'cargossetores') {
       return res.status(200).json([
         { id: '1', nome: 'Analista', setor: 'TI' },
-        { id: '2', nome: 'Gerente', setor: 'Gestão' },
-        { id: '3', nome: 'Consultor', setor: 'Consultoria' }
+        { id: '2', nome: 'Gerente', setor: 'Gestão' }
       ]);
     }
 
-    // Default 404 - but with useful data for missing routes
+    // PERFORMANCE
+    if (first === 'performance') {
+      if (second === 'snapshot') {
+        return res.status(200).json({
+          canais: [
+            { id: 'yampi', nome: 'Yampi', faturamento: 50000, gastoAds: 3000, pedidos: 200, roas: 16.67, cpa: 15, margem: 30, alertas: [] },
+            { id: 'ml', nome: 'Mercado Livre', faturamento: 30000, gastoAds: 1800, pedidos: 100, roas: 16.67, cpa: 18, margem: 28, alertas: [] }
+          ],
+          funil: [
+            { estagio: 'visitas', valor: 100000 },
+            { estagio: 'leads', valor: 5000 },
+            { estagio: 'conversoes', valor: 300 }
+          ],
+          diarias: [
+            { data: '2026-01-29', faturamento: 10000, gastoAds: 800, pedidosPagos: 50, vendedores: 0, canceladas: 2 },
+            { data: '2026-01-28', faturamento: 9000, gastoAds: 700, pedidosPagos: 45, vendedores: 0, canceladas: 1 }
+          ],
+          eventos: [],
+          custos: { gateway: 2.5, transporte: 50, picking: 25, imposto: 15, checkout: 1.5 },
+          integracoes: []
+        });
+      }
+    }
+
+    // DEFAULT RESPONSE
     return res.status(200).json({
-      message: 'Mock data endpoint',
-      path: parts.join('/'),
-      method,
-      timestamp: new Date().toISOString()
+      data: Array.from({ length: 10 }, (_, i) => ({ id: i + 1, nome: `Item ${i + 1}` }))
     });
 
   } catch (error) {
     console.error('Mock API Error:', error);
-    return res.status(500).json({ 
-      detail: 'Internal server error in mock API',
-      error: error.message 
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
