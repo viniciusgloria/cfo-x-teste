@@ -30,7 +30,28 @@ interface SolicitacoesState {
   reset: () => void;
 }
 
-const mockSolicitacoes: Solicitacao[] = [];
+const mockSolicitacoes: Solicitacao[] = [
+  {
+    id: '1',
+    tipo: 'material',
+    titulo: 'Solicitação Demo 1',
+    descricao: 'Solicitação de material para demonstração',
+    status: 'pendente',
+    solicitante: { nome: 'João Silva', avatar: '' },
+    data: new Date().toISOString(),
+    urgencia: 'alta',
+  },
+  {
+    id: '2',
+    tipo: 'ferias',
+    titulo: 'Solicitação Demo 2',
+    descricao: 'Solicitação de férias para exemplo',
+    status: 'aprovada',
+    solicitante: { nome: 'Maria Santos', avatar: '' },
+    data: new Date(Date.now() - 86400000).toISOString(),
+    urgencia: 'media',
+  },
+];
 
 export const useSolicitacoesStore = create<SolicitacoesState>()(
   persist(

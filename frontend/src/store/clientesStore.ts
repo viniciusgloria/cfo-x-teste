@@ -226,7 +226,91 @@ interface ClientesState {
   reset: () => void;
 }
 
-const mockClientes: Cliente[] = [];
+const mockClientes: Cliente[] = [
+  // Dados FALLBACK quando API falha
+  {
+    id: 1,
+    dadosGerais: {
+      nome: 'Cliente Mock 1',
+      cnpj: '11111111000111',
+      endereco: 'Rua A, 123',
+      telefone: '11999999999',
+      email: 'cliente1@mock.com',
+    },
+    contatosPrincipais: {
+      nomeSocio: 'João Silva',
+      emailPrincipal: 'joao@mock.com',
+      telefone: '11999999999',
+    },
+    outrosContatos: [],
+    comunicacaoFluxo: {
+      canalPreferencial: 'email' as const,
+      horarioPreferencial: 'comercial' as const,
+      pessoaContatoPrincipal: 'João',
+    },
+    servicosContratados: {
+      previsaoInicio: '2024-01-15',
+      bpoFinanceiro: true,
+      assessoriaFinanceira: true,
+      contabilidade: false,
+      juridicoContratual: false,
+      juridicoTributario: false,
+      trading: false,
+      planosHistorico: [],
+    },
+    omieConfig: {
+      pertenceGrupo: false,
+      appKey: '',
+      appSecret: '',
+      integracoes: createDefaultIntegrations(),
+    },
+    status: 'ativo' as StatusCadastro,
+    mrr: 5000,
+    criadoEm: new Date().toISOString(),
+    atualizadoEm: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    dadosGerais: {
+      nome: 'Cliente Mock 2',
+      cnpj: '22222222000222',
+      endereco: 'Avenida B, 456',
+      telefone: '11988888888',
+      email: 'cliente2@mock.com',
+    },
+    contatosPrincipais: {
+      nomeSocio: 'Maria Santos',
+      emailPrincipal: 'maria@mock.com',
+      telefone: '11988888888',
+    },
+    outrosContatos: [],
+    comunicacaoFluxo: {
+      canalPreferencial: 'email' as const,
+      horarioPreferencial: 'comercial' as const,
+      pessoaContatoPrincipal: 'Maria',
+    },
+    servicosContratados: {
+      previsaoInicio: '2024-02-20',
+      bpoFinanceiro: false,
+      assessoriaFinanceira: true,
+      contabilidade: true,
+      juridicoContratual: false,
+      juridicoTributario: false,
+      trading: false,
+      planosHistorico: [],
+    },
+    omieConfig: {
+      pertenceGrupo: false,
+      appKey: '',
+      appSecret: '',
+      integracoes: createDefaultIntegrations(),
+    },
+    status: 'ativo' as StatusCadastro,
+    mrr: 7500,
+    criadoEm: new Date().toISOString(),
+    atualizadoEm: new Date().toISOString(),
+  },
+];
 
 // Helper para converter ClienteAPI para Cliente (formato interno)
 function apiToCliente(apiCliente: ClienteAPI): Cliente {
