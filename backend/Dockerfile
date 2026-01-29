@@ -19,8 +19,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia a aplicacao
 COPY . .
 
-# Expoe a porta
-EXPOSE 8000
+# Expoe a porta (variável de runtime)
+ARG PORT=8000
+EXPOSE ${PORT}
 
-# Executa a aplicacao
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Executa a aplicacao em modo production (usa variável de ambiente PORT quando disponível)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
