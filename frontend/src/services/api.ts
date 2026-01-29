@@ -2,8 +2,8 @@
  * API Service - Configuração centralizada para chamadas HTTP
  */
 
-// Use relative paths so Vite proxy can intercept and route to backend
-const API_URL = '';
+// Use environment variable `VITE_API_URL` in production; empty string uses relative paths (development Vite proxy)
+const API_URL = (import.meta as any).env?.VITE_API_URL ?? '';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number>;
