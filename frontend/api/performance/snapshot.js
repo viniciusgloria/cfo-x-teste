@@ -6,8 +6,8 @@ export default function handler(req, res) {
 
   const snapshot = {
     canais: [
-      { id: 'yampi', nome: 'Yampi', faturamento: 50000, gastoAds: 3000, pedidos: 200, roas: 16.67, cpa: 15, margem: 30 },
-      { id: 'ml', nome: 'Mercado Livre', faturamento: 30000, gastoAds: 1800, pedidos: 100, roas: 16.67, cpa: 18, margem: 28 }
+      { id: 'yampi', nome: 'Yampi', faturamento: 50000, gastoAds: 3000, pedidos: 200, roas: 16.67, cpa: 15, margem: 30, alertas: [] },
+      { id: 'ml', nome: 'Mercado Livre', faturamento: 30000, gastoAds: 1800, pedidos: 100, roas: 16.67, cpa: 18, margem: 28, alertas: [] }
     ],
     funil: [
       { estagio: 'visitas', valor: 100000 },
