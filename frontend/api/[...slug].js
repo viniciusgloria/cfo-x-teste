@@ -1,6 +1,6 @@
 /**
- * MOCK API HANDLER - COMPREHENSIVE
- * All endpoints return complete mock data for event presentation
+ * ULTIMATE MOCK API HANDLER
+ * Returns EXACT data structures expected by frontend stores
  */
 
 export default function handler(req, res) {
@@ -11,44 +11,38 @@ export default function handler(req, res) {
     const first = parts[0] || '';
     const second = parts[1] || '';
 
-    // ==================== MOCK DATA BUILDERS ====================
+    // ==================== DATA GENERATORS ====================
 
-    const user = (id) => ({
-      id: String(id),
+    const mockUser = (id) => ({
+      id: id,
       nome: `Usuário ${id}`,
       email: `user${id}@empresa.com`,
       role: id === 1 ? 'admin' : 'colaborador',
       ativo: true,
       avatar: null,
       tipo: 'CLT',
-      primeiro_acesso: false,
-      departamento: 'Gestão',
-      cargo: 'Gestor',
-      telefone: '11999999999'
+      primeiro_acesso: false
     });
 
-    const cliente = (id) => ({
-      id,
+    const mockCliente = (id) => ({
+      id: id,
       nome: `Cliente ${id}`,
       nomeFantasia: `Fantasia ${id}`,
       status: id % 3 === 0 ? 'pendente' : 'ativo',
-      dadosGerais: {
-        nome: `Cliente ${id}`,
-        cnpj: `${String(id).padStart(14, '0')}`,
-        endereco: `Rua ${id}`,
-        numero: String(100 + id),
-        cidade: 'São Paulo',
-        uf: 'SP'
-      },
-      contatosPrincipais: {
-        nomeSocio: `Sócio ${id}`,
-        emailPrincipal: `contato${id}@cliente${id}.com.br`,
-        telefone: `11999${String(id).padStart(5, '0')}`
-      }
+      cnpj: `${String(id).padStart(14, '0')}`,
+      razao_social: `Razão Social ${id}`,
+      email: `contato${id}@cliente${id}.com.br`,
+      telefone: `11999${String(id).padStart(5, '0')}`,
+      endereco: `Rua ${id}, ${100 + id}`,
+      mrr: 1000 + id * 500,
+      omie_sync: id % 2 === 0,
+      data_inicio: '2024-01-15',
+      created_at: new Date(2026, 0, 29 - id).toISOString(),
+      updated_at: new Date(2026, 0, 29).toISOString()
     });
 
-    const colaborador = (id) => ({
-      id: String(id),
+    const mockColaborador = (id) => ({
+      id: id,
       nome: `Colaborador ${id}`,
       email: `colab${id}@empresa.com`,
       telefone: '11999999999',
@@ -57,11 +51,12 @@ export default function handler(req, res) {
       ativo: true,
       dataAdmissao: '2024-01-15',
       cpf: `${String(id).padStart(11, '0')}`,
+      rg: `${String(id).padStart(9, '0')}`,
       salario: 3000 + id * 500
     });
 
-    const tarefa = (id) => ({
-      id: String(id),
+    const mockTarefa = (id) => ({
+      id: id,
       titulo: `Tarefa ${id}`,
       descricao: `Descrição da tarefa ${id}`,
       status: ['pendente', 'em_progresso', 'concluida'][id % 3],
@@ -71,17 +66,17 @@ export default function handler(req, res) {
       projeto: `Projeto ${Math.ceil(id / 2)}`
     });
 
-    const solicitacao = (id) => ({
-      id: String(id),
+    const mockSolicitacao = (id) => ({
+      id: id,
       tipo: ['folga', 'adiantamento', 'licenca'][id % 3],
       status: ['pendente', 'aprovada', 'rejeitada'][id % 3],
       dataSolicitacao: new Date(2026, 0, 29 - id).toISOString(),
-      colaborador: colaborador(id),
+      colaborador: mockColaborador(id),
       motivo: `Motivo da solicitação ${id}`
     });
 
-    const notificacao = (id) => ({
-      id: String(id),
+    const mockNotificacao = (id) => ({
+      id: id,
       titulo: `Notificação ${id}`,
       mensagem: `Mensagem ${id}`,
       tipo: ['info', 'aviso', 'erro'][id % 3],
@@ -89,8 +84,8 @@ export default function handler(req, res) {
       dataCriacao: new Date(2026, 0, 29 - (id % 5)).toISOString()
     });
 
-    const documento = (id) => ({
-      id: String(id),
+    const mockDocumento = (id) => ({
+      id: id,
       nome: `Documento ${id}.pdf`,
       tipo: 'pdf',
       tamanho: 1024 * (100 + id),
@@ -99,23 +94,22 @@ export default function handler(req, res) {
       url: `https://example.com/docs/${id}.pdf`
     });
 
-    const okr = (id) => ({
-      id: String(id),
+    const mockOKR = (id) => ({
+      id: id,
       objetivo: `Objetivo ${id}`,
       descricao: `Descrição do objetivo ${id}`,
       periodo: '2026 Q1',
       status: ['planejamento', 'em_progresso', 'concluido'][id % 3],
       progresso: (id * 15) % 100,
-      responsavel: `Colaborador ${id}`,
       keyResults: [
         { id: '1', descricao: `KR 1.${id}`, progresso: (id * 20) % 100 },
         { id: '2', descricao: `KR 2.${id}`, progresso: (id * 25) % 100 }
       ]
     });
 
-    const avaliacao = (id) => ({
-      id: String(id),
-      colaborador: colaborador(id),
+    const mockAvaliacao = (id) => ({
+      id: id,
+      colaborador: mockColaborador(id),
       periodo: '2025 Q4',
       status: ['rascunho', 'finalizada'][id % 2],
       nota: 7 + (id % 3),
@@ -123,8 +117,8 @@ export default function handler(req, res) {
       avaliador: `Gestor ${id}`
     });
 
-    const beneficio = (id) => ({
-      id: String(id),
+    const mockBeneficio = (id) => ({
+      id: id,
       nome: `Benefício ${id}`,
       descricao: `Descrição do benefício ${id}`,
       tipo: ['saude', 'alimentacao', 'transporte'][id % 3],
@@ -132,8 +126,8 @@ export default function handler(req, res) {
       ativo: true
     });
 
-    const folhaPagamento = (id) => ({
-      id: String(id),
+    const mockFolha = (id) => ({
+      id: id,
       mes: `2026-${String(id).padStart(2, '0')}`,
       total: 15000 * id,
       colaboradores: 10 + id,
@@ -141,24 +135,16 @@ export default function handler(req, res) {
       dataProcessamento: new Date(2026, 0, 28).toISOString()
     });
 
-    const folhaClientes = (id) => ({
-      id: String(id),
-      cliente: cliente(id),
-      mes: `2026-${String(id).padStart(2, '0')}`,
-      valor: 5000 + id * 1000,
-      status: ['pendente', 'processada', 'paga'][id % 3]
-    });
-
-    const chat = (id) => ({
-      id: String(id),
+    const mockChat = (id) => ({
+      id: id,
       participantes: [`Usuário ${id}`, `Colaborador ${id + 1}`],
       ultimaMensagem: `Última mensagem do chat ${id}`,
       dataUltimaMensagem: new Date(2026, 0, 29 - (id % 3)).toISOString(),
       naoLidas: id % 2 === 0 ? id : 0
     });
 
-    const muralPost = (id) => ({
-      id: String(id),
+    const mockMural = (id) => ({
+      id: id,
       autor: `Usuário ${id}`,
       conteudo: `Post do mural número ${id}`,
       dataCriacao: new Date(2026, 0, 29 - (id % 5)).toISOString(),
@@ -167,8 +153,8 @@ export default function handler(req, res) {
       tipo: ['comunicado', 'dica', 'celebracao'][id % 3]
     });
 
-    const feedback = (id) => ({
-      id: String(id),
+    const mockFeedback = (id) => ({
+      id: id,
       de: `Usuário ${id}`,
       para: `Colaborador ${id + 1}`,
       conteudo: `Feedback construtivo número ${id}`,
@@ -177,18 +163,17 @@ export default function handler(req, res) {
       publicado: id % 2 === 0
     });
 
-    const lembrete = (id) => ({
-      id: String(id),
+    const mockLembrete = (id) => ({
+      id: id,
       titulo: `Lembrete ${id}`,
       descricao: `Descrição do lembrete ${id}`,
       dataVencimento: new Date(2026, 1, 1 + id).toISOString(),
       prioridade: ['baixa', 'media', 'alta'][id % 3],
-      concluido: id % 3 === 0,
-      criador: `Usuário ${id}`
+      concluido: id % 3 === 0
     });
 
-    const ponto = (id) => ({
-      id: String(id),
+    const mockPonto = (id) => ({
+      id: id,
       colaborador: `Colaborador ${id}`,
       data: new Date(2026, 0, 29 - (id % 5)).toISOString(),
       horaEntrada: `0${8 + (id % 2)}:00`,
@@ -197,8 +182,8 @@ export default function handler(req, res) {
       tipo: ['presencial', 'remoto', 'hibrido'][id % 3]
     });
 
-    const evento = (id) => ({
-      id: String(id),
+    const mockEvento = (id) => ({
+      id: id,
       titulo: `Evento ${id}`,
       descricao: `Descrição do evento ${id}`,
       dataInicio: new Date(2026, 1, 1 + id).toISOString(),
@@ -208,8 +193,8 @@ export default function handler(req, res) {
       tipo: ['reuniao', 'treinamento', 'confraternizacao'][id % 3]
     });
 
-    const automacao = (id) => ({
-      id: String(id),
+    const mockAutomacao = (id) => ({
+      id: id,
       nome: `Automação ${id}`,
       descricao: `Descrição da automação ${id}`,
       ativa: id % 2 === 0,
@@ -217,8 +202,8 @@ export default function handler(req, res) {
       dataCriacao: new Date(2026, 0, 20).toISOString()
     });
 
-    const relatorio = (id) => ({
-      id: String(id),
+    const mockRelatorio = (id) => ({
+      id: id,
       nome: `Relatório ${id}`,
       tipo: ['vendas', 'financeiro', 'rh'][id % 3],
       dataCriacao: new Date(2026, 0, 29 - id).toISOString(),
@@ -237,7 +222,7 @@ export default function handler(req, res) {
         return res.status(401).json({ detail: 'Invalid credentials' });
       }
       if (second === 'me') {
-        return res.status(200).json(user(1));
+        return res.status(200).json(mockUser(1));
       }
       if (second === 'logout' && method === 'POST') {
         return res.status(204).send('');
@@ -247,191 +232,192 @@ export default function handler(req, res) {
       }
     }
 
-    // USERS
+    // USERS - returns ARRAY
     if (first === 'users') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 20 }, (_, i) => user(i + 1)));
+        const limit = parseInt(req.query.limit) || 20;
+        return res.status(200).json(Array.from({ length: limit }, (_, i) => mockUser(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(user(1));
+        return res.status(201).json(mockUser(1));
       }
       if (second && method === 'GET') {
-        return res.status(200).json(user(parseInt(second) || 1));
+        return res.status(200).json(mockUser(parseInt(second) || 1));
       }
     }
 
-    // CLIENTES
+    // CLIENTES - returns ARRAY
     if (first === 'clientes') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 15 }, (_, i) => cliente(i + 1)));
+        return res.status(200).json(Array.from({ length: 15 }, (_, i) => mockCliente(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(cliente(1));
+        return res.status(201).json(mockCliente(1));
       }
       if (second && method === 'GET') {
-        return res.status(200).json(cliente(parseInt(second) || 1));
+        return res.status(200).json(mockCliente(parseInt(second) || 1));
       }
     }
 
-    // COLABORADORES
+    // COLABORADORES - returns ARRAY
     if (first === 'colaboradores') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 20 }, (_, i) => colaborador(i + 1)));
+        return res.status(200).json(Array.from({ length: 20 }, (_, i) => mockColaborador(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(colaborador(1));
+        return res.status(201).json(mockColaborador(1));
       }
       if (second && method === 'GET') {
-        return res.status(200).json(colaborador(parseInt(second) || 1));
+        return res.status(200).json(mockColaborador(parseInt(second) || 1));
       }
     }
 
-    // TAREFAS
+    // TAREFAS - returns ARRAY
     if (first === 'tarefas') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 20 }, (_, i) => tarefa(i + 1)));
+        return res.status(200).json(Array.from({ length: 20 }, (_, i) => mockTarefa(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(tarefa(1));
+        return res.status(201).json(mockTarefa(1));
       }
     }
 
-    // SOLICITAÇÕES
+    // SOLICITAÇÕES - returns ARRAY
     if (first === 'solicitacoes') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 15 }, (_, i) => solicitacao(i + 1)));
+        return res.status(200).json(Array.from({ length: 15 }, (_, i) => mockSolicitacao(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(solicitacao(1));
+        return res.status(201).json(mockSolicitacao(1));
       }
     }
 
-    // NOTIFICAÇÕES
+    // NOTIFICAÇÕES - returns ARRAY
     if (first === 'notificacoes') {
-      return res.status(200).json(Array.from({ length: 15 }, (_, i) => notificacao(i + 1)));
+      return res.status(200).json(Array.from({ length: 15 }, (_, i) => mockNotificacao(i + 1)));
     }
 
-    // DOCUMENTOS
+    // DOCUMENTOS - returns ARRAY
     if (first === 'documentos') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 12 }, (_, i) => documento(i + 1)));
+        return res.status(200).json(Array.from({ length: 12 }, (_, i) => mockDocumento(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(documento(1));
+        return res.status(201).json(mockDocumento(1));
       }
     }
 
-    // OKRs
+    // OKRs - returns ARRAY
     if (first === 'okrs') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 8 }, (_, i) => okr(i + 1)));
+        return res.status(200).json(Array.from({ length: 8 }, (_, i) => mockOKR(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(okr(1));
+        return res.status(201).json(mockOKR(1));
       }
     }
 
-    // AVALIAÇÕES
+    // AVALIAÇÕES - returns ARRAY
     if (first === 'avaliacoes') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 12 }, (_, i) => avaliacao(i + 1)));
+        return res.status(200).json(Array.from({ length: 12 }, (_, i) => mockAvaliacao(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(avaliacao(1));
+        return res.status(201).json(mockAvaliacao(1));
       }
     }
 
-    // BENEFÍCIOS
+    // BENEFÍCIOS - returns ARRAY
     if (first === 'beneficios') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 8 }, (_, i) => beneficio(i + 1)));
+        return res.status(200).json(Array.from({ length: 8 }, (_, i) => mockBeneficio(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(beneficio(1));
+        return res.status(201).json(mockBeneficio(1));
       }
     }
 
-    // FOLHA DE PAGAMENTO
+    // FOLHA - returns ARRAY
     if (first === 'folha' || first === 'folha-pagamento') {
-      return res.status(200).json(Array.from({ length: 12 }, (_, i) => folhaPagamento(i + 1)));
+      return res.status(200).json(Array.from({ length: 12 }, (_, i) => mockFolha(i + 1)));
     }
 
-    // FOLHA CLIENTES
+    // FOLHA CLIENTES - returns ARRAY
     if (first === 'folha-clientes') {
-      return res.status(200).json(Array.from({ length: 10 }, (_, i) => folhaClientes(i + 1)));
+      return res.status(200).json(Array.from({ length: 10 }, (_, i) => mockFolha(i + 1)));
     }
 
-    // CHAT
+    // CHAT - returns ARRAY
     if (first === 'chat') {
-      return res.status(200).json(Array.from({ length: 8 }, (_, i) => chat(i + 1)));
+      return res.status(200).json(Array.from({ length: 8 }, (_, i) => mockChat(i + 1)));
     }
 
-    // MURAL
+    // MURAL - returns ARRAY
     if (first === 'mural') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 15 }, (_, i) => muralPost(i + 1)));
+        return res.status(200).json(Array.from({ length: 15 }, (_, i) => mockMural(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(muralPost(1));
+        return res.status(201).json(mockMural(1));
       }
     }
 
-    // FEEDBACKS
+    // FEEDBACKS - returns ARRAY
     if (first === 'feedbacks') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 12 }, (_, i) => feedback(i + 1)));
+        return res.status(200).json(Array.from({ length: 12 }, (_, i) => mockFeedback(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(feedback(1));
+        return res.status(201).json(mockFeedback(1));
       }
     }
 
-    // LEMBRETES
+    // LEMBRETES - returns ARRAY
     if (first === 'lembretes') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 10 }, (_, i) => lembrete(i + 1)));
+        return res.status(200).json(Array.from({ length: 10 }, (_, i) => mockLembrete(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(lembrete(1));
+        return res.status(201).json(mockLembrete(1));
       }
     }
 
-    // PONTO
+    // PONTO - returns ARRAY
     if (first === 'ponto') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 25 }, (_, i) => ponto(i + 1)));
+        return res.status(200).json(Array.from({ length: 25 }, (_, i) => mockPonto(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(ponto(1));
+        return res.status(201).json(mockPonto(1));
       }
     }
 
-    // CALENDÁRIO
+    // CALENDÁRIO - returns ARRAY
     if (first === 'calendario' || first === 'calendar') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 15 }, (_, i) => evento(i + 1)));
+        return res.status(200).json(Array.from({ length: 15 }, (_, i) => mockEvento(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(evento(1));
+        return res.status(201).json(mockEvento(1));
       }
     }
 
-    // AUTOMAÇÕES
+    // AUTOMAÇÕES - returns ARRAY
     if (first === 'automacoes') {
       if (method === 'GET') {
-        return res.status(200).json(Array.from({ length: 10 }, (_, i) => automacao(i + 1)));
+        return res.status(200).json(Array.from({ length: 10 }, (_, i) => mockAutomacao(i + 1)));
       }
       if (method === 'POST') {
-        return res.status(201).json(automacao(1));
+        return res.status(201).json(mockAutomacao(1));
       }
     }
 
-    // RELATÓRIOS
+    // RELATÓRIOS - returns ARRAY
     if (first === 'relatorios') {
-      return res.status(200).json(Array.from({ length: 8 }, (_, i) => relatorio(i + 1)));
+      return res.status(200).json(Array.from({ length: 8 }, (_, i) => mockRelatorio(i + 1)));
     }
 
-    // EMPRESA
+    // EMPRESA - returns OBJECT
     if (first === 'empresa') {
       return res.status(200).json({
         id: '1',
@@ -441,7 +427,7 @@ export default function handler(req, res) {
       });
     }
 
-    // PERMISSÕES
+    // PERMISSÕES - returns ARRAY or OBJECT
     if (first === 'permissoes') {
       if (second === 'role') {
         return res.status(200).json({
@@ -456,7 +442,7 @@ export default function handler(req, res) {
       ]);
     }
 
-    // CARGOS E SETORES
+    // CARGOS-SETORES - returns ARRAY
     if (first === 'cargos-setores' || first === 'cargossetores') {
       return res.status(200).json([
         { id: '1', nome: 'Analista', setor: 'TI' },
@@ -468,19 +454,30 @@ export default function handler(req, res) {
     if (first === 'performance') {
       if (second === 'snapshot') {
         return res.status(200).json({
-          canais: [
-            { id: 'yampi', nome: 'Yampi', faturamento: 50000, gastoAds: 3000, pedidos: 200, roas: 16.67, cpa: 15, margem: 30, alertas: [] },
-            { id: 'ml', nome: 'Mercado Livre', faturamento: 30000, gastoAds: 1800, pedidos: 100, roas: 16.67, cpa: 18, margem: 28, alertas: [] }
-          ],
+          canais: Array.from({ length: 3 }, (_, i) => ({
+            id: `canal_${i + 1}`,
+            nome: `Canal ${i + 1}`,
+            faturamento: 50000 - i * 10000,
+            gastoAds: 3000 - i * 500,
+            pedidos: 200 - i * 30,
+            roas: 16.67,
+            cpa: 15 + i * 3,
+            margem: 30 - i,
+            alertas: []
+          })),
           funil: [
             { estagio: 'visitas', valor: 100000 },
             { estagio: 'leads', valor: 5000 },
             { estagio: 'conversoes', valor: 300 }
           ],
-          diarias: [
-            { data: '2026-01-29', faturamento: 10000, gastoAds: 800, pedidosPagos: 50, vendedores: 0, canceladas: 2 },
-            { data: '2026-01-28', faturamento: 9000, gastoAds: 700, pedidosPagos: 45, vendedores: 0, canceladas: 1 }
-          ],
+          diarias: Array.from({ length: 7 }, (_, i) => ({
+            data: new Date(2026, 0, 29 - i).toISOString().split('T')[0],
+            faturamento: 10000 + Math.random() * 5000,
+            gastoAds: 800 + Math.random() * 400,
+            pedidosPagos: 50 + Math.random() * 20,
+            vendedores: 0,
+            canceladas: Math.floor(Math.random() * 3)
+          })),
           eventos: [],
           custos: { gateway: 2.5, transporte: 50, picking: 25, imposto: 15, checkout: 1.5 },
           integracoes: []
@@ -488,10 +485,8 @@ export default function handler(req, res) {
       }
     }
 
-    // DEFAULT RESPONSE
-    return res.status(200).json({
-      data: Array.from({ length: 10 }, (_, i) => ({ id: i + 1, nome: `Item ${i + 1}` }))
-    });
+    // DEFAULT - returns ARRAY
+    return res.status(200).json(Array.from({ length: 10 }, (_, i) => ({ id: i + 1, nome: `Item ${i + 1}` })));
 
   } catch (error) {
     console.error('Mock API Error:', error);
