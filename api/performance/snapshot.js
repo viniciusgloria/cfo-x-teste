@@ -5,15 +5,28 @@ export default function handler(req, res) {
   }
 
   const snapshot = {
-    total_revenue: 100000,
-    total_cost: 60000,
-    total_profit: 40000,
-    total_margin: 40,
-    channels: [
-      { id: 'yampi', name: 'Yampi', revenue: 50000, cost: 30000, profit: 20000, margin: 40, cpa: 50, leads: 1000, conversions: 200 },
-      { id: 'ml', name: 'Mercado Livre', revenue: 30000, cost: 18000, profit: 12000, margin: 40, cpa: 60, leads: 600, conversions: 100 }
+    canais: [
+      { id: 'yampi', nome: 'Yampi', faturamento: 50000, gastoAds: 3000, pedidos: 200, roas: 16.67, cpa: 15, margem: 30 },
+      { id: 'ml', nome: 'Mercado Livre', faturamento: 30000, gastoAds: 1800, pedidos: 100, roas: 16.67, cpa: 18, margem: 28 }
     ],
-    expenses: { marketing: 40000, operational: 10000, administrative: 8000, other: 2000 }
+    funil: [
+      { estagio: 'visitas', valor: 100000 },
+      { estagio: 'leads', valor: 5000 },
+      { estagio: 'conversoes', valor: 300 }
+    ],
+    diarias: [
+      { data: '2026-01-29', faturamento: 10000, gastoAds: 800, pedidosPagos: 50, vendedores: 0, canceladas: 2 },
+      { data: '2026-01-28', faturamento: 9000, gastoAds: 700, pedidosPagos: 45, vendedores: 0, canceladas: 1 }
+    ],
+    eventos: [],
+    custos: {
+      gateway: 2.5,
+      transporte: 50,
+      picking: 25,
+      imposto: 15,
+      checkout: 1.5
+    },
+    integracoes: []
   };
 
   res.status(200).json(snapshot);
