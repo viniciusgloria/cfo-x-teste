@@ -34,7 +34,34 @@ interface MuralState {
   reset: () => void;
 }
 
-const mockPosts: Post[] = [];
+const mockPosts: Post[] = [
+  {
+    id: 1,
+    author: 'Sistema',
+    avatar: undefined,
+    content: 'Bem-vindo ao CFO X - Demonstração do Sistema para Evento',
+    type: 'anuncio',
+    createdAt: new Date().toISOString(),
+    attachments: undefined,
+    reactions: { like: 10, heart: 5, party: 2 },
+    myReactions: undefined,
+    comments: [
+      { id: 1, author: 'João', text: 'Muito bom!', createdAt: new Date().toISOString() }
+    ],
+  },
+  {
+    id: 2,
+    author: 'Admin',
+    avatar: undefined,
+    content: 'Parabéns a todos pelo trabalho excelente neste trimestre! 🎉',
+    type: 'comemoracao',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    attachments: undefined,
+    reactions: { like: 25, heart: 15, party: 8 },
+    myReactions: undefined,
+    comments: [],
+  },
+];
 const initialMural = {
   posts: mockPosts,
   filter: 'Todos' as MuralState['filter'],

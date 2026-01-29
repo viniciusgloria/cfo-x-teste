@@ -68,7 +68,28 @@ function hhmmFromTs(ts: number) {
 export const usePontoStore = create<PontoState>()(
   persist(
     (set, get) => ({
-      registros: [],
+      registros: [
+        {
+          data: new Date().toLocaleDateString('pt-BR'),
+          punches: [
+            { type: 'entrada', ts: Date.now() - 8 * 3600000, hhmm: '08:00' },
+            { type: 'saida', ts: Date.now() - 1 * 3600000, hhmm: '17:00' },
+          ],
+          intervals: [],
+          totalMinutos: 480,
+          bancoHoras: '0h 0m',
+        },
+        {
+          data: new Date(Date.now() - 86400000).toLocaleDateString('pt-BR'),
+          punches: [
+            { type: 'entrada', ts: Date.now() - 33 * 3600000, hhmm: '08:00' },
+            { type: 'saida', ts: Date.now() - 25 * 3600000, hhmm: '17:00' },
+          ],
+          intervals: [],
+          totalMinutos: 480,
+          bancoHoras: '+0h 30m',
+        },
+      ],
       feriadosISO: [],
       isProcessing: false,
       statusHoje: 'Registre sua entrada!',
