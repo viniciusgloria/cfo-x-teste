@@ -46,6 +46,11 @@ class User(Base):
     telefone = Column(String(20))
     avatar = Column(String(500))
     
+    # Dados de cliente
+    empresa = Column(String(255), nullable=True)
+    grupoId = Column(String(100), nullable=True)
+    grupoNome = Column(String(255), nullable=True)
+    
     # Flags de status usadas para acesso e fluxo de primeiro login.
     ativo = Column(Boolean, default=True, nullable=False)
     primeiro_acesso = Column(Boolean, default=True, nullable=False)

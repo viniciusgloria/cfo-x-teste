@@ -159,7 +159,7 @@ export interface ContextoGeral {
   observacao?: string;
 }
 
-export type StatusCadastro = 'rascunho' | 'pendente' | 'rejeitado' | 'aprovado' | 'ativo' | 'pausado' | 'encerrado' | 'devolvido';
+export type StatusCadastro = 'rascunho' | 'pendente' | 'rejeitado' | 'aprovado' | 'ativo' | 'inativo' | 'pausado' | 'encerrado' | 'devolvido';
 
 export interface Cliente {
   id: number;

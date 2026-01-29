@@ -104,6 +104,7 @@ export function Clientes() {
       rejeitado: { colors: 'bg-red-100 text-red-800', label: 'Rejeitado', icon: '❌' },
       devolvido: { colors: 'bg-orange-100 text-orange-800', label: 'Devolvido', icon: '🔄' },
       ativo: { colors: 'bg-green-100 text-green-800', label: 'Ativo', icon: '🟢' },
+      inativo: { colors: 'bg-red-100 text-red-800', label: 'Inativo', icon: '🔴' },
       pausado: { colors: 'bg-yellow-100 text-yellow-800', label: 'Pausado', icon: '⏸️' },
       encerrado: { colors: 'bg-slate-200 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200', label: 'Encerrado', icon: '🔚' }
     };

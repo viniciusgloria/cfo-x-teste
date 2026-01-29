@@ -17,6 +17,9 @@ class UserBase(BaseModel):
     setor: Optional[str] = None
     telefone: Optional[str] = None
     avatar: Optional[str] = None
+    empresa: Optional[str] = None
+    grupoId: Optional[str] = None
+    grupoNome: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -34,6 +37,9 @@ class UserUpdate(BaseModel):
     telefone: Optional[str] = None
     avatar: Optional[str] = None
     ativo: Optional[bool] = None
+    empresa: Optional[str] = None
+    grupoId: Optional[str] = None
+    grupoNome: Optional[str] = None
 
 
 class UserResponse(UserBase):

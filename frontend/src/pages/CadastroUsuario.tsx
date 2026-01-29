@@ -35,6 +35,8 @@ interface FormData {
   setorId: string;
   funcao?: string;
   empresa?: string;
+  grupoId?: string;
+  grupoNome?: string;
   regime?: 'CLT' | 'PJ';
   contrato?: 'CLT' | 'PJ';
   role: UserRole;
@@ -111,6 +113,9 @@ export function CadastroUsuario() {
     metaHorasMensais: '176',
     status: 'em_contratacao',
     dispensaDocumentacao: false,
+    empresa: '',
+    grupoId: '',
+    grupoNome: '',
     beneficiosSelecionados: [],
     salarioBase: '',
     dataAdmissao: '',
@@ -198,9 +203,11 @@ export function CadastroUsuario() {
           setorId: '', // TODO: migrar dados antigos se necessário
           funcao: colab.funcao || '',
           empresa: colab.empresa || '',
+          grupoId: colab.grupoId || '',
+          grupoNome: colab.grupoNome || '',
           regime: colab.regime || undefined,
           contrato: colab.contrato || undefined,
-          role: 'colaborador',
+          role: 'colaborador', // Será atualizado quando carregar dados do usuário
           metaHorasMensais: String(colab.metaHorasMensais || 176),
           status: colab.status,
           dispensaDocumentacao: !!colab.dispensaDocumentacao,
@@ -226,7 +233,7 @@ export function CadastroUsuario() {
           dataAdmissao: '', // TODO: carregar data admissão
         });
 
-        // Tentar carregar dados do usuário correspondente
+        // Tentar carregar dados do usuário correspondente para obter o role correto
         loadUserData(colab.email);
       } else {
         // Colaborador não encontrado, tentar carregar dados do usuário
@@ -253,7 +260,9 @@ export function CadastroUsuario() {
                 cargoId: '',
                 setorId: '',
                 funcao: '',
-                empresa: '',
+                empresa: user.empresa || '',
+                grupoId: user.grupoId || '',
+                grupoNome: user.grupoNome || '',
                 regime: undefined,
                 contrato: undefined,
                 role: user.role || 'colaborador',
@@ -350,6 +359,13 @@ export function CadastroUsuario() {
       setFormData(prev => ({ ...prev, senha: userData.senha }));
     }
   }, [userData?.senha]);
+
+  // Sincronizar role do userData com formData
+  useEffect(() => {
+    if (userData?.role !== undefined) {
+      setFormData(prev => ({ ...prev, role: userData.role }));
+    }
+  }, [userData?.role]);
 
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => {
@@ -519,6 +535,11 @@ export function CadastroUsuario() {
           const userUpdateData: any = {
             nome: formData.nome,
             role: formData.role,
+            ...(formData.role === 'cliente' && {
+              empresa: formData.empresa,
+              grupoId: formData.grupoId,
+              grupoNome: formData.grupoNome,
+            }),
           };
           if (formData.senha && formData.senha.trim()) {
             userUpdateData.senha = formData.senha;
@@ -526,11 +547,16 @@ export function CadastroUsuario() {
           await api.put(`/api/users/${userData.id}`, userUpdateData);
         } else {
           // Criar novo usuário
-          const userCreateData = {
+          const userCreateData: any = {
             nome: formData.nome,
             email: formData.email,
             senha: formData.senha || 'Cfo123@@', // Senha padrão se não informada
             role: formData.role,
+            ...(formData.role === 'cliente' && {
+              empresa: formData.empresa,
+              grupoId: formData.grupoId,
+              grupoNome: formData.grupoNome,
+            }),
           };
           const newUser = await api.post('/api/users', userCreateData);
           setUserData({
@@ -564,6 +590,8 @@ export function CadastroUsuario() {
           departamento,
           funcao: formData.funcao,
           empresa: formData.empresa,
+          grupoId: formData.grupoId,
+          grupoNome: formData.grupoNome,
           regime: formData.regime,
           contrato: formData.contrato,
           status: formData.status,
@@ -614,6 +642,8 @@ export function CadastroUsuario() {
           departamento,
           funcao: formData.funcao,
           empresa: formData.empresa,
+          grupoId: formData.grupoId,
+          grupoNome: formData.grupoNome,
           regime: formData.regime,
           contrato: formData.contrato,
           status: formData.status,
@@ -958,6 +988,16 @@ export function CadastroUsuario() {
                     value={(formData as any).empresa || ''}
                     onChange={(e) => handleChange('empresa', e.target.value)}
                     placeholder="Empresa"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Grupo:</label>
+                  <input
+                    type="text"
+                    value={(formData as any).grupoNome || ''}
+                    onChange={(e) => handleChange('grupoNome', e.target.value)}
+                    placeholder="Grupo"
                     className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-[#10B981] focus:border-transparent"
                   />
                 </div>

@@ -219,9 +219,6 @@ const fluxoFinanceiroCenarios: Record<'real' | 'orcado', ResumoItem[]> = {
 // Mocks de tendência para sparklines
 const resumoTrendMap: Record<string, number[]> = {};
 
-// Detalhes rápidos para drill-down em linhas específicas
-const detalheLinhaMap: Record<string, string[]> = {};
-
 // Mocks de tendência para sparklines (Fluxo Financeiro)
 const fluxoTrendMap: Record<string, number[]> = {};
 
@@ -359,6 +356,51 @@ export default function CPA() {
   const handleReload = () => {
     fetchData();
   };
+
+  // Detalhes rápidos para drill-down em linhas específicas
+  const detalheLinhaMap = useMemo(() => {
+    const detalhes: Record<string, string[]> = {};
+
+    // IMPOSTO - Lista de impostos com valores da API
+    detalhes['IMPOSTO'] = [
+      'Simples Nacional: R$ 0,00',
+      'PIS: R$ 0,00',
+      'COFINS: R$ 0,00',
+      'ICMS: R$ 0,00',
+      'DIFAL: R$ 0,00',
+      'Fundos Sociais: R$ 0,00',
+      'ISS: R$ 0,00',
+      'IPI: R$ 0,00',
+      'IRPJ: R$ 0,00',
+      'CSLL: R$ 0,00'
+    ];
+
+    // CMV - Custo dos Produtos Vendidos
+    detalhes['CMV'] = [
+      'Custo de produto: R$ 0,00',
+      'Insumo: R$ 0,00',
+      'Reintegralização de estoque: R$ 0,00'
+    ];
+
+    // CVA - Custos Variáveis de Aquisição (plataformas de ADS cadastradas)
+    const plataformasAds = submenusPublicidade.map(sub => `${sub.label}: R$ 0,00`);
+    detalhes['CVA'] = plataformasAds.length > 0 ? plataformasAds : ['Nenhuma plataforma de ADS cadastrada'];
+
+    // CVD - Custos Variáveis de Distribuição
+    detalhes['CVD'] = [
+      'Transporte - Mercadorias vendidas: R$ 0,00',
+      'Fulfillment: R$ 0,00',
+      'Comissões: R$ 0,00',
+      'Variável prestadores de serviço: R$ 0,00',
+      'Mensalidade de software - Variável: R$ 0,00',
+      'Custos com checkout: R$ 0,00',
+      'Custos com gateway: R$ 0,00',
+      'Tarifas de Marketplace: R$ 0,00',
+      'Outros custos variáveis diretos: R$ 0,00'
+    ];
+
+    return detalhes;
+  }, [submenusPublicidade]);
 
   // Carregamento inicial
   useEffect(() => {
@@ -2389,7 +2431,7 @@ export default function CPA() {
                                 ))}
                               </div>
                             )}
-                            <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">Sugestão do Analista:</p>
+                            <p className="text-xs mt-2 text-emerald-600 dark:text-emerald-500">Sugestão do Analista:</p>
                           </div>
                         )}
                       </div>
@@ -2446,7 +2488,7 @@ export default function CPA() {
                               {item.percentage !== null && (
                                 <p className="mb-2">Percentual: <span className="font-bold" style={{ color: colors.text }}>{percent(Math.abs(item.percentage))}</span></p>
                               )}
-                              <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">Sugestão do Analista:</p>
+                              <p className="text-xs mt-2 text-emerald-600 dark:text-emerald-500">Sugestão do Analista:</p>
                             </div>
                           )}
                         </div>

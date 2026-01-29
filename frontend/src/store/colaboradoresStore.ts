@@ -34,6 +34,8 @@ export interface Colaborador {
   setor?: string;
   funcao?: string;
   empresa?: string;
+  grupoId?: string; // Grupo Omie associado ao usuário
+  grupoNome?: string; // Nome do grupo Omie
   regime?: 'CLT' | 'PJ';
   contrato?: 'CLT' | 'PJ';
   chavePix?: string;
@@ -62,7 +64,19 @@ interface ColaboradoresState {
   reset: () => void;
 }
 
-const mock: Colaborador[] = [];
+const mock: Colaborador[] = [
+  {
+    id: 1,
+    nome: 'Administrador',
+    cargo: 'Administrador',
+    departamento: 'TI',
+    email: 'admin@cfohub.com',
+    status: 'ativo',
+    contrato: 'CLT',
+    regime: 'CLT',
+    dispensaDocumentacao: true, // Administrador não precisa de documentação
+  }
+];
 
 export const useColaboradoresStore = create<ColaboradoresState>()(
   persist(

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Save, AlertCircle, Check, Loader, X, RotateCcw, Eye, EyeOff, Building2, ShoppingCart, Megaphone, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { UpsellManager } from '../components/UpsellManager';
@@ -275,13 +276,17 @@ export function CadastroCliente() {
     omieConfig: { pertenceGrupo: false, grupoId: '', appKey: '', appSecret: '', integracoes: createDefaultIntegracoes() }
   });
 
+  const [grupoNomeDisplay, setGrupoNomeDisplay] = useState<string>('');
+
   const emailPrincipalValido = isValidEmailLocal(form.contatosPrincipais.emailPrincipal || '');
   const emailFinanceiroValido = !form.contatosPrincipais.emailFinanceiro || isValidEmailLocal(form.contatosPrincipais.emailFinanceiro);
   const outrosEmailsInvalidos = form.outrosContatos.some((c) => c.email && !isValidEmailLocal(c.email));
 
   useEffect(() => {
     if (isEdit && clienteId) {
+      // Procurar por ID numérico
       const cliente = clientes.find(c => c.id === parseInt(clienteId));
+      
       if (cliente) {
         setForm({
           dadosGerais: cliente.dadosGerais,
@@ -296,6 +301,31 @@ export function CadastroCliente() {
       }
     }
   }, [isEdit, clienteId, clientes]);
+
+
+
+  // Carregar nome do grupo quando edita cliente
+  useEffect(() => {
+    const loadGrupoInfo = async () => {
+      const email = form.contatosPrincipais.emailPrincipal;
+      if (isEdit && clienteId && email && email.trim() !== '') {
+        try {
+          const response = await api.get(`/api/users/email/${email}`);
+          if (response.data?.grupoNome) {
+            setGrupoNomeDisplay(response.data.grupoNome);
+          } else {
+            setGrupoNomeDisplay('');
+          }
+        } catch (error) {
+          // Se não conseguir carregar, deixa vazio
+          console.error('Erro ao carregar informações do grupo:', error);
+          setGrupoNomeDisplay('');
+        }
+      }
+    };
+    
+    loadGrupoInfo();
+  }, [isEdit, clienteId, form.contatosPrincipais.emailPrincipal]);
 
   // Auto-preencher endereço via CEP
   const handleCepChange = (value: string) => {
@@ -1053,6 +1083,17 @@ export function CadastroCliente() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">WhatsApp:</label>
                 <input type="tel" value={formatPhone(form.contatosPrincipais.whatsapp || '')} onChange={(e) => setForm(prev => ({ ...prev, contatosPrincipais: { ...prev.contatosPrincipais, whatsapp: onlyDigits(e.target.value).slice(0, 11) } }))} placeholder="(11) 98765-4321" maxLength={15} className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 bg-white dark:bg-slate-900/70 text-gray-900 dark:text-slate-100" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Grupo:</label>
+                <input 
+                  type="text" 
+                  value={grupoNomeDisplay || 'Nenhum grupo'} 
+                  disabled={true}
+                  placeholder="Nenhum grupo" 
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 cursor-not-allowed" 
+                />
               </div>
             </div>
           </div>

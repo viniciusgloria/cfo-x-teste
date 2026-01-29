@@ -19,6 +19,7 @@ import { useAuthStore } from '../store/authStore';
 import { useSystemStore } from '../store/systemStore';
 import { useCargosSetoresStore } from '../store/cargosSetoresStore';
 import { useColaboradoresStore } from '../store/colaboradoresStore';
+import { useClientesStore } from '../store/clientesStore';
 import { CargoModalAdvanced } from '../components/CargoModalAdvanced';
 import { HierarquiaSetor } from '../components/HierarquiaSetor';
 import { OrganogramaModal } from '../components/OrganogramaModal';
@@ -48,6 +49,12 @@ export function Configuracoes() {
     isActive?: boolean;
   }>>([
   ]);
+
+  // Estados para filtros de usuários
+  const [filtroNome, setFiltroNome] = useState('');
+  const [filtroTipoAcesso, setFiltroTipoAcesso] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('');
+  const [filtroEmpresaGrupo, setFiltroEmpresaGrupo] = useState('');
   const [isSavingEmpresa, setIsSavingEmpresa] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toRemoveUser, setToRemoveUser] = useState<string | null>(null);
@@ -93,7 +100,7 @@ export function Configuracoes() {
   const [draggingCargoId, setDraggingCargoId] = useState<string | null>(null);
 
   // Estados para Estrutura Organizacional unificada
-  const [estruturaView, setEstruturaView] = useState<'setores' | 'cargos' | 'hierarquia'>('setores');
+  const [estruturaView, setEstruturaView] = useState<'setores' | 'cargos' | 'grupos' | 'hierarquia'>('setores');
   const [estruturaLayout, setEstruturaLayout] = useState<'cards' | 'table'>('cards');
 
   // Estados para configuração de email
@@ -142,6 +149,9 @@ export function Configuracoes() {
   const [grupoSelecionadoId, setGrupoSelecionadoId] = useState('');
   const [criandoGrupoCliente, setCriandoGrupoCliente] = useState(false);
   const [vincularGrupo, setVincularGrupo] = useState(false);
+  const [showGruposModal, setShowGruposModal] = useState(false);
+  const [editingGrupoId, setEditingGrupoId] = useState<string | null>(null);
+  const [novoGrupoNome, setNovoGrupoNome] = useState('');
   const [clienteAcessoForm, setClienteAcessoForm] = useState({ nome: '', email: '', empresa: '', ativo: true });
 
   // Estados para novas abas de Configurações
@@ -341,6 +351,61 @@ export function Configuracoes() {
     }
   };
 
+  // Função para filtrar usuários
+  const getFilteredUsers = () => {
+    return users.filter(user => {
+      // Filtro por nome
+      if (filtroNome && !user.name.toLowerCase().includes(filtroNome.toLowerCase())) {
+        return false;
+      }
+
+      // Filtro por tipo de acesso
+      if (filtroTipoAcesso && user.role !== filtroTipoAcesso) {
+        return false;
+      }
+
+      // Filtro por status
+      if (filtroStatus) {
+        const userStatus = user.isActive ? 'ativo' : 'inativo';
+        if (userStatus !== filtroStatus) {
+          return false;
+        }
+      }
+
+      // Filtro por empresa ou grupo
+      if (filtroEmpresaGrupo) {
+        const empresaMatch = user.empresa && user.empresa.toLowerCase().includes(filtroEmpresaGrupo.toLowerCase());
+        const grupoMatch = user.grupoNome && user.grupoNome.toLowerCase().includes(filtroEmpresaGrupo.toLowerCase());
+        if (!empresaMatch && !grupoMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  // Função para obter badge de status baseado no role do usuário
+  const getStatusBadge = (role: string, isActive: boolean) => {
+    // Se for cliente, usa status de clientes
+    if (role === 'cliente') {
+      const status = isActive ? 'ativo' : 'inativo';
+      const config = {
+        ativo: { colors: 'bg-green-100 text-green-800', label: 'Ativo', icon: '🟢' },
+        inativo: { colors: 'bg-red-100 text-red-800', label: 'Inativo', icon: '🔴' },
+      };
+      return config[status as keyof typeof config] || config.ativo;
+    }
+    
+    // Se for administrador/gestor/colaborador, usa status de colaboradores
+    const status = isActive ? 'ativo' : 'inativo';
+    const config = {
+      ativo: { colors: 'bg-green-100 text-green-800', label: 'Ativo', icon: '🟢' },
+      inativo: { colors: 'bg-slate-200 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200', label: 'Inativo', icon: '🔚' }
+    };
+    return config[status as keyof typeof config] || config.ativo;
+  };
+
   // Carregar configurações de email existentes
   useEffect(() => {
     const systemConfig = useSystemStore.getState().config.emailConfig;
@@ -362,11 +427,24 @@ export function Configuracoes() {
     
     const userToRemove = users.find(u => u.id === toRemoveUser);
     const isColaboradorOrGestor = userToRemove && (userToRemove.role === 'colaborador' || userToRemove.role === 'gestor');
+    const isCliente = userToRemove && userToRemove.role === 'cliente';
     
     try {
       await api.delete(`/api/users/${toRemoveUser}`);
       
-      if (isColaboradorOrGestor) {
+      if (isCliente) {
+        // Para clientes, o backend já marcou como inativo
+        // Recarregar lista de clientes da API para sincronizar
+        const { fetchClientes } = useClientesStore.getState();
+        await fetchClientes();
+        
+        // Manter o usuário na lista mas marcar como inativo
+        setUsers((prev) => prev.map((u) => 
+          u.id === toRemoveUser 
+            ? { ...u, isActive: false } 
+            : u
+        ));
+      } else if (isColaboradorOrGestor) {
         // Para colaboradores/gestores, marcar como inativo em vez de remover
         const { atualizarColaborador } = useColaboradoresStore.getState();
         // Encontrar o colaborador pelo email
@@ -395,7 +473,6 @@ export function Configuracoes() {
       setToRemoveUser(null);
       setConfirmOpen(false);
       setEditModalOpen(false);
-      setConfirmRemoveInModal(false);
     }
   };
 
@@ -415,14 +492,33 @@ export function Configuracoes() {
     setEditModalOpen(true);
   };
 
-  const redirectToCadastro = (userId: string) => {
+  const redirectToCadastro = (userId: string, userEmail?: string) => {
     const u = users.find((x) => x.id === userId);
     if (!u) return;
     
-    if (u.role === 'colaborador' || u.role === 'gestor') {
+    if (u.role === 'colaborador' || u.role === 'gestor' || u.role === 'admin') {
       navigate(`/colaboradores/cadastro?id=${userId}`);
     } else if (u.role === 'cliente') {
-      navigate(`/cadastro-cliente?id=${userId}`);
+      // Para clientes, recarregar a lista e procurar o cliente pelo email
+      const { clientes, fetchClientes } = useClientesStore.getState();
+      
+      // Tentar encontrar imediatamente
+      let cliente = clientes.find(c => c.contatosPrincipais?.emailPrincipal === u.email);
+      
+      if (cliente) {
+        navigate(`/cadastro-cliente?id=${cliente.id}`);
+      } else {
+        // Se não encontrou, recarregar da API e tentar novamente
+        fetchClientes().then(() => {
+          const clientesAtualizados = useClientesStore.getState().clientes;
+          const clienteEncontrado = clientesAtualizados.find(c => c.contatosPrincipais?.emailPrincipal === u.email);
+          if (clienteEncontrado) {
+            navigate(`/cadastro-cliente?id=${clienteEncontrado.id}`);
+          } else {
+            toast.error('Cliente não encontrado');
+          }
+        });
+      }
     }
   };
 
@@ -445,23 +541,26 @@ export function Configuracoes() {
     }
 
     try {
+      const grupoNome = editForm.grupoId 
+        ? config.omieConfig.grupos.find(g => g.id === editForm.grupoId)?.nome 
+        : undefined;
+
       const updateData: any = {
         nome: editForm.name,
         role: editForm.role,
         ...(editForm.password && { senha: editForm.password }),
         ...(editForm.role === 'cliente' && {
           empresa: editForm.empresa,
-          ...(editForm.grupoId && { grupoId: editForm.grupoId })
+          ...(editForm.grupoId && { 
+            grupoId: editForm.grupoId,
+            grupoNome
+          })
         })
       };
 
       await api.put(`/api/users/${editUserId}`, updateData);
 
       // Atualizar estado local
-      const grupoNome = editForm.grupoId 
-        ? config.omieConfig.grupos.find(g => g.id === editForm.grupoId)?.nome 
-        : undefined;
-
       setUsers((prev) => prev.map((u) => 
         u.id === editUserId 
           ? { 
@@ -482,6 +581,51 @@ export function Configuracoes() {
     } catch (error: any) {
       console.error('Erro ao atualizar usuário:', error);
       toast.error(error.response?.data?.detail || 'Erro ao atualizar usuário');
+    }
+  };
+
+  // Função para alternar status do usuário
+  const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
+    try {
+      const newStatus = !currentStatus;
+      
+      // Atualizar status do usuário
+      await api.put(`/api/users/${userId}`, { ativo: newStatus });
+
+      // Se for usuário cliente, também atualizar o cliente associado
+      const user = users.find(u => u.id === userId);
+      if (user && user.role === 'cliente') {
+        try {
+          // Buscar cliente pelo email
+          const clienteResponse = await api.get('/api/clientes');
+          const cliente = clienteResponse.data.find((c: any) => c.contatosPrincipais?.emailPrincipal === user.email);
+          
+          if (cliente) {
+            // Atualizar status do cliente
+            const clienteStatus = newStatus ? 'ativo' : 'inativo';
+            await api.put(`/api/clientes/${cliente.id}`, { status: clienteStatus });
+            
+            // Atualizar estado local dos clientes
+            const clienteAtualizado = { ...cliente, status: clienteStatus as any };
+            useClientesStore.getState().editarCliente(clienteAtualizado);
+          }
+        } catch (clienteError) {
+          console.warn('Erro ao atualizar cliente associado:', clienteError);
+          // Não falha a operação principal se não conseguir atualizar o cliente
+        }
+      }
+
+      // Atualizar estado local dos usuários
+      setUsers((prev) => prev.map((u) => 
+        u.id === userId 
+          ? { ...u, isActive: newStatus } 
+          : u
+      ));
+      
+      toast.success(`Usuário ${newStatus ? 'ativado' : 'inativado'} com sucesso`);
+    } catch (error: any) {
+      console.error('Erro ao alterar status do usuário:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao alterar status do usuário');
     }
   };
 
@@ -540,7 +684,10 @@ export function Configuracoes() {
         role: createUserForm.role,
         ...(createUserForm.role === 'cliente' && { 
           empresa: createUserForm.empresa,
-          ...(resolvedGrupoId && { grupoId: resolvedGrupoId })
+          ...(resolvedGrupoId && { 
+            grupoId: resolvedGrupoId,
+            grupoNome: resolvedGrupoNome
+          })
         }),
       };
 
@@ -559,17 +706,35 @@ export function Configuracoes() {
 
       toast.success('Usuário criado com sucesso');
       
-      // Se for colaborador ou gestor, criar automaticamente na página Colaboradores
-      if (createUserForm.role === 'colaborador' || createUserForm.role === 'gestor') {
-        const { adicionarColaborador } = useColaboradoresStore.getState();
-        adicionarColaborador({
-          nome: createUserForm.nome,
-          cargo: createUserForm.role === 'gestor' ? 'Gestor' : 'Colaborador',
-          departamento: '', // Será definido quando o setor for selecionado no cadastro
-          email: createUserForm.email,
-          status: 'ativo',
-          metaHorasMensais: 176,
-        });
+      // Criar automaticamente na página Colaboradores para qualquer role
+      const { adicionarColaborador } = useColaboradoresStore.getState();
+      adicionarColaborador({
+        nome: createUserForm.nome,
+        cargo: createUserForm.role === 'gestor' ? 'Gestor' : createUserForm.role === 'cliente' ? 'Cliente' : 'Colaborador',
+        departamento: '', // Será definido quando o setor for selecionado no cadastro
+        email: createUserForm.email,
+        status: 'ativo',
+        metaHorasMensais: 176,
+        ...(createUserForm.role === 'cliente' && {
+          empresa: createUserForm.empresa,
+          grupoId: resolvedGrupoId,
+          grupoNome: resolvedGrupoNome,
+        }),
+      });
+
+      // Se for cliente, criar também na página Clientes via API
+      if (createUserForm.role === 'cliente') {
+        const { createClienteAPI } = useClientesStore.getState();
+        try {
+          await createClienteAPI({
+            nome: createUserForm.empresa || createUserForm.nome,
+            email: createUserForm.email,
+            status: 'ativo',
+          });
+        } catch (error) {
+          console.error('Erro ao criar cliente na página Clientes:', error);
+          // Não impede a criação do usuário se falhar aqui
+        }
       }
       
       setCreateUserForm({ nome: '', email: '', role: 'colaborador' });
@@ -1355,6 +1520,94 @@ export function Configuracoes() {
                 </div>
               )}
 
+              {/* Filtros de Usuários */}
+              {!isLoadingUsers && users.length > 0 && (
+                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4 mb-6">
+                  <h3 className="text-lg font-medium text-gray-800 dark:text-slate-100 mb-4">Filtros</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Filtro por Nome */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Nome
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="Buscar por nome..."
+                        value={filtroNome}
+                        onChange={(e) => setFiltroNome(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Filtro por Tipo de Acesso */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Tipo de Acesso
+                      </label>
+                      <select
+                        value={filtroTipoAcesso}
+                        onChange={(e) => setFiltroTipoAcesso(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      >
+                        <option value="">Todos</option>
+                        <option value="cliente">Cliente</option>
+                        <option value="colaborador">Colaborador</option>
+                        <option value="gestor">Gestor</option>
+                        <option value="administrador">Administrador</option>
+                      </select>
+                    </div>
+
+                    {/* Filtro por Status */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Status
+                      </label>
+                      <select
+                        value={filtroStatus}
+                        onChange={(e) => setFiltroStatus(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      >
+                        <option value="">Todos</option>
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                      </select>
+                    </div>
+
+                    {/* Filtro por Empresa/Grupo */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Empresa/Grupo
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="Buscar por empresa ou grupo..."
+                        value={filtroEmpresaGrupo}
+                        onChange={(e) => setFiltroEmpresaGrupo(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Botão para limpar filtros */}
+                  {(filtroNome || filtroTipoAcesso || filtroStatus || filtroEmpresaGrupo) && (
+                    <div className="mt-4 flex justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setFiltroNome('');
+                          setFiltroTipoAcesso('');
+                          setFiltroStatus('');
+                          setFiltroEmpresaGrupo('');
+                        }}
+                        className="text-sm"
+                      >
+                        Limpar Filtros
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Lista de Usuários */}
               {isLoadingUsers ? (
                 <div className="flex items-center justify-center py-12">
@@ -1363,22 +1616,56 @@ export function Configuracoes() {
                     <p className="text-gray-600 dark:text-gray-400">Carregando usuários...</p>
                   </div>
                 </div>
-              ) : users.length === 0 ? (
+              ) : getFilteredUsers().length === 0 ? (
                 <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 dark:text-gray-400">Nenhum usuário encontrado</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Crie o primeiro usuário usando o formulário acima</p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {users.length === 0 ? 'Nenhum usuário encontrado' : 'Nenhum usuário encontrado com os filtros aplicados'}
+                  </p>
+                  {users.length > 0 && (
+                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                      Tente ajustar os filtros ou <button
+                        onClick={() => {
+                          setFiltroNome('');
+                          setFiltroTipoAcesso('');
+                          setFiltroStatus('');
+                          setFiltroEmpresaGrupo('');
+                        }}
+                        className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 underline"
+                      >
+                        limpar filtros
+                      </button>
+                    </p>
+                  )}
                 </div>
               ) : (
                 <>
+                  {/* Indicador de resultados */}
+                  <div className="mb-4 text-sm text-gray-600 dark:text-slate-400">
+                    Mostrando {getFilteredUsers().length} de {users.length} usuário{getFilteredUsers().length !== 1 ? 's' : ''}
+                    {(filtroNome || filtroTipoAcesso || filtroStatus || filtroEmpresaGrupo) && (
+                      <span className="ml-2 text-emerald-600 dark:text-emerald-400">
+                        (filtros aplicados)
+                      </span>
+                    )}
+                  </div>
+
                   {/* Mobile: cards */}
                   <div className="space-y-3 md:hidden">
-                {users.map((u) => (
+                {getFilteredUsers().map((u) => (
                   <div key={u.id} className={`p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg ${!u.isActive ? 'opacity-60' : ''}`}>
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2">
                           <div className="text-sm text-gray-500 dark:text-slate-400">{u.role}</div>
+                          {(() => {
+                            const badgeInfo = getStatusBadge(u.role, u.isActive);
+                            return (
+                              <span className={`inline-block px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${badgeInfo.colors}`}>
+                                {badgeInfo.label}
+                              </span>
+                            );
+                          })()}
                           {!u.isActive && (
                             <span className="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">
                               Inativo
@@ -1395,9 +1682,17 @@ export function Configuracoes() {
                         )}
                       </div>
                       <div className="flex flex-col gap-2 ml-4">
-                        <Button variant="ghost" aria-label={`Editar acesso de ${u.name}`} onClick={() => openEditUser(u.id)}>Acesso</Button>
+                        <Button variant="outline" aria-label={`Editar acesso de ${u.name}`} onClick={() => openEditUser(u.id)}>Acesso</Button>
                         <Button variant="outline" aria-label={`Editar cadastro de ${u.name}`} onClick={() => redirectToCadastro(u.id)}>Cadastro</Button>
-                        <Button variant="outline" onClick={() => { setToRemoveUser(u.id); setConfirmOpen(true); }} aria-label={`Remover usuário ${u.name}`}>Remover</Button>
+                        <Button 
+                          variant="secondary" 
+                          className="!opacity-100"
+                          style={{ opacity: 1 }}
+                          aria-label={`${u.isActive ? 'Inativar' : 'Ativar'} usuário ${u.name}`} 
+                          onClick={() => toggleUserStatus(u.id, u.isActive)}
+                        >
+                          {u.isActive ? 'Inativar' : 'Ativar'}
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -1411,14 +1706,15 @@ export function Configuracoes() {
                         <tr className="text-left text-sm text-gray-600 dark:text-slate-300">
                           <th className="p-2">Nome</th>
                           <th className="p-2">E-mail</th>
-                          <th className="p-2">Cargo</th>
+                          <th className="p-2">Tipo de Acesso</th>
+                          <th className="p-2">Status</th>
                           <th className="p-2">Empresa</th>
                           <th className="p-2">Grupo</th>
                           <th className="p-2">Ações</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((u) => (
+                        {getFilteredUsers().map((u) => (
                           <tr key={u.id} className={`border-t dark:border-slate-700 ${!u.isActive ? 'opacity-60' : ''}`}>
                             <td className="p-2">
                               <div className="flex items-center gap-2">
@@ -1432,13 +1728,31 @@ export function Configuracoes() {
                             </td>
                             <td className={`p-2 ${!u.isActive ? 'text-gray-400' : ''}`}>{u.email}</td>
                             <td className={`p-2 ${!u.isActive ? 'text-gray-400' : ''}`}>{u.role}</td>
+                            <td className="p-2">
+                              {(() => {
+                                const badgeInfo = getStatusBadge(u.role, u.isActive);
+                                return (
+                                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${badgeInfo.colors}`}>
+                                    {badgeInfo.label}
+                                  </span>
+                                );
+                              })()}
+                            </td>
                             <td className={`p-2 text-sm ${!u.isActive ? 'text-gray-400' : ''}`}>{u.empresa || '—'}</td>
                             <td className={`p-2 text-sm ${!u.isActive ? 'text-gray-400' : ''}`}>{u.grupoNome || '—'}</td>
                             <td className="p-2">
                               <div className="flex gap-2">
-                                <Button variant="ghost" aria-label={`Editar acesso de ${u.name}`} onClick={() => openEditUser(u.id)}>Acesso</Button>
+                                <Button variant="outline" aria-label={`Editar acesso de ${u.name}`} onClick={() => openEditUser(u.id)}>Acesso</Button>
                                 <Button variant="outline" aria-label={`Editar cadastro de ${u.name}`} onClick={() => redirectToCadastro(u.id)}>Cadastro</Button>
-                                <Button variant="outline" onClick={() => { setToRemoveUser(u.id); setConfirmOpen(true); }} aria-label={`Remover usuário ${u.name}`}>Remover</Button>
+                                <Button 
+                                  variant="secondary" 
+                                  className="!opacity-100"
+                                  style={{ opacity: 1 }}
+                                  aria-label={`${u.isActive ? 'Inativar' : 'Ativar'} usuário ${u.name}`} 
+                                  onClick={() => toggleUserStatus(u.id, u.isActive)}
+                                >
+                                  {u.isActive ? 'Inativar' : 'Ativar'}
+                                </Button>
                               </div>
                             </td>
                           </tr>
@@ -1727,6 +2041,16 @@ export function Configuracoes() {
                     }`}
                   >
                     Cargos
+                  </button>
+                  <button
+                    onClick={() => setEstruturaView('grupos')}
+                    className={`px-4 py-2 rounded-md font-medium transition-all ${
+                      estruturaView === 'grupos'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Grupos
                   </button>
                   <button
                     onClick={() => setEstruturaView('hierarquia')}
@@ -2101,6 +2425,165 @@ export function Configuracoes() {
                     }
                   })()}
                 </>
+              )}
+
+              {estruturaView === 'grupos' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Gerenciar Grupos</h3>
+                    {isAdmin && (
+                      <Button
+                        onClick={() => {
+                          setEditingGrupoId(null);
+                          setNovoGrupoNome('');
+                          setShowGruposModal(true);
+                        }}
+                        className="inline-flex items-center"
+                      >
+                        <Plus size={16} className="mr-1" />
+                        Novo Grupo
+                      </Button>
+                    )}
+                  </div>
+
+                  {config.omieConfig.grupos.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                      Nenhum grupo cadastrado. Clique em "Novo Grupo" para começar.
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                      {config.omieConfig.grupos.map((grupo) => (
+                        <div
+                          key={grupo.id}
+                          className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-semibold text-gray-800 dark:text-white">{grupo.nome}</h4>
+                            {isAdmin && (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingGrupoId(grupo.id);
+                                    setNovoGrupoNome(grupo.nome);
+                                    setShowGruposModal(true);
+                                  }}
+                                  className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded"
+                                  aria-label={`Editar ${grupo.nome}`}
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Tem certeza que deseja remover o grupo "${grupo.nome}"?`)) {
+                                      const newGrupos = config.omieConfig.grupos.filter(g => g.id !== grupo.id);
+                                      useSystemStore.setState((state) => ({
+                                        config: {
+                                          ...state.config,
+                                          omieConfig: {
+                                            ...state.config.omieConfig,
+                                            grupos: newGrupos
+                                          }
+                                        }
+                                      }));
+                                      toast.success('Grupo removido com sucesso');
+                                    }
+                                  }}
+                                  className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                  aria-label={`Remover ${grupo.nome}`}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Modal para criar/editar grupo */}
+                  <Modal
+                    isOpen={showGruposModal && isAdmin}
+                    onClose={() => {
+                      setShowGruposModal(false);
+                      setEditingGrupoId(null);
+                      setNovoGrupoNome('');
+                    }}
+                    title={editingGrupoId ? 'Editar Grupo' : 'Novo Grupo'}
+                  >
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Nome do Grupo
+                        </label>
+                        <Input
+                          value={novoGrupoNome}
+                          onChange={(e) => setNovoGrupoNome(e.target.value)}
+                          placeholder="Ex: Grupo GNF, Grupo Vendas"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowGruposModal(false);
+                            setEditingGrupoId(null);
+                            setNovoGrupoNome('');
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            if (!novoGrupoNome.trim()) {
+                              toast.error('Preencha o nome do grupo');
+                              return;
+                            }
+
+                            if (editingGrupoId) {
+                              // Editar grupo existente
+                              const updatedGrupos = config.omieConfig.grupos.map(g =>
+                                g.id === editingGrupoId ? { ...g, nome: novoGrupoNome.trim() } : g
+                              );
+                              useSystemStore.setState((state) => ({
+                                config: {
+                                  ...state.config,
+                                  omieConfig: {
+                                    ...state.config.omieConfig,
+                                    grupos: updatedGrupos
+                                  }
+                                }
+                              }));
+                              toast.success('Grupo atualizado com sucesso');
+                            } else {
+                              // Criar novo grupo
+                              const newGrupo = {
+                                id: Date.now().toString(),
+                                nome: novoGrupoNome.trim()
+                              };
+                              useSystemStore.setState((state) => ({
+                                config: {
+                                  ...state.config,
+                                  omieConfig: {
+                                    ...state.config.omieConfig,
+                                    grupos: [...state.config.omieConfig.grupos, newGrupo]
+                                  }
+                                }
+                              }));
+                              toast.success('Grupo criado com sucesso');
+                            }
+                            
+                            setShowGruposModal(false);
+                            setEditingGrupoId(null);
+                            setNovoGrupoNome('');
+                          }}
+                        >
+                          {editingGrupoId ? 'Atualizar' : 'Criar'}
+                        </Button>
+                      </div>
+                    </div>
+                  </Modal>
+                </div>
               )}
 
               {estruturaView === 'hierarquia' && (
@@ -2709,6 +3192,17 @@ export function Configuracoes() {
           <div className="flex gap-3 justify-end pt-4">
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>
               Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              className="border-2 border-red-500"
+              onClick={() => { 
+                setToRemoveUser(editUserId); 
+                setConfirmOpen(true); 
+                setEditModalOpen(false);
+              }}
+            >
+              Remover Usuário
             </Button>
             <Button onClick={saveEditUser}>
               Salvar Alterações
